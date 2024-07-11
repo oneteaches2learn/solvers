@@ -1,0 +1,249 @@
+\documentclass{amsart}
+
+% PACKAGES
+\usepackage[top=.5in, bottom=.5in, left=.7in, right=.7in]{geometry}
+\usepackage{amsmath}        % AMS fonts and symbols
+\usepackage{amsthm}         % Theorems in AMS style
+\usepackage{amssymb}        % Additional AMS symbols
+\usepackage{amsfonts}       % Additional AMS fonts
+\usepackage{nicefrac}       % Partially stacks horizontal fractions
+\usepackage{scrextend}      % Required to manipulate margins
+\usepackage{mathrsfs}       % Adds \mathscr, i.e. math script style
+\usepackage{hyperref}       % Displays hyperlinks
+\usepackage{enumitem}       % Additional enumeration features
+\usepackage{verbatim}       % Displays code-like text
+\usepackage{graphicx}       % Used for graphics
+\usepackage{cite}           % Enables bibtex bibliographies
+\usepackage{soul}           % Special text editing, for MP comments
+\usepackage{color}
+  
+% PAGE LAYOUT
+\setlength{\parskip}{\baselineskip}
+\setlength\parindent{0pt}
+
+\begin{document}
+A \textit{triangulation} is an indexed set of elements. An \textit{element}
+$X_i$ is a triple consisting of a domain, a set of shape functions, and a set
+of degrees of freedom. The element's \textit{domain} $\omega_i$ is a subset of
+$\Omega$, the overall domain being triangulated. The \textit{shape functions}
+are a subset of the basis functions defined on $\Omega$; specifically, the
+shape functions for $X_i$ are those basis functions whose support is
+$\omega_i$.\footnote{I think the definitions of \textit{basis function} and
+\textit{shape function} are not agreed on by all sources. I am going with the
+following convention: A shape function is a specific type of basis function.
+That is, a basis function is any function that is part of a basis for a
+function space. This is a very broadly defined object. By contrast, a shape
+function is specifically a basis function that is a piecewise defined
+polynomial which is supported only on some element of a triangulation of a
+domain.} The \textit{degrees of freedom} are the elements of the dual basis
+that correspond to the shape functions. Recall that for vector $v = sum_{i=1}^n
+c_i \eta_i$ written in basis $\{\eta_i\}$, the dual basis vector $f_i$ simply
+returns the coefficient $c_i$ attached to $\eta_i$, i.e. $f_i(v) = c_i$. So,
+since the ultimate aim of the finite element method is to return an
+approximation $u_h$ to the true solution $u$ where $u_h = sum_{i=1}^n c_i
+\eta_i$ where $\eta_i$ are the shape functions. So, if this solution were
+known, the degrees of freedom would return the coefficients $c_i$ that are the
+data of the solution.
+
+To help define a Lagrangian element, let us first define a \textit{nodal
+basis}: Given nodes $x_1, \dots, x_n$, a nodal basis is a set of polynomials
+$p_i$ defined so that $p_i(x_j) = \delta_{ij}$. For example, the Lagrange
+polynomials are defined in just such a way, and are therefore a nodal basis. By
+contrast, consider a \textit{modal basis}, which occurs when basis functions
+are defined according to increasing vibrational frequencies. The simplest
+example of a modal basis is the Legendre basis, which consists of polynomials
+of increasing degree (and therefore which have an increasing number of zeros).
+
+With a nodal basis, the final solution $u_h = \sum_{i=1}^{n} c_i \eta_i$ has
+the property that $u_h(x_i) = c_i$ because $\eta_i(x_i) = 1$ and $\eta_j(x_i) =
+0$ for all $j \neq i$. If you use a nodal basis and you place your nodes along
+the boundary of your element, then you can easily enforce continuity of your
+solution between elements. 
+
+Keep in mind, however, that for a non-nodal basis, this property will not generally be true. You cannot, in general, think about the coefficients $c_i$ as corresponding to the solution value at node $x_i$. b
+
+A \textit{Lagrangian element} is an element whose shape functions are Lagrange polynomials on $\omega_i$. The Lagrange polynomials are a nodal basis, and the only information needed to define these polynomials is the set of nodes on which they are defined. Because these are a nodal basis, the final It may seem beneficial to define the nodes at the same locations as Gaussian quadrature points because this will ensure that  
+
+
+
+
+\texttt{Element} \\
+Superclass representing a finite element
+
+\texttt{Element1d} \\
+Superclass representing a 1d finite element, i.e. a line element. Inherits from \texttt{Element}.
+
+\texttt{LagrangeElement1d} \\
+Represents a 1d Lagrangian finite element. Inherits from \texttt{Element1d}. Has properties \texttt{degree}
+
+
+
+
+I need to just think about this a minute. So the idea is that I want to have a set of tests that I can run on my solver to ensure that the solver is working well. And I want this set of tests to be easy to run. Like maybe one button push easy to run. That way, I can then iterate on the design of the solver and, with a single button press, be sure that the solver is behaving appropriately. To do that, I need to make a bunch of MMS tests. To that, I really need a single MMS test. But I need to make the MMS test be a function so that I can pass different things to it. I think that for now, I will make an MMS test function. I can later turn it into an MMS test object, which would be nice. 
+
+Also, I want you to keep in mind that you're not using correct quadrature yet. So that's fine. Later I can update the quadrature to be correct. For right now, I'm going to go with what works and not worry too much more about it beyond that. 
+
+So just do this: From scratch, code up an MMS test. As you do it, try to decide what kinds of things will need to be passed to the MMS test and what kinds of things will just be stored in the MMS test. 
+
+
+
+\textbf{2-28-2024} \\
+So I'm at a point now where I need to decide what the solver even is. I think
+the whole point of this exercise is that a solver has been a huge monolithic
+thing with two dozen subfunctions and so on. Like a thousand lines of code. And
+I've wanted to compartmentalize the code into objects that could be assembled
+in different ways and therefore would be more reusable. 
+
+So now, I am feeling a little disgruntled about the fact that the solver object
+I am trying to design seems to have almost nothing left to it. But really
+that's the point isn't it? That I've compartmentalized most of the things the
+solver used to do into individual objects that know what they are supposed to
+do without being instructed by some massive solver. 
+
+OK I have a question. I want to take my time setting it up though. Basically, a
+Pennes equation, I know now, is just a reaction diffusion equation. The Pennes
+coefficient gets multiplied by the blood temperature. That becomes a source
+term. Traditionally, we move the source term over to the RHS and go ahead and
+solve. In the case that the Pennes coefficient is a function of u, then the
+blood gets multiplied by a function that depends on u, and we no longer move
+that over to the RHS (unless we are solving through linearizing by time
+lagging, in which case we do move it to the RHS). 
+
+The blood temperature itself might also be a function of u, in which case, even
+if the pennes coefficient is not a function of u, the coefficient should be
+kept on the LHS. Although in that case, the problem is still linear. There is
+also the question of the permeability constant, k. In everything I have done so
+far, k has been independent of u. But theoretically, k could be a function of
+u. The difficulty there is that then the discrete laplacian needs to get
+recalculated each time. I think there are also theoretical difficulties with,
+i.e. related to well-posedness and so on. And so I just haven't touched the
+problem at all yet. 
+
+Then also, there is the porosity, which is the coefficient attached to the time
+derivative in a time-dependent problem, which could also be a function of u, or
+not. 
+
+I think that when you put all of this together, a Pennes problem consists of
+five pieces of data: the porosity, the permeability, the reaction coefficient,
+the blood temperature, and the source. Any one of these could be a function of
+u, and in every case (except the blood temperature), that makes the problem
+nonlinear.
+
+I do think that the solver should be designed in such a way that it assumes a
+nonlinear problem, i.e. an iterative solution technique. Then in the case that
+the problem is linear, the iteration will just converge extremely rapidly, i.e.
+within one or two iterations, and the computation cost that I'm imposing on the
+computer will be more than made up for by the simplicity of having a solver
+that doesn't care what kind of problem you're setting up. So that design
+decision has been made. 
+
+The design decision I'm struggling at is: Who does all of this assembling, if
+not the solver? Certainly I don't want to be responsible for assembling the
+objects. Rather, I just want to specify the data and have a solver that does
+all the rest. 
+
+OK then. That's actually useful. In fact, I think that ideally, a solver would
+take the information that is specified in a problem statment and it would
+simply output a solution. Isn't that the ideal goal? You just hand me a
+problem, I directly input it into the solver, and moments later the solver
+outputs an approximate answer. It's as if I had a problem written down on a
+page, and I just input it directly into the computer, and out comes an answer.
+No set up. All of the set up is handled by the solver. 
+
+OK. So in addition to the five functions I've mentioned, what else is there in
+a 1D Pennes problem? Well there is a domain. A domain is specified by its
+endpoints. There is a number of cells. I like cell number over h because cell
+number is an integer. However, I can see that in the higher dimensional case,
+you may be offloading the gridding to some third party program, and in that
+case you may just set the tolerance h, and let the program determine the
+appropriate number and placement of grid cells based on your desired tolerance.
+So maybe that is an argument for tolerance h over cell number. But let's just
+go with it for right now. 
+
+In my problem, a domain could also have internal boundaries, which is something
+that I should probably account for. 
+
+It also has boundary conditions. So. Again, I don't want to specify the
+boundary conditions. But the boundary conditions what are they really? They are
+functions aren't they. They are functions and they are locations. Like let's
+think of this more generally: Let's set aside Robin for a second and let's say
+that I have a Dirichlet boundary condition that varies in time. I need to
+specify where that condition applies. Let's say that I have a gap in my domain
+as I am imagining. Then on paper, I need to specify where the left and right
+endpoints of that gap are, and I need to specify a boundary condition on those
+locations. The way you would do that would be to specify the left and right
+endpoints of the domain and the left and right endpoints of the gap. Then you
+could just specify a time-varying function that is applied to any of those four
+points. 
+
+If it is Robin condition, it's still just a function isn't it. 
+
+So I think that the solver should just take all these functions, extract the
+necessary data from the functions, build the necessary objects, assemble, and
+solve. That sounds like a lot, but most of the work will be done by the objects
+themselves. And most of my objects are designed to take a domain and a function
+and go from there. The one exception is the boundary conditions, which have not
+already been designed to take functions. But that can easily be fixed. 
+
+Now, one other design principle that I've been working on is being very strict
+in terms of the kinds of objects (especially functions) that get passed. I have
+insisted that function_handles be passed. I am considering allowing more
+flexibility here. But I think for now, I will continue to insist on
+function_handles. And we'll just see how inconvenient that is (or isn't). 
+
+OK so presuming that the solver takes functions, I still think it is useful to
+bundle these functions as I have been: domain, parameters, boundary, source,
+time. I think that if I want to extend the solver, for example having a domain
+with a hole, there is more to specify, i.e. now there are four boundary
+conditions, etc. So rather than having the solver take a bunch of variable
+arguments, I think it makes sense for it to take the same set of arguments, but
+now those arguments themselves can be changed. 
+
+What kind of data container should something like the domain input be? I mean
+it could simply be a cell array. I think there is a reason why it should not be
+a cell array. Specifically, if they are specially designed objects, I can check
+that the right kinds of objects have been passed. I can also potentially do
+some input parsing; e.g. the parameters object ultimately stores
+function_handle objects, but allows to pass symbolic functions, or doubles
+(representing constant functions), and then the object parses these inputs.
+However also, for now, they could be cell arrays. 
+
+So lastly, the parameters object is currently a cell array. The source input
+need not be a cell array; it can for now just be a function handle. So the
+problematic inputs are the boundary conditions and the domain. 
+
+For the domain, assuming it is a simple interval, I need only specify the
+endpoints and the number of cells (or the desired cell size). So I guess I am
+reversing the decision I made yesterday, in that I am now asking the solver to
+direct the construction of the domain object, rather than passing in a domain
+object. But again, if the solver doesn't direct the construction of the domain
+object, who does? The answer is that *I* do. And I don't want to do that! 
+
+Lastly, boundary conditions. If I pass a Dirichlet boundary condition, then I
+pass a function of u. If I pass a Neumann boundary condition, then I pass a
+function of q. If I pass a Robin boundary condition, I pass a function of the
+form q = gamma(u - u*). That is, I pass a function of q = q(u). So I guess
+ideally you would be able to just pass a function, and the solver would have to
+then parse what kind of boundary condition you've passed right? 
+
+I suppose another obseration is: When you specify the boundary conditions, you
+actually specify the parts of the boundary that each condition applies to.
+But...that's part of the domain isn't it? So perhaps part of the domain should
+be specifying what parts of the boundary each condition applies to. And then in
+the boundary input, you're only specifying functions, and the solver is using
+the data from the domain to determine what kind of condition each one is. 
+
+Another perspective is that the domain input really refers to the interior of
+the domain and how that should be set up, while the boundary object refers to
+the parts of the domain that are the boundaries and the conditions applied to
+those boundaries. 
+
+:x
+
+
+
+
+
+
+
+\end{document}

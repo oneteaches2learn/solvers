@@ -1,0 +1,38 @@
+function v = resolvent(v_in,dt,c_B,v_Underbar,v_Overbar)
+	v_in
+
+	denom = 1 + dt * c_B;
+
+	% CASE 1: with upper constraint, no lower constraint
+	if isnan(v_Underbar) && ~isnan(v_Overbar)
+		if v_in < v_Overbar * denom
+			v = v_in / denom;
+		else
+			v = v_Overbar;
+		end
+
+	% CASE 2: no upper constraint, with lower constraint
+	elseif ~isnan(v_Underbar) && isnan(v_Overbar)
+		if v_in > v_Underbar * denom
+			v = v_in / denom;
+		else
+			v = v_Underbar;
+		end
+
+	% CASE 3: no upper constraint, no lower constraint
+	elseif isnan(v_Underbar) && isnan(v_Overbar)
+		v = v_in;
+
+	% CASE 4: with upper constraint, with lower constraint
+	elseif ~isnan(v_Underbar) && ~isnan(v_Overbar)
+		if v_in > v_Underbar * denom && v_in < v_Overbar * denom
+			v = v_in / demon
+		elseif v_in <= v_Underbar
+			v = v_Underbar;
+		elseif v_in >= v_Overbar
+			v = v_Overbar;
+		end
+
+	end
+
+end

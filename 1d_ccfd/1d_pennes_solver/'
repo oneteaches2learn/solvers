@@ -1,0 +1,208 @@
+function [U,xc,tGrid] = pennesCCFD1dTimeNonlinear(domain,parameters,boundary,time)
+%PENNESCCFD1DTIMENONLINEAR(domain,parameters,boundary,time) computes a cell-centered
+%   finite difference solution u on grid centers xc to the equation
+%   u_t - k(x)u_xx + c(x)(u - u*) = f(x). 
+%
+%   Author: Tyler Fara           Date: April 2, 2024
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   INPUTS
+%       domain:     {L,M}
+%       parameters: {k,c,theta,f,por} 
+%       boundary:   {leftCond,leftType,rightCond,rightType}
+%       time:       {dt,nt,init} 
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   EXAMPLES
+%   example 1
+%       L = 1; M = 100; dt = 1; nt = 10; 
+%       [U,xc,tGrid] = pennesCCFD1dtime({L,M},{1,1,1,0,1},{0,'D',0,'D'},{dt,nt,0}); 
+%       surfplotterCCFD(U,L,dt,10);
+%
+%   example 2
+%       init = @(x)sin(pi*x); L = 1; dt = .1;
+%       [U,xc] = pennesCCFD1dtime({L,100},{1,1,1,0,1},{0,'D',0,'D'},{dt,10,init});
+%       surfplotterCCFD(U,L,dt,10);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+	% unpack inputs
+	[x,dx',xc]          = constructDomain(domain);
+	[k,c,uStar,f,por]  = assignParameters(parameters);
+	[dt,nt,tGrid,init] = constructTimeStepping(time);
+
+	% initialize storage
+	U = zeros(nt+1,length(xc));
+	Uiter = zeros(2,length(xc));
+
+	% compute initial condition
+	Init   = computeFunction(init,xc);
+	U(1,:) = Init;
+
+	% loop over time
+	%wait = waitbar(0,'Please wait...');
+	for i = 2:nt+1
+
+		% set up iteration
+		t = i*dt;
+		Uiter(1,:) = U(i-1,:);
+
+		% Iterate to resolve nonlinearity
+		%while 1
+		for j = 1:10
+
+			% compute coefficients
+			perm  = computeFunction(k,xc)';
+			C     = computeFunction(c,xc)';
+			Por   = computeFunction(por,xc)';
+			UStar = computeFunction(uStar,xc)';
+			F     = computeFunction(f,xc,t)';
+			tx    = computeTransmissibility(dx,perm);
+			Q_bc  = computeRHSbc(tx,boundary);
+
+			% compute tensors 
+			M_k  = computeStiffnessMatrix(tx);
+			A_h  = computeMassMatrix(Por,dx);
+			M_c  = computeMassMatrix(C,dx);
+			M_bc = computeBCMatrix(tx,boundary);
+
+			% construct LHS
+			S = A_h + dt*M_k + dt*M_c + dt*M_bc;
+
+			% construct RHS
+			Q = A_h*U(i-1,:)' + dt*M_c*UStar + dt*F.*dx + dt*Q_bc;
+			size(dx)
+			size(F.*dx)
+
+
+			% SOLVE
+			temp = S \ Q;
+			Uiter(2,:) = temp';
+
+			%{
+			% CHECK STOPPING CRITERION
+			[U,Uiter,uBody,iterCase,iter] = checkStoppingCriterion( ...
+							U,Uiter,uBody,uBodyIter,L,M,atol,maxIter,loop_verbosity,i,iter);
+
+			if iterCase == 0;     break;	% convergence acheived
+			elseif iterCase == 1; break;	% no convergence before maxIter
+			elseif iterCase == 2; ... 		% continue iterating
+			end
+			%}
+			Uiter(1,:) = Uiter(2,:);
+		end
+
+	%    if wait_verbosity == 'on'; waitbar(i/nt, wait, 'Please wait...'); end
+
+		% Store last iteration as n-th time step
+		U(n,:) = Uiter(2,:);
+
+	end
+
+	%close(wait);
+end
+
+
+
+
+
+% AUXILIARY FUNCTIONS
+function M_k = computeStiffnessMatrix(tx)
+%CONSTRUCTSTIFFNESSMATRIX(TX) builds the tridiagonal matrix using transmissibility. 
+
+	% instantiate storage
+    n = length(tx)-1;
+    M_k = sparse(n,n);
+    
+	% assemble global matrix from local matrices
+    for i = 2:n
+        gl = i-1;
+        gr = i;
+    
+        M_k(gl,gl) = M_k(gl,gl) + tx(i);
+        M_k(gl,gr) = M_k(gl,gr) - tx(i); 
+        M_k(gr,gl) = M_k(gr,gl) - tx(i);
+        M_k(gr,gr) = M_k(gr,gr) + tx(i);
+    end
+end
+
+
+function A_h = computeMassMatrix(por,dx)
+%CONSTRUCTMASSMATRIX(POR,DX) constructs diagonal mass matrix using porosity.
+
+	% instantiate storage
+	A_h = sparse(length(por),length(por));
+
+	% add entries on diagonal
+	for i = 1:length(por)
+		A_h(i,i) = por(i) * dx(i);
+	end
+end
+
+
+function M_bc = computeBCMatrix(tx,boundary)    
+%UPDATESTIFFNESSMATRIX updates stiffness matrix S based on the 
+%   boundary conditions.
+
+    % unpack boundary variables
+    leftBC      = boundary{1};
+    leftBCtype  = boundary{2};
+    rightBC     = boundary{3};
+    rightBCtype = boundary{4};
+
+    % initialize storage
+    n = length(tx)-1;
+	M_bc = sparse(n,n);
+
+    % apply x = 0 boundary condition
+    if leftBCtype == 'D'
+        M_bc(1,1) = tx(1);
+    elseif leftBCtype == 'N'
+        ...
+    elseif leftBCtype == 'R'
+        M_bc(1,1) = leftBC(1);
+    end
+    
+    % apply x = L boundary condition
+    if rightBCtype == 'D'
+        M_bc(n,n) = tx(n+1);
+    elseif rightBCtype == 'N'
+        ...
+    elseif rightBCtype == 'R'
+        M_bc(n,n) = rightBC(1);
+    end
+end
+
+
+function Q_bc = computeRHSbc(tx,boundary)
+%UPDATERHS updates vector F, which represents the right-hand side, based 
+%   on the boundary conditions.
+
+    % unpack boundary variables
+    leftBC      = boundary{1};
+    leftBCtype  = boundary{2};
+    rightBC     = boundary{3};
+    rightBCtype = boundary{4};
+
+    % store # of intervals
+    n = length(tx)-1;
+	Q_bc = sparse(n,1);
+
+    % apply x = 0 boundary condition
+    if leftBCtype == 'D'
+        Q_bc(1) = tx(1)*leftBC;
+    elseif leftBCtype == 'N'
+        Q_bc(1) = -leftBC;
+    elseif leftBCtype == 'R'
+        Q_bc(1) = leftBC(1)*rightBC(2);
+    end
+    
+    % apply x = L boundary condition
+    if rightBCtype == 'D'
+        Q_bc(n) = tx(n+1)*rightBC;
+    elseif rightBCtype == 'N'
+        Q_bc(n) = -rightBC;
+    elseif rightBCtype == 'R'
+        Q_bc(n) = rightBC(1)*rightBC(2);
+    end
+end

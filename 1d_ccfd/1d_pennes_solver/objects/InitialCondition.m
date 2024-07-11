@@ -1,0 +1,2 @@
+classdef InitialCondition < Coefficient
+end
