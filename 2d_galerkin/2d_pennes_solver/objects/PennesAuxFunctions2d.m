@@ -1,9 +1,10 @@
-classdef HeatAuxFunctions2d
+classdef PennesAuxFunctions2d
 
 	properties
 		p
 		k
 		r
+		uStar
 		uInit
 		q
 		divq
@@ -13,13 +14,14 @@ classdef HeatAuxFunctions2d
 	end
 
 	methods
-		function self = HeatAuxFunctions2d(p,k,r,uInit,uTrue)
+		function self = PennesAuxFunctions2d(p,k,r,uStar,uInit,uTrue)
 			
 			% store inputs
 			x = sym('x',[1 2]); syms t;
 			self.p = symfun(p,[x t]);
 			self.k = symfun(k,[x t]);
 			self.r = symfun(r,[x t]);
+			self.uStar = symfun(uStar,[x t]);
 			self.uTrue = symfun(uTrue,[x t]);
 			self.uInit = symfun(self.uTrue(x(1),x(2),0),x);
 
@@ -39,7 +41,7 @@ classdef HeatAuxFunctions2d
 			u_t = diff(uTrue,t);
 
 			% manufacture RHS
-			self.f = self.p * u_t + self.divq + self.r * self.uTrue;
+			self.f = self.p * u_t + self.divq + self.r * (self.uTrue - self.uStar);
 
 		end
 
@@ -49,6 +51,7 @@ classdef HeatAuxFunctions2d
 			cofs.k = matlabFunction(self.k);
 			cofs.r = matlabFunction(self.r);
 			cofs.p = matlabFunction(self.p);
+			cofs.uStar = matlabFunction(self.uStar);
 
 		end
 
