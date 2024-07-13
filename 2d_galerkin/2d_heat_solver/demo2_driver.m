@@ -15,7 +15,7 @@ alpha = 2; % <~~~ alpha = |delta Q| / |Y|
 
 % mms parameters
 base = 2;
-demo = 4;
+demo = 0;
 timeOffset = 1;
 timeFactor = 2;
 
