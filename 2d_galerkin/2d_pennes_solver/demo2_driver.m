@@ -13,34 +13,35 @@ N_x = 1;
 N_y = 1;
 alpha = 2; % <~~~ alpha = |delta Q| / |Y|
 
-% generate mesh
-p = 1;
+% mms parameters
 base = 2;
-h = base^-p;
+demo = 0;
+timeOffset = 1;
+timeFactor = 2;
 
 % specify BCs
 bTypes = {'R' 'R' 'R' 'R'};
 bTypes2 = 'R';
 
 % specify coefficients
-p     = 1;
-k     = 1;
-r     = 1;
+p = 1;
+k = 1;
+r = 1 + x(1) + x(2) + t; 
 uStar = 1;
 
 % specify desired result
 uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2)) * t + t;
 
-mms_test = 1;
 
 
 % MMS TEST %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fprintf('MMS Test Begun\n')
 
 % assemble inputs
-bound  = PuncturedBoundary2d(bTypes,{@()(0.0),@()(0.0),@()(0.0),@()(0.0)},bTypes2,{@()(0.0)});
-auxfun = PennesAuxFunctions2d(p,k,r,uStar,@()(0.0),uTrue);
-time   = TimeStepping(T,1);
+bound     = PuncturedBoundary2d(bTypes,{@()(0.0),@()(0.0),@()(0.0),@()(0.0)},bTypes2,{@()(0.0)});
+auxfun    = AuxFunctions2d_pennes(p,k,r,uStar,@()(0.0),uTrue);
+time      = TimeStepping(T,1);
+mmsparams = MMSParams(base,demo=demo,timeOffset=timeOffset,timeFactor=timeFactor);
 
 % build domain
 fprintf('Initialization\n')
@@ -52,12 +53,13 @@ dom = dom.setEdgeBCTypes(bound);
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
 
+
 % run mms test
-if mms_test == 1
-	mms = GalerkinPennes2d_mms(dom,time,auxfun,errType="Linfty(L2)")
+if demo == 0
+	mms = GalerkinPennes2d_mms(dom,time,auxfun,mmsparams,errType="Linfty(L2)")
 
 % run demo test
-elseif mms_test == 0
-	mms = GalerkinPennes2d_mms(dom,time,auxfun,demo=p);
+else
+	mms = GalerkinPennes2d_mms(dom,time,auxfun,mmsparams);
 	prob = mms.problems{1};
 end

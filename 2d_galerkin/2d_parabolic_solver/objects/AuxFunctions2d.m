@@ -28,7 +28,6 @@ classdef AuxFunctions2d
 			self.q = self.manufactureFlux;
 			self.divq = self.manufactureFluxDivergence;
 			self.u_t = self.manufactureTimeDerivative;
-			%self.f = self.manufactureRHS; 
 
 		end
 
