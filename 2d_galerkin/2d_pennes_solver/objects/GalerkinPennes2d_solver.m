@@ -83,8 +83,9 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 				elementCoord  = coords(elementInd,:);
 				b(elementInd) = b(elementInd) + ...
 					det([1,1,1; elementCoord']) * ...
-					r(sum(elementCoord(:,1))/3,sum(elementCoord(:,2))/3,t) / 6;
+					r(sum(elementCoord(:,1))/3,sum(elementCoord(:,2))/3,t) * ...
 					uStar(sum(elementCoord(:,1))/3,sum(elementCoord(:,2))/3,t) / 6;
+
 			end
 
 		end
