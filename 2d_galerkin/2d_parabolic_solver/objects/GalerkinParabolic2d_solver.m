@@ -306,6 +306,8 @@ classdef GalerkinParabolic2d_solver
 			end
 		end
 
+
+		% PLOTTING FUNCTIONS
 		function plot(self,timestep)
 
 			% plot final time point unless otherwise specified
@@ -316,7 +318,7 @@ classdef GalerkinParabolic2d_solver
 			elements3 = self.domain.Mesh.Elements';
 			elements4 = [];
 
-			% get solution at final time step
+			% get solution at desired time step
 			U = self.solution(:,timestep);
 
 			% plot data
@@ -332,16 +334,50 @@ classdef GalerkinParabolic2d_solver
 			title('Solution of the Problem')
 		end
 
+		function plotPatch(self,timestep)
+
+			% plot final time point unless otherwise specified
+			if nargin < 2, timestep = self.time.N_t; end
+
+			% store domain information
+			coordinates = self.domain.Mesh.Nodes';
+			elements3 = self.domain.Mesh.Elements';
+
+			% get solution at desired time step
+			u_min = min(min(self.solution));
+			u_max = max(max(self.solution));
+			U = self.solution(:,timestep);
+
+			% plot data
+			patch('Faces',elements3, ...
+				  'Vertices',coordinates, ...
+				  'FaceVertexCData',U, ...
+				  'FaceColor','interp');
+			clim([u_min u_max])
+			colorbar
+
+		end
+
+		%{
+		function plotMaxSolutionValue(self)
+
+			% store variabes
+			maxVal = self.getMaxSolutionValue;
+			timeGrid = 
+		%}
+
 		function animate(self)
 
 			u_min = min(min(self.solution));
 			u_max = max(max(self.solution));
 			N_t = self.time.N_t;
 
+			% plot first time step
 			self.plot(1);
 			zlim([u_min u_max])
 			pause();
 
+			% animate remaining steps
 			for i = 1:N_t
 				self.plot(i)
 				zlim([u_min u_max])
@@ -349,6 +385,145 @@ classdef GalerkinParabolic2d_solver
 			end
 
 		end
+
+		function animatePatch(self)
+
+			N_t = self.time.N_t;
+
+			% plot first time step
+			self.plotPatch(1);
+			pause();
+
+			% animate remaining steps
+			for i = 1:N_t
+				self.plotPatch(i)
+				pause(1/N_t)
+			end
+
+		end
+
+
+		% SOLUTION ANALYSIS
+		function result = getMaxSolutionValue(self,timestep)
+
+			% capture max value at each timestep
+			maxVal = max(self.solution);
+
+			% if max value at specified timestep is desired
+			if nargin == 2
+
+				% return max value across all timesteps,
+				if strcmp(timestep,'all')
+					result = max(maxVal);
+
+				% return max value at given timestep
+				else
+					result = maxVal(timestep);
+				end
+
+			% else return vector of max values at each timestep
+			else
+				result = maxVal;
+			end
+
+		end
+
+		function result = getMinSolutionValue(self,timestep)
+
+			% capture min value at each timestep
+			minVal = min(self.solution);
+
+			% if min value at specified timestep is desired
+			if nargin == 2
+
+				% return min value across all timesteps,
+				if strcmp(timestep,'all')
+					result = min(minVal);
+
+				% return min value at given timestep
+				else
+					result = minVal(timestep);
+				end
+
+			% else return vector of min values at each timestep
+			else
+				result = minVal;
+			end
+
+		end
+
+		function int = getSolutionIntegral(self,NameValueArgs)
+
+			arguments
+				self
+				NameValueArgs.timestep double = 0
+				NameValueArgs.quadOrder double = 1
+			end
+
+			tic
+			% if no timestep passed, loop over all time steps
+			if NameValueArgs.timestep == 0
+				time_start = 1;
+				time_stop = self.time.N_t;
+
+			% else compute at a specific timestep
+			else
+				time_start = NameValueArgs.timestep;
+				time_stop = NameValueArgs.timestep;
+			end
+
+			% if first order quadrature, run much faster algorithm
+			if NameValueArgs.quadOrder == 1
+			
+				% compute element areas
+				[temp,elemArea] = area(self.domain.Mesh);
+
+				% loop over timesteps
+				int = zeros(1,time_stop - time_start + 1);
+				for n = time_start:time_stop
+
+					% store numerical solution
+					U_n = self.solution(:,n);
+
+					% loop over elements
+					for j = 1:self.domain.nElem
+						elemInd = self.domain.Mesh.Elements(:,j);
+						int(n) = int(n) + (sum(U_n(elemInd)) / 3) * ...
+							self.domain.elemAreas(j);
+					end
+
+				end
+
+			% else run slower algorithm for higher order quadrature
+			else
+				int = zeros(1,time_stop - time_start + 1);
+				for n = time_start:time_stop
+
+					% store numerical solution
+					U_n = self.solution(:,n);
+
+					% loop over elements
+					nElem = size(self.domain.Mesh.Elements,2);
+					for i = 1:nElem
+
+						% interpolate u_h locally 
+						locNodes = self.domain.Mesh.Elements(:,i); 
+						locCoord = self.domain.Mesh.Nodes(:,locNodes)';
+						uLoc = scatteredInterpolant(locCoord,U_n(locNodes)); 
+
+						% compute local error function on quad points
+						Qp = quadtriangle(NameValueArgs.quadOrder,'Domain',locCoord); 
+						uSol_Qp = uLoc(Qp.Points(:,1),Qp.Points(:,2)); 
+
+						% quadrature on local error function
+						int(n) = int(n) + dot(Qp.Weights, uSol_Qp); 
+
+					end
+				end
+			end
+
+		end
+
 
 	end
 end

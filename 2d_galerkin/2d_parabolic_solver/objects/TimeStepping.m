@@ -26,8 +26,10 @@ classdef TimeStepping
 
 		function self = setMesh(self,p,base)
 
-			% set dt from inputs
-			self.dt = base^-p;
+			if nargin == 3
+				% set dt from inputs
+				self.dt = base^-p;
+			end
 
 			% set number of time steps
 			self.M_t = self.T / self.dt;

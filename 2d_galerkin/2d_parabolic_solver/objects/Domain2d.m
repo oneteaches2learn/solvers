@@ -7,11 +7,15 @@ classdef Domain2d < fegeometry
 		h
 		edges
 		nNodes
+		nElem
+		elemAreas
+		domainArea
 		boundaryNodes
 		freeNodes
 	end
 
 	methods
+		% CONSTRUCTOR
 		function self = Domain2d(x,y)
 
 			gd = Domain2d.getGeometryDescriptionMatrix(x,y);
@@ -30,6 +34,7 @@ classdef Domain2d < fegeometry
 
 		end
 
+		% SETTERS
 		function edges = setEdgeGeometry(self)
 
 			% store variables
@@ -105,6 +110,12 @@ classdef Domain2d < fegeometry
 			% store number of nodes
 			self.nNodes = size(self.Mesh.Nodes,2);
 
+			% store number of elements
+			self.nElem = size(self.Mesh.Elements,2);
+
+			% store domain and element areas
+			[self.domainArea,self.elemAreas] = area(self.Mesh);
+
 			% distribute boundary nodes to edges
 			for i = 1:self.NumEdges
 				edgeID = self.edges(i).ID;
@@ -138,7 +149,7 @@ classdef Domain2d < fegeometry
 
 		end
 
-		
+		% GETTERS
 		function [bNodes, nearestEdge] = getBoundaryNodes(self)
 
 			% instantiate storage
@@ -155,6 +166,52 @@ classdef Domain2d < fegeometry
 			end
 		end
 
+		function output = getElementCoordinates(self,nElem,requestedCoord)
+
+			% store domain information
+			coordinates = self.Mesh.Nodes';
+			elements3 = self.Mesh.Elements';
+
+			% store coordinates
+			xElem = coordinates(elements3(nElem,:),1);
+			yElem = coordinates(elements3(nElem,:),2);
+
+			% set output
+			if nargin == 3
+				if requestedCoord == 1
+					output = xElem;
+				elseif requestedCoord == 2
+					output = yElem;
+				end
+			else
+				output = [xElem,yElem];
+			end
+
+		end
+
+		function output = getElementArea(self,nElem)
+
+			% store domain information
+			coordinates = self.Mesh.Nodes';
+			elements    = self.Mesh.Elements';
+
+			% store element information
+			elementInd    = elements(nElem,:);
+			elementCoord  = coordinates(elementInd,:);
+
+			% compute area
+			output = det([1,1,1; elementCoord']) / 2;
+
+		end
+
+		function A = getDomainArea(self)
+
+			% get domain area
+			A = area(self.Mesh);
+
+		end
+
+		% PLOTTING FUNCTIONS
 		function h = plot(self,NameValueArgs)
 
 			arguments
@@ -212,7 +269,6 @@ classdef Domain2d < fegeometry
 		end
 
 	end
-
 
 	methods (Static)
 		

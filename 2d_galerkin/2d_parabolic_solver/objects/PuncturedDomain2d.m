@@ -280,6 +280,30 @@ classdef PuncturedDomain2d < Domain2d & fegeometry
 
 		end
 
+		function self = setEdgeBCConditions(self,boundary)
+
+			edges = self.edges;
+
+			% set outer boundary types
+			for i = 1:4
+				edges(i).boundaryCondition = boundary.boundaryConditions{i};
+			end
+
+			% set boundary types on inclusions
+			incBCCond = boundary.boundaryConditionsInclusions;
+			if sum(size(incBCCond)) == 2
+				for i = 5:self.NumEdges
+					edges(i).boundaryCondition = incBCCond;
+				end
+			else
+				for i = 1:self.nInclusions, for j = 1:4
+					edges(4*i + j).boundaryCondition = incBCCond(i,j);
+				end, end
+			end
+
+			self.edges = edges;
+
+		end
 	end
 
 	methods (Static)

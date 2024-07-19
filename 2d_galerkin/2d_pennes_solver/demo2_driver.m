@@ -9,8 +9,8 @@ yLim = [0 1];
 T = 1;
 
 % number of inclusions
-N_x = 1;
-N_y = 1;
+N_x = 0;
+N_y = 0;
 alpha = 2; % <~~~ alpha = |delta Q| / |Y|
 
 % mms parameters
@@ -26,8 +26,8 @@ bTypes2 = 'R';
 % specify coefficients
 p = 1;
 k = 1;
-r = 1 + x(1) + x(2) + t; 
-uStar = 2 + x(1) + x(2) + t;
+r = 1 + x(1) * x(2) * t; 
+uStar = 2 + x(1) * x(2) * t;
 
 % specify desired result
 uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2)) * t + t;
