@@ -28,7 +28,7 @@ classdef mmsErrorComputer
 			% get appropriate problem
 			prob = self.mmsObj.problems{trial_num};
 			errType = self.mmsObj.errType;
-			quadOrder = 2;
+			quadOrder = 1; % <~~quad order hard coded
 			
 			% send problem to appropriate error module
 			tic 
@@ -113,6 +113,55 @@ classdef mmsErrorComputer
 
 		function L2_IP = L2_IP(self,prob,quadOrder,timestep)
 
+			if quadOrder == 1
+				L2_IP = L2_IP_firstOrder(self,prob,quadOrder,timestep);
+			else
+				L2_IP = L2_IP_higherOrder(self,prob,quadOrder,timestep);
+			end
+
+		end
+
+		function L2_IP = L2_IP_firstOrder(self,prob,quadOrder,timestep)
+
+			% check if timestep passed
+			if nargin == 4, timeVarying = 1;
+			else timeVarying = 0;
+			end
+
+			% if timetep passed, set current time
+			if timeVarying == 1, t = (timestep-1) * prob.time.dt; end
+
+			% store uTrue at current time
+			uTrue = matlabFunction(self.mmsObj.auxFunctions.uTrue);
+			if timeVarying == 1, uTrue = @(x1,x2)(uTrue(x1,x2,t)); end
+			UTrue = uTrue(prob.domain.Mesh.Nodes(1,:)',prob.domain.Mesh.Nodes(2,:)');
+
+			% store numerical solution
+			if timeVarying == 1, u_h = prob.solution(:,timestep);
+			else u_h = full(prob.solution); end
+
+			% loop over elements
+			L2_IP = 0;
+			nElem = prob.domain.nElem; 
+			for i = 1:nElem
+
+				% interpolate u_h locally 
+				locNodes = prob.domain.Mesh.Elements(:,i);
+
+				% compute local error function on quad points
+				uTrue_Qp = UTrue(locNodes);
+				uSol_Qp  = u_h(locNodes); 
+				err_Qp   = uTrue_Qp - uSol_Qp; 
+
+				% quadrature on local error function
+				L2_IP = L2_IP + prob.domain.elemAreas(i) * sum(err_Qp.^2) / 3; 
+
+			end
+
+		end
+
+		function L2_IP = L2_IP_higherOrder(self,prob,quadOrder,timestep)
+
 			% check if timestep passed
 			if nargin == 4, timeVarying = 1;
 			else timeVarying = 0;
@@ -148,8 +197,6 @@ classdef mmsErrorComputer
 				L2_IP = L2_IP + dot(Qp.Weights, err_Qp .* err_Qp); 
 			end
 		end
-
-
 
 	end
 

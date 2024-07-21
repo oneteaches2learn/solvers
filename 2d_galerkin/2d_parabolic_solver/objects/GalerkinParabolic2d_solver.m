@@ -120,7 +120,7 @@ classdef GalerkinParabolic2d_solver
 				elementInd = elements3(j,:);
 				elementCoord = coords(elementInd,:);
 				B(elementInd,elementInd) = B(elementInd,elementInd) + ...
-					det([1,1,1;elementCoord']) * [2,1,1;1,2,1;1,1,2] / 24;
+					self.domain.elemAreas(j) * [2,1,1;1,2,1;1,1,2] / 12;
 			end
 
 			% compute r on nodes
@@ -157,8 +157,8 @@ classdef GalerkinParabolic2d_solver
 				elementInd    = elements3(j,:);
 				elementCoord  = coords(elementInd,:);
 				b(elementInd) = b(elementInd) + ...
-					det([1,1,1; elementCoord']) * ...
-					self.f(sum(elementCoord(:,1))/3,sum(elementCoord(:,2))/3,t) / 6;
+					self.domain.elemAreas(j) * ...
+					self.f(sum(elementCoord(:,1))/3,sum(elementCoord(:,2))/3,t) / 3;
 			end
 
 		end
@@ -358,13 +358,27 @@ classdef GalerkinParabolic2d_solver
 
 		end
 
-		%{
-		function plotMaxSolutionValue(self)
+		function p = plotMaxSolutionValue(self)
 
 			% store variabes
 			maxVal = self.getMaxSolutionValue;
-			timeGrid = 
-		%}
+			timeGrid = self.time.getTimeGrid;
+
+			% plot result
+			p = plot(timeGrid,maxVal);
+
+		end
+
+		function p = plotAverageSolutionValue(self)
+
+			% store variabes
+			avgVal = self.getAverageSolutionValue;
+			timeGrid = self.time.getTimeGrid;
+
+			% plot result
+			p = plot(timeGrid,avgVal);
+
+		end
 
 		function animate(self)
 
@@ -452,6 +466,25 @@ classdef GalerkinParabolic2d_solver
 
 		end
 
+		function result = getAverageSolutionValue(self,timestep)
+
+			% capture average value at each timestep
+			avgVal = self.getSolutionIntegral;
+			avgVal = avgVal / self.domain.domainArea;
+
+			% if average value at specified timestep is desired
+			if nargin == 2
+					
+				% return average value at specified timestep					
+				result = avgVal(timestep);
+
+			% else return vector of average values at each timestep
+			else
+				result = avgVal;
+			end
+
+		end
+
 		function int = getSolutionIntegral(self,NameValueArgs)
 
 			arguments
@@ -475,9 +508,6 @@ classdef GalerkinParabolic2d_solver
 			% if first order quadrature, run much faster algorithm
 			if NameValueArgs.quadOrder == 1
 			
-				% compute element areas
-				[temp,elemArea] = area(self.domain.Mesh);
-
 				% loop over timesteps
 				int = zeros(1,time_stop - time_start + 1);
 				for n = time_start:time_stop
@@ -486,9 +516,10 @@ classdef GalerkinParabolic2d_solver
 					U_n = self.solution(:,n);
 
 					% loop over elements
+					ind = n - time_start + 1;
 					for j = 1:self.domain.nElem
 						elemInd = self.domain.Mesh.Elements(:,j);
-						int(n) = int(n) + (sum(U_n(elemInd)) / 3) * ...
+						int(ind) = int(ind) + (sum(U_n(elemInd)) / 3) * ...
 							self.domain.elemAreas(j);
 					end
 
@@ -504,6 +535,7 @@ classdef GalerkinParabolic2d_solver
 
 					% loop over elements
 					nElem = size(self.domain.Mesh.Elements,2);
+					ind = n - time_start + 1;
 					for i = 1:nElem
 
 						% interpolate u_h locally 
@@ -516,10 +548,80 @@ classdef GalerkinParabolic2d_solver
 						uSol_Qp = uLoc(Qp.Points(:,1),Qp.Points(:,2)); 
 
 						% quadrature on local error function
-						int(n) = int(n) + dot(Qp.Weights, uSol_Qp); 
+						int(ind) = int(ind) + dot(Qp.Weights, uSol_Qp); 
 
 					end
 				end
+			end
+
+		end
+
+		function IP = L2_IP(self,arg1,arg2,NameValueArgs)
+
+			arguments
+				self
+				arg1
+				arg2
+				NameValueArgs.quadOrder double = 1
+			end
+
+			% if first order quadrature, run much faster algorithm
+			if NameValueArgs.quadOrder == 0
+
+				% compute product of arguments
+				arg = arg1 .* arg2;
+		
+				% loop over elements
+				IP = 0;
+				for j = 1:self.domain.nElem
+					elemInd = self.domain.Mesh.Elements(:,j);
+					IP = IP + (sum(arg(elemInd)) / 3) * ...
+						self.domain.elemAreas(j);
+				end
+
+			% else run slower algorithm for higher order quadrature
+			else
+
+				% loop over elements
+				IP = 0;
+				for i = 1:self.domain.nElem
+
+					% interpolate arguments locally 
+					locNodes = self.domain.Mesh.Elements(:,i); 
+					locCoord = self.domain.Mesh.Nodes(:,locNodes)';
+					arg1_interp = scatteredInterpolant(locCoord,arg1(locNodes)); 
+					arg2_interp = scatteredInterpolant(locCoord,arg2(locNodes)); 
+
+					% compute arguments on local quad points
+					Qp = quadtriangle(NameValueArgs.quadOrder,'Domain',locCoord); 
+					arg1_Qp = arg1_interp(Qp.Points(:,1),Qp.Points(:,2)); 
+					arg2_Qp = arg2_interp(Qp.Points(:,1),Qp.Points(:,2)); 
+
+					% quadrature on product of arguments
+					IP = IP + dot(Qp.Weights,arg1_Qp .* arg2_Qp); 
+
+				end
+			end
+
+		end
+
+		function result = getConvergenceTime(self,tol)
+
+			quadOrder = 1;
+
+			%for n = 1:self.time.M_t
+			for n = 1:1
+
+				err_n = self.solution(:,n+1) - self.solution(:,n);
+				errObj_n = self;
+				errObj_n.solution = err_n;
+
+
+
+
+
+
+
 			end
 
 		end

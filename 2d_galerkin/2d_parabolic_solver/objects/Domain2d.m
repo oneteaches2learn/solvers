@@ -211,6 +211,54 @@ classdef Domain2d < fegeometry
 
 		end
 
+		function G = meshToGraph(self)
+
+			% store variables
+			elemNodes = self.Mesh.Elements';
+			elemNodes(:,4) = elemNodes(:,1);
+
+			% create lists of corresponding nodes
+			ind = 1;
+			for i = 1:self.nElem
+				for j = 1:3
+					
+					% start nodes for each edge
+					r(ind) = elemNodes(i,j);
+
+					% end nodes for each edge
+					s(ind) = elemNodes(i,j+1);
+
+					ind = ind+1;
+
+				end
+			end
+
+			% generate graph
+			G = graph(r,s);
+			
+			% remove duplicate edges
+			G = simplify(G);
+
+		end			
+
+		function [edges,midptCoords] = getEdgeMidpoints(self)
+
+			% store variables
+			elemCoord = self.Mesh.Nodes';
+
+			% generate graph from mesh
+			G = meshToGraph(self);
+
+			% store edges as an array
+			edges = table2array(G.Edges);
+
+			% compute midpoints
+			startCoords = elemCoord(edges(:,1),:);
+			endCoords = elemCoord(edges(:,2),:);
+			midptCoords = (startCoords + endCoords) / 2;
+
+		end
+
 		% PLOTTING FUNCTIONS
 		function h = plot(self,NameValueArgs)
 
@@ -267,6 +315,117 @@ classdef Domain2d < fegeometry
 		function y = y(self)
 			y = [self.Vertices(1,2) self.Vertices(3,2)];
 		end
+
+		
+		% ANALYSIS FUNCTIONS
+		function int = nodalQuadrature(self,f)
+			
+			% if f is function_handle
+			if isa(f,'function_handle')
+
+				F = f(self.Mesh.Nodes(1,:)',self.Mesh.Nodes(2,:)');
+
+			% if f is symbolic function
+			elseif isa(f,'sym')
+
+				f = matlabFunction(f);
+				F = f(self.Mesh.Nodes(1,:)',self.Mesh.Nodes(2,:)');
+
+			% if f is vector of nodal values
+			elseif isvector(f)
+
+				if isrow(f), F = f'; else, F = f; end
+
+			elseif isdouble(f)
+
+				F = f * ones(self.nNodes,1);
+
+			end
+
+			% loop over elements
+			int = 0;
+			elemNodes = self.Mesh.Elements';
+			for i = 1:self.nElem
+
+				% nodal quadrature on element
+				int = int + self.elemAreas(i) * sum(F(elemNodes(i,:))) / 3;
+
+			end
+		end
+
+		function int = centroidQuadrature(self,f)
+			
+			% compute element centroids
+			centroids = zeros(self.nElem,2);
+			elemNodes = self.Mesh.Elements';
+			elemCoord = self.Mesh.Nodes';
+			for i = 1:self.nElem
+				centroids(i,:) = sum(elemCoord(elemNodes(i,:),:)) / 3;
+			end
+
+			% if f is function_handle
+			if isa(f,'function_handle')
+
+				F = f(centroids(:,1),centroids(:,2));
+
+			% if f is symbolic function
+			elseif isa(f,'sym')
+
+				f = matlabFunction(f);
+				F = f(centroids(:,1),centroids(:,2));
+
+			% if f is vector of nodal values
+			elseif isvector(f)
+
+				if isrow(f), F = f'; else, F = f; end
+
+			elseif isdouble(f)
+
+				F = f * ones(self.nElem,1);
+
+			end
+
+			% loop over elements
+			int = 0;
+			elemInd = self.Mesh.Elements';
+			for i = 1:self.nElem
+
+				% nodal quadrature on element
+				int = int + self.elemAreas(i) * F(i);
+
+			end
+		end
+
+
+		function int = gaussianThreePointQuadrature(self,f)
+
+			% get edge midpoints
+			[edges,midpts] = self.getEdgeMidpoints;
+
+			% compute F on edge midpoints; store as sparse, symmetric, weighted adjacency matrix
+			F = f(midpts(:,1),midpts(:,2));
+			F = sparse([edges(:,1);edges(:,2)], ...
+					[edges(:,2);edges(:,1)], ...
+					[F(:);F(:)]);
+
+			% loop on elements
+			elemNodes = self.Mesh.Elements';
+			elemNodes(:,4) = elemNodes(:,1);
+			int = 0;
+			for i = 1:self.nElem
+
+				% loop on edges
+				tot = 0;
+				for j = 1:3
+					tot = tot + F(elemNodes(i,j),elemNodes(i,j+1));
+				end
+				
+				int = int + self.elemAreas(i) * tot/3;
+
+			end
+
+		end
+
 
 	end
 

@@ -48,5 +48,11 @@ classdef TimeStepping
 
 		end
 
+		function output = getTimeGrid(self)
+
+			output = linspace(0,self.T,self.N_t);
+			
+		end
+
 	end
 end

@@ -1,0 +1,122 @@
+\documentclass[12pt]{amsart}
+
+% PACKAGES
+\usepackage[top=.5in, bottom=.5in, left=.7in, right=.7in]{geometry}
+\usepackage{amsmath}        % AMS fonts and symbols
+\usepackage{amsthm}         % Theorems in AMS style
+\usepackage{amssymb}        % Additional AMS symbols
+\usepackage{amsfonts}       % Additional AMS fonts
+\usepackage{amsthm}			% Theorems, remarks, etc
+\usepackage{bbm}			% Blackboard bold numbers
+\usepackage{nicefrac}       % Partially stacks horizontal fractions
+\usepackage{scrextend}      % Required to manipulate margins
+\usepackage{mathrsfs}       % Adds \mathscr, i.e. math script style
+\usepackage{hyperref}       % Displays hyperlinks
+\usepackage{enumitem}       % Additional enumeration features
+\usepackage{verbatim}       % Displays code-like text
+\usepackage{graphicx}       % Used for graphics
+\usepackage{cite}           % Enables bibtex bibliographies
+\usepackage{soul}           % Special text editing, for MP comments
+\usepackage{color}
+  
+% PAGE LAYOUT
+\setlength{\parskip}{\baselineskip}
+\setlength\parindent{0pt}
+
+\begin{document}
+\subsection{Nodal Quadrature}
+For function $f = f(x,y)$ and triangular domain $\Delta$ defined by nodes
+$(x_i,y_i)$, $1 \leq i \leq 3$, the nodal quadrature rule is given by 
+%
+\begin{eqnarray}
+	\int_\Delta f(x,y) dx \approx \frac{1}{3} |\Delta| \sum_{i=1}^{3} f(x_i,y_i). 
+\end{eqnarray}
+%
+This method is generally first order accurate, meaning that if $h$ is reduced
+by half, then the error in the approximation is reduced by half. 
+
+
+\subsection{Gaussian One-Point Quadrature}
+For $f$ and $\Delta$ as above, the Gaussian one-point quadrature formula is 
+%
+\begin{eqnarray}
+	\int_\Delta f(x,y) dx \approx |\Delta| f(x_c,y_c)
+\end{eqnarray}
+%
+where $(x_c,y_c)$ is the centroid of $\Delta$, given by 
+%
+\begin{eqnarray}
+	(x_c,y_c) = \frac{1}{3} \sum_{i=1}^{3} (x_i,y_i).	
+\end{eqnarray}
+%
+This method is also generally first order accurate.
+
+
+\subsection{Quadrature for Linear Functions}
+For $\Delta$ as above and linear $f$, Gaussian one-point quadrature is exact.
+Also, due to the linearity of $f$,
+%
+\begin{eqnarray}
+	f(\bar{x},\bar{y}) = \frac{1}{3} \sum_{i=1}^{3} f(x_i,y_i).
+\end{eqnarray}
+%
+so that Gaussian one-point quadrature is equivalent to nodal quadrature.
+
+
+\subsection{Nodal Quadrature vs. Gaussian One-Point Quadrature}
+For a single triangle, Gaussian one-point quadrature requires compuation of the
+centroid of $\Delta$, followed by a single function evaluation. Nodal
+quadrature requires three function evaluations. So, on a single triangle,
+Gaussian one-point quadrature is less expensive. 
+
+However, on an entire mesh of triangles, nodal quadrature is usually less
+expensive. This is because nodes are reused (often multiple times) in defining
+the triangles of the mesh; so the number of nodes in the mesh will generally be
+smaller (perhaps much smaller) than the number of elements. Quadrature will be
+done on each triangle and the results summed. So, while Gaussian one-point
+quadrature requires one function evaluation per triangle, by contrast the
+function can be evaluated (and stored) at each node in advance, and the results
+of these nodal function evaluations can be reused as nodal quadrature is
+performed on each triangle. Therefore, nodal quadrature requires one function
+evaluation per node, whereas Gaussian one-point quadrature requires one
+function evaluation per element; and the number of nodes in the mesh is likely
+(much) smaller than the number of elements.
+
+For example, Table \ref{tab:1} shows the number of nodes and elements in a
+triangular mesh on $\Omega = (0,1) \times (0,1)$ for various values $h$. As the
+table shows, for refine meshes, the number of triangles is greater than the
+number of nodes. 
+
+Furthermore, if you are integrating a Galerkin finite element solution, then
+the solution's value will already be stored on the nodes. Therefore, there is
+no need to even compute the function's value, since it will already be stored. 
+
+%
+\begin{table}[]
+    \centering
+    \begin{tabular}{c c c}
+    \hline
+		$h$ & nodes & elements \\
+	\hline
+		$2^0$		& 5    & 4    \\
+		$2^{-1}$	& 12   & 14   \\
+		$2^{-2}$	& 29   & 40   \\
+		$2^{-3}$	& 92   & 150  \\
+		$2^{-4}$	& 322  & 578  \\
+		$2^{-5}$	& 1232 & 2334 \\
+	\hline
+    \end{tabular}
+    \caption{}
+    \label{tab:1}
+\end{table}
+%
+
+
+
+
+Gaussian one-point quadrature
+also requires to compute the centroid of $\Delta$. However, this computation
+amounts to an arithmetic average and is therefore 
+
+
+\end{document}
