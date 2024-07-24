@@ -360,7 +360,7 @@ classdef GalerkinParabolic2d_solver
 
 		function p = plotMaxSolutionValue(self)
 
-			% store variabes
+			% store variables
 			maxVal = self.getMaxSolutionValue;
 			timeGrid = self.time.getTimeGrid;
 
@@ -371,7 +371,7 @@ classdef GalerkinParabolic2d_solver
 
 		function p = plotAverageSolutionValue(self)
 
-			% store variabes
+			% store variables
 			avgVal = self.getAverageSolutionValue;
 			timeGrid = self.time.getTimeGrid;
 
@@ -382,9 +382,13 @@ classdef GalerkinParabolic2d_solver
 
 		function animate(self)
 
+			% store variables
+			N_t = self.time.N_t;
+
+			% capture zLim bounds
 			u_min = min(min(self.solution));
 			u_max = max(max(self.solution));
-			N_t = self.time.N_t;
+			if u_max == u_min, u_max = u_min + 1; end
 
 			% plot first time step
 			self.plot(1);
@@ -605,25 +609,36 @@ classdef GalerkinParabolic2d_solver
 
 		end
 
-		function result = getConvergenceTime(self,tol)
+		function [t,timestep] = getConvergenceTime(self,tol)
 
-			quadOrder = 1;
+			% default tolerance = 10^-6
+			if nargin == 1, tol = 10^-6; end
 
-			%for n = 1:self.time.M_t
-			for n = 1:1
+			for n = 1:self.time.M_t
 
-				err_n = self.solution(:,n+1) - self.solution(:,n);
-				errObj_n = self;
-				errObj_n.solution = err_n;
+				% store current and next timestep
+				arg1 = self.solution(:,n);		
+				arg2 = self.solution(:,n+1);		
 
+				% compute error between subsequent timesteps
+				err_n = arg1 - arg2;
 
+				% compute L2 norm of error
+				int = self.domain.L2norm_piecewiseLinear(err_n);
 
-
-
-
+				% check against tolerance
+				if int < tol
+					timestep = n-1;
+					t = self.time.dt * timestep;
+					return	
+				end
 
 			end
 
+			% if loop completes, then the desired tolerance is never reached
+			t = NaN;
+			timestep = NaN;
+			fprintf('WARNING: Tolerance not reached during time-series\n');
 		end
 
 

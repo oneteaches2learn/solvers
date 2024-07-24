@@ -211,7 +211,7 @@ classdef Domain2d < fegeometry
 
 		end
 
-		function G = meshToGraph(self)
+		function G = getMeshGraph(self)
 
 			% store variables
 			elemNodes = self.Mesh.Elements';
@@ -241,16 +241,20 @@ classdef Domain2d < fegeometry
 
 		end			
 
-		function [edges,midptCoords] = getEdgeMidpoints(self)
-
-			% store variables
-			elemCoord = self.Mesh.Nodes';
+		function edges = getMeshEdges(self)
 
 			% generate graph from mesh
-			G = meshToGraph(self);
+			G = getMeshGraph(self);
 
 			% store edges as an array
 			edges = table2array(G.Edges);
+
+		end
+
+		function midptCoords = getMeshEdgeMidpoints(self,edges)
+
+			% store variables
+			elemCoord = self.Mesh.Nodes';
 
 			% compute midpoints
 			startCoords = elemCoord(edges(:,1),:);
@@ -396,14 +400,31 @@ classdef Domain2d < fegeometry
 			end
 		end
 
+		function int = threePointQuadrature(self,f)
 
-		function int = gaussianThreePointQuadrature(self,f)
+			edges = self.getMeshEdges;
 
-			% get edge midpoints
-			[edges,midpts] = self.getEdgeMidpoints;
+			if isa(f,'function_handle') || isa(f,'symfun')
 
-			% compute F on edge midpoints; store as sparse, symmetric, weighted adjacency matrix
-			F = f(midpts(:,1),midpts(:,2));
+				% convert symfun to function_handle
+				if isa(f,'symfun'), f = matlabFunction(f); end
+
+				% get edge midpoints
+				midpts = self.getMeshEdgeMidpoints(edges);
+
+				% compute F on edge midpoints 
+				F = f(midpts(:,1),midpts(:,2));
+
+			elseif isvector(f)
+
+				F = f; 
+
+				% convert to column, if necessary
+				if isrow(F), F = F'; end 
+
+			end
+
+			% store F as sparse, symmetric, weighted adjacency matrix
 			F = sparse([edges(:,1);edges(:,2)], ...
 					[edges(:,2);edges(:,1)], ...
 					[F(:);F(:)]);
@@ -420,9 +441,36 @@ classdef Domain2d < fegeometry
 					tot = tot + F(elemNodes(i,j),elemNodes(i,j+1));
 				end
 				
+				% compute three pt quadrature on element
 				int = int + self.elemAreas(i) * tot/3;
 
 			end
+
+		end
+
+		function IP = L2_IP_piecewiseLinear(self,arg1,arg2)
+		% arg1, arg2 should be a vectors of values on the nodes of the mesh,
+		% representing a piecewise linear functions 
+
+			% get mesh edges
+			edges = self.getMeshEdges;
+
+			% compute arg1,arg2 at midpoints (simple average)
+			mdptVals1 = (arg1(edges(:,1)) + arg1(edges(:,2))) / 2;
+			mdptVals2 = (arg2(edges(:,1)) + arg2(edges(:,2))) / 2;
+
+			% compute L2 inner product using 3-pt gaussian quadrature
+			IP = self.threePointQuadrature(mdptVals1 .* mdptVals2);
+
+		end
+
+		function int = L2norm_piecewiseLinear(self,F)
+		% F should be a vector of values on the nodes of the mesh,
+		% representing a piecewise linear functions 
+
+
+			IP = L2_IP_piecewiseLinear(self,F,F);
+			int = sqrt(IP);
 
 		end
 
