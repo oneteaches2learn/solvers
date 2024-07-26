@@ -11,7 +11,6 @@ classdef AuxFunctions2d
 		f
 		uTrue
 		coefficients
-		test
 	end
 
 	methods
