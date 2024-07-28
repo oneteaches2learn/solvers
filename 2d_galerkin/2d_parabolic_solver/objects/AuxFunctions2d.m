@@ -1,4 +1,5 @@
 classdef AuxFunctions2d
+% AUXFUNCTIONS2D(P,K,UTRUE)
 
 	properties
 		p
@@ -13,7 +14,7 @@ classdef AuxFunctions2d
 	end
 
 	methods
-		function self = AuxFunctions2d(p,k,uInit,uTrue)
+		function self = AuxFunctions2d(p,k,uTrue)
 			
 			% store inputs
 			x = sym('x',[1 2]); syms t;

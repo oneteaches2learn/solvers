@@ -4,10 +4,10 @@ classdef AuxFunctions2d_heat < AuxFunctions2d
 	end
 
 	methods
-		function self = AuxFunctions2d_heat(p,k,uInit,uTrue)
+		function self = AuxFunctions2d_heat(p,k,uTrue)
 			
 			% call superclass constructor
-			self@AuxFunctions2d(p,k,uInit,uTrue)
+			self@AuxFunctions2d(p,k,uTrue)
 
 			% manufacture RHS
 			self.f = self.manufactureRHS; 
