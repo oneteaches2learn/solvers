@@ -9,8 +9,8 @@ yLim = [0 1];
 T = 1;
 
 % number of inclusions
-N_x = 0;
-N_y = 0;
+N_x = 2;
+N_y = 2;
 alpha = 2; % <~~~ alpha = |delta Q| / |Y|
 
 % mms parameters

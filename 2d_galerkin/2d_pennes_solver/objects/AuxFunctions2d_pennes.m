@@ -1,6 +1,7 @@
 classdef AuxFunctions2d_pennes < AuxFunctions2d
 
 	properties
+		r
 		uStar
 	end
 
@@ -8,10 +9,11 @@ classdef AuxFunctions2d_pennes < AuxFunctions2d
 		function self = AuxFunctions2d_pennes(p,k,r,uStar,uInit,uTrue)
 			
 			% call superclass constructor
-			self@AuxFunctions2d(p,k,r,uInit,uTrue)
+			self@AuxFunctions2d(p,k,uInit,uTrue)
 
 			% store additional coefficients
 			x = sym('x',[1 2]); syms t;
+			self.r = symfun(r,[x t]);
 			self.uStar = symfun(uStar,[x t]);
 
 			% manufacture RHS

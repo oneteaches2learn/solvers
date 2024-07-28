@@ -1,4 +1,4 @@
-% DEMO2_DRIVER 
+% HEAT_DEMO
 clear all; x = sym('x',[1 2],'real'); syms t;
 % USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % domain bounds
@@ -9,8 +9,8 @@ yLim = [0 1];
 T = 1;
 
 % number of inclusions
-N_x = 1;
-N_y = 1;
+N_x = 2;
+N_y = 2;
 alpha = 2; % <~~~ alpha = |delta Q| / |Y|
 
 % mms parameters
@@ -26,7 +26,7 @@ bTypes2 = 'R';
 % specify coefficients
 p = 1;
 k = 1;
-r = 1;
+uStar = 2 + x(1) * x(2) * t;
 
 % specify desired result
 uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2)) * t + t;
@@ -38,21 +38,18 @@ fprintf('MMS Test Begun\n')
 
 % assemble inputs
 bound     = PuncturedBoundary2d(bTypes,{@()(0.0),@()(0.0),@()(0.0),@()(0.0)},bTypes2,{@()(0.0)});
-auxfun    = AuxFunctions2d_heat(p,k,r,@()(0.0),uTrue);
+auxfun    = AuxFunctions2d_heat(p,k,@()(0.0),uTrue);
 time      = TimeStepping(T,1);
 mmsparams = MMSParams(base,demo=demo,timeOffset=timeOffset,timeFactor=timeFactor);
-mmsparams
 
 % build domain
 fprintf('Initialization\n')
 fprintf(' Contructing Domain:'), tic
-incMod = InclusionModule1(alpha);
-dom    = PuncturedDomain2d(xLim,yLim,N_x,N_y,incMod);
-%dom    = Domain2d(xLim,yLim);
-dom = dom.setEdgeBCTypes(bound);
-executionTime = toc; 
+	incMod = InclusionModule1(alpha);
+	dom    = PuncturedDomain2d(xLim,yLim,N_x,N_y,incMod);
+	dom = dom.setEdgeBCTypes(bound);
+	executionTime = toc; 
 fprintf(' %f s\n',executionTime)
-
 
 % run mms test
 if demo == 0

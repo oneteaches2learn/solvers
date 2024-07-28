@@ -3,7 +3,6 @@ classdef AuxFunctions2d
 	properties
 		p
 		k
-		r
 		uInit
 		q
 		divq
@@ -14,13 +13,12 @@ classdef AuxFunctions2d
 	end
 
 	methods
-		function self = AuxFunctions2d(p,k,r,uInit,uTrue)
+		function self = AuxFunctions2d(p,k,uInit,uTrue)
 			
 			% store inputs
 			x = sym('x',[1 2]); syms t;
 			self.p = symfun(p,[x t]);
 			self.k = symfun(k,[x t]);
-			self.r = symfun(r,[x t]);
 			self.uTrue = symfun(uTrue,[x t]);
 			self.uInit = symfun(self.uTrue(x(1),x(2),0),x);
 
@@ -35,7 +33,6 @@ classdef AuxFunctions2d
 
 			% convert coefficients to function handles, store as struct
 			cofs.k = matlabFunction(self.k);
-			cofs.r = matlabFunction(self.r);
 			cofs.p = matlabFunction(self.p);
 
 		end
