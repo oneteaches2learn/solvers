@@ -15,6 +15,7 @@ classdef GalerkinHeat2d_solver < GalerkinParabolic2d_solver
 
 			% assemble tensors
 			tensors.A   = self.assembleStiffnessMatrix(t);
+			tensors.M_r = self.assembleMassMatrix(self.coefficients.r,t);
 			tensors.M_p = self.assembleMassMatrix(self.coefficients.p,t);
 			[tensors.E,temp] = self.computeRobinBCs(t);
 
@@ -33,7 +34,7 @@ classdef GalerkinHeat2d_solver < GalerkinParabolic2d_solver
 		function [S,b] = finalAssembly(self,tensors,vectors,U_prev)
 
 			% assemble LHS
-			S = self.time.dt * (tensors.A + tensors.E) + tensors.M_p;
+			S = self.time.dt * (tensors.A + tensors.M_r + tensors.E) + tensors.M_p;
 
 			% assemble RHS
 			b = self.time.dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob) - ... 

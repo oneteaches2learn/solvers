@@ -291,7 +291,7 @@ classdef PuncturedDomain2d < Domain2d & fegeometry
 
 			% set boundary types on inclusions
 			incBCCond = boundary.boundaryConditionsInclusions;
-			if sum(size(incBCCond)) == 2
+			if sum(size(incBCCond)) == 2 || sum(size(incBCCond)) == 3 
 				for i = 5:self.NumEdges
 					edges(i).boundaryCondition = incBCCond;
 				end
