@@ -26,7 +26,6 @@ bTypes2 = 'R';
 % specify coefficients
 p = 1;
 k = 1;
-uStar = 2 + x(1) * x(2) * t;
 
 % specify desired result
 uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2)) * t + t;
@@ -47,7 +46,7 @@ fprintf('Initialization\n')
 fprintf(' Contructing Domain:'), tic
 	incMod = InclusionModule1(alpha);
 	dom    = PuncturedDomain2d(xLim,yLim,N_x,N_y,incMod);
-	dom = dom.setEdgeBCTypes(bound);
+	dom    = dom.setEdgeBCTypes(bound);
 	executionTime = toc; 
 fprintf(' %f s\n',executionTime)
 
