@@ -51,8 +51,8 @@ classdef ManufacturedFunctions2d
 
 
 	properties
-		p		% double or symfun, coefficient in (pu)_t - div (k grad u) = f
-		k		% double or symfun, coefficient in (pu)_t - div (k grad u) = f
+		p		% symfun, coefficient in (pu)_t - div (k grad u) = f
+		k		% symfun, coefficient in (pu)_t - div (k grad u) = f
 		uInit	% symfun, uInit(x) = uTrue(x,0)
 		q		% symfun, q = -k grad uTrue
 		divq	% symfun, divq = div q = - div (k grad uTrue)
@@ -67,8 +67,8 @@ classdef ManufacturedFunctions2d
 			
 			% store inputs
 			x = sym('x',[1 2]); syms t;
-			self.p = p;
-			self.k = k;
+			self.p = symfun(p,[x t]);
+			self.k = symfun(k,[x t]);
 			self.uTrue = symfun(uTrue,[x t]);
 			self.uInit = symfun(self.uTrue(x(1),x(2),0),x);
 

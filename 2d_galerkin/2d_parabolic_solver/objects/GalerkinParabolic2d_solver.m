@@ -6,6 +6,7 @@ classdef GalerkinParabolic2d_solver
 		coefficients
 		uInit
 		f
+		tensors
 		solution
 	end
 
@@ -34,15 +35,18 @@ classdef GalerkinParabolic2d_solver
 			U = zeros(self.domain.nNodes,self.time.N_t);
 			U(:,1) = self.uInit(coords(:,1),coords(:,2));
 
+			% initialize tensors
+			self.tensors = self.initializeTensors;
+
 			for n = 1:self.time.M_t
 
 				% current time
 				t = n * self.time.dt;
 
 				% assemble problem
-				tensors = self.assembleTensors(t);
+				self = self.assembleTensors(t);
 				vectors = self.assembleVectors(t);
-				[S,b]   = self.finalAssembly(tensors,vectors,U(:,n));
+				[S,b]   = self.finalAssembly(vectors,U(:,n));
 
 				% solve and store solution
 				v = sparse(self.domain.nNodes,1);
@@ -55,7 +59,7 @@ classdef GalerkinParabolic2d_solver
 
 		end
 
-		function tensors = assembleTensors(self,t)
+		function self = assembleTensors(self,t)
 
 			% NOTE: placeholder function. Actually handled by specific subclasses.
 			...
@@ -69,7 +73,7 @@ classdef GalerkinParabolic2d_solver
 
 		end
 
-		function [S,b] = finalAssembly(self,tensors,vectors,U_prev)
+		function [S,b] = finalAssembly(self,vectors,U_prev)
 
 			% NOTE: placeholder function. Actually handled by specific subclasses.
 			...
@@ -78,12 +82,19 @@ classdef GalerkinParabolic2d_solver
 
 		function A = assembleStiffnessMatrix(self,t)
 
+			% store variables
+			k = self.coefficients.k;
+
+			% check coefficient variables
+			if Coefficients.checkTimeVarying(k) == 0
+				k = @(x1,x2,t)(k(x1,x2));
+			end
+
 			% unpack variables
 			nNodes    = size(self.domain.Mesh.Nodes,2);
 			nElem3    = size(self.domain.Mesh.Elements,2);
 			coords    = self.domain.Mesh.Nodes';
 			elements3 = self.domain.Mesh.Elements';
-			k = self.coefficients.k;
 
 			% initialize storage
 			A = sparse(nNodes,nNodes);
@@ -99,13 +110,18 @@ classdef GalerkinParabolic2d_solver
 				elementCoord = coords(elementInd,:);
 				K_j = (1/3) * sum(K(elementInd));
 				A(elementInd,elementInd) = A(elementInd,elementInd) + ...
-				 	K_j * self.stima3(elementCoord);
+					K_j * self.stima3(elementCoord);
 			end
 
 		end
 
 		function B = assembleMassMatrix(self,c,t)
 
+			% check coefficient variables
+			if Coefficients.checkTimeVarying(c) == 0
+				c = @(x1,x2,t)(c(x1,x2));
+			end
+				
 			% unpack variables
 			nNodes    = size(self.domain.Mesh.Nodes,2);
 			nElem3    = size(self.domain.Mesh.Elements,2);

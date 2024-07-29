@@ -25,13 +25,12 @@ bTypes2 = 'R';
 
 % specify coefficients
 p = 1;
-k = 1;
+k = 1 + x(1) * x(2) * t;
 r = 1 + x(1) * x(2) * t; 
-uStar = 2 + x(1) * x(2) * t;
+uStar = 1 + x(1) * x(2) * t;
 
 % specify desired result
 uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2)) * t + t;
-
 
 
 % MMS TEST %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,7 +40,7 @@ fprintf('MMS Test Begun\n')
 bound     = PuncturedBoundary2d(bTypes,{@()(0.0),@()(0.0),@()(0.0),@()(0.0)},bTypes2,{@()(0.0)});
 auxfun    = ManufacturedFunctions2d_pennes(p,k,r,uStar,uTrue);
 time      = TimeStepping(T,1);
-mmsparams = MMSParams(base,demo=demo,timeOffset=timeOffset,timeFactor=timeFactor);
+mmsparams = MMSParams(base,demo=demo,timeOffset=timeOffset,timeFactor=timeFactor,pmax=5);
 
 % build domain
 fprintf('Initialization\n')

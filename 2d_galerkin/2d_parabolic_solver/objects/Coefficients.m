@@ -34,6 +34,12 @@ classdef Coefficients
 			result = any(strcmp(usedVars,checkVar));
 
 		end
+
+		function result = checkTimeVarying(f)
+
+			result = Coefficients.checkFunctionForVariable(f,'t');
+
+		end
 	end
 
 end

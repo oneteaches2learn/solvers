@@ -48,8 +48,9 @@ classdef ManufacturedFunctions2d_heat < ManufacturedFunctions2d
 		%	format cofs.k and cofs.r
 
 			% convert coefficients to function handles, store as struct
-			cofs.k = matlabFunction(self.k);
-			cofs.p = matlabFunction(self.p);
+			x = sym('x',[1 2]); 
+			cofs.k = matlabFunction(symfun(self.k,x));
+			cofs.p = matlabFunction(symfun(self.p,x));
 
 		end
 

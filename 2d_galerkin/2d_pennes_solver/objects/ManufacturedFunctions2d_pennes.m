@@ -12,8 +12,8 @@ classdef ManufacturedFunctions2d_pennes < ManufacturedFunctions2d
 %-----------------------------------------------------------------------------%
 
 	properties
-		r	  % symfun, coefficient in (pu)_t - div (k grad u) + r(u - uStar) = f
-		uStar % symfun, coefficient in (pu)_t - div (k grad u) + r(u - uStar) = f
+		r	  % double or sym, coefficient in (pu)_t - div (k grad u) + r(u - uStar) = f
+		uStar % double or sym, coefficient in (pu)_t - div (k grad u) + r(u - uStar) = f
 	end
 
 	methods
@@ -24,9 +24,8 @@ classdef ManufacturedFunctions2d_pennes < ManufacturedFunctions2d
 			self@ManufacturedFunctions2d(p,k,uTrue)
 
 			% store additional coefficients
-			x = sym('x',[1 2]); syms t;
-			self.r = symfun(r,[x t]);
-			self.uStar = symfun(uStar,[x t]);
+			self.r = r;
+			self.uStar = uStar;
 
 			% manufacture RHS
 			self.f = self.manufactureRHS; 
@@ -48,10 +47,11 @@ classdef ManufacturedFunctions2d_pennes < ManufacturedFunctions2d
 		%	format cofs.k, cofs.r, cofs.p, cofs.uStar;
 
 			% convert coefficients to function handles, store as struct
-			cofs.k = matlabFunction(self.k);
-			cofs.r = matlabFunction(self.r);
-			cofs.p = matlabFunction(self.p);
-			cofs.uStar = matlabFunction(self.uStar);
+			x = sym('x',[1 2]);
+			cofs.k = matlabFunction(symfun(self.k,x));
+			cofs.r = matlabFunction(symfun(self.r,x));
+			cofs.p = matlabFunction(symfun(self.p,x));
+			cofs.uStar = matlabFunction(symfun(self.uStar,x));
 
 		end
 
