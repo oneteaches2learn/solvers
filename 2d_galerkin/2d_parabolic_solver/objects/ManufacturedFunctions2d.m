@@ -56,8 +56,7 @@ classdef ManufacturedFunctions2d
 		uInit	% symfun, uInit(x) = uTrue(x,0)
 		q		% symfun, q = -k grad uTrue
 		divq	% symfun, divq = div q = - div (k grad uTrue)
-		u_t		% symfun, u_t is time derivative of uTrue
-		pu_t	% symfun, u_t is time derivative of p * uTrue
+		pu_t	% symfun, pu_t = (p * uTrue)_t, i.e. is the time derivative of p * uTrue
 		f		% symfun, manufactured source function
 		uTrue	% symfun, represents desired true solution
 	end
@@ -76,8 +75,7 @@ classdef ManufacturedFunctions2d
 			% manufacture data
 			self.q = self.manufactureFlux;
 			self.divq = self.manufactureFluxDivergence;
-			self.u_t = self.manufactureTimeDerivative;
-			self.pu_t = self.manufactureTimeDerivative2;
+			self.pu_t = self.manufactureTimeDerivative;
 
 			% manufacture RHS: handled by subclasses
 				... 
@@ -106,16 +104,7 @@ classdef ManufacturedFunctions2d
 
 		end
 
-		function u_t = manufactureTimeDerivative(self)
-		% Manufactures symfun u_t, the time derivative of u
-
-			% manufacture time derivative
-			x = sym('x',[1 2]); syms t;
-			u_t = diff(self.uTrue,t);
-
-		end
-
-		function pu_t = manufactureTimeDerivative2(self)
+		function pu_t = manufactureTimeDerivative(self)
 		% Manufactures symfun u_t, the time derivative of u
 
 			% manufacture time derivative
@@ -125,14 +114,6 @@ classdef ManufacturedFunctions2d
 		end
 
 		function f = manufactureRHS(self)
-		% Manufactures symfun f (i.e. the right-hand side) from data
-
-			% NOTE: placeholder function. Actually handled by specific subclasses.
-			...
-
-		end
-
-		function f = manufactureRHS2(self)
 		% Manufactures symfun f (i.e. the right-hand side) from data
 
 			% NOTE: placeholder function. Actually handled by specific subclasses.

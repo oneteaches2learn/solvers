@@ -28,22 +28,11 @@ classdef ManufacturedFunctions2d_pennes < ManufacturedFunctions2d
 			self.uStar = uStar;
 
 			% manufacture RHS
-			%self.f = self.manufactureRHS; 
-			self.f = self.manufactureRHS2; 
-
+			self.f = self.manufactureRHS; 
 
 		end
 
 		function f = manufactureRHS(self)
-		% Manufactures symfun f (i.e. the right-hand side) from data
-
-			% manufacture RHS
-			x = sym('x',[1 2]); syms t;
-			f = self.p * self.u_t + self.divq + self.r * (self.uTrue - self.uStar);
-
-		end
-
-		function f = manufactureRHS2(self)
 		% Manufactures symfun f (i.e. the right-hand side) from data
 
 			% manufacture RHS

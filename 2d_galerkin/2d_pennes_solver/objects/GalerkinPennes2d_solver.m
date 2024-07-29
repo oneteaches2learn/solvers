@@ -23,7 +23,7 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 			tensors.A   = [];
 			tensors.M_r = [];
 			tensors.M_p_prev = self.assembleMassMatrix(self.coefficients.p,0);
-			tensors.M_p = self.assembleMassMatrix(self.coefficients.p,0);
+			tensors.M_p = [];
 			tensors.E   = [];
 
 			% check which tensors are time-varying

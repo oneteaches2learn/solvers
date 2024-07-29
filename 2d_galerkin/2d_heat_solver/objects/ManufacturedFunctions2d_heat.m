@@ -30,6 +30,9 @@ classdef ManufacturedFunctions2d_heat < ManufacturedFunctions2d
 			% call superclass constructor
 			self@ManufacturedFunctions2d(p,k,uTrue)
 
+			% manufacture RHS
+			self.f = self.manufactureRHS;
+
 		end
 
 		function f = manufactureRHS(self)
@@ -37,7 +40,7 @@ classdef ManufacturedFunctions2d_heat < ManufacturedFunctions2d
 
 			% manufacture RHS
 			x = sym('x',[1 2]); syms t;
-			f = self.p * self.u_t + self.divq;
+			f = self.pu_t + self.divq;
 
 		end
 
