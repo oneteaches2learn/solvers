@@ -37,7 +37,7 @@ fprintf('MMS Test Begun\n')
 
 % assemble inputs
 bound     = PuncturedBoundary2d(bTypes,{@()(0.0),@()(0.0),@()(0.0),@()(0.0)},bTypes2,{@()(0.0)});
-auxfun    = AuxFunctions2d_heat(p,k,uTrue);
+auxfun    = ManufacturedFunctions2d_heat(p,k,uTrue);
 time      = TimeStepping(T,1);
 mmsparams = MMSParams(base,demo=demo,timeOffset=timeOffset,timeFactor=timeFactor);
 

@@ -17,7 +17,7 @@ classdef GalerkinHeat2d_mms < GalerkinParabolic2d_mms
 			arguments
 				dom 		Domain2d
 				time		TimeStepping
-				auxfun  	AuxFunctions2d_heat
+				auxfun  	ManufacturedFunctions2d_heat
 				mmsparams 	MMSParams
 				NameValueArgs.errType = "Linfty(L2)"
 			end

@@ -17,7 +17,7 @@ classdef GalerkinPennes2d_mms < GalerkinParabolic2d_mms
 			arguments
 				dom 		Domain2d
 				time		TimeStepping
-				auxfun  	AuxFunctions2d_pennes
+				auxfun  	ManufacturedFunctions2d_pennes
 				mmsparams 	MMSParams
 				NameValueArgs.errType = "Linfty(L2)"
 			end
