@@ -24,10 +24,10 @@ bTypes = {'R' 'R' 'R' 'R'};
 bTypes2 = 'R';
 
 % specify coefficients
-p = 1;
-k = 1 + x(1) * x(2) * t;
-r = 1 + x(1) * x(2) * t; 
-uStar = 1 + x(1) * x(2) * t;
+p = 1 + t;
+k = 1;
+r = 1; 
+uStar = 1;
 
 % specify desired result
 uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2)) * t + t;

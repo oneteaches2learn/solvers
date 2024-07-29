@@ -22,7 +22,8 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 			% create fields for tensor storage
 			tensors.A   = [];
 			tensors.M_r = [];
-			tensors.M_p = [];
+			tensors.M_p_prev = self.assembleMassMatrix(self.coefficients.p,0);
+			tensors.M_p = self.assembleMassMatrix(self.coefficients.p,0);
 			tensors.E   = [];
 
 			% check which tensors are time-varying
@@ -55,6 +56,7 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 				end
 
 				% update M_p
+				self.tensors.M_p_prev = self.tensors.M_p;
 				if self.tensors.timeVarying.M_p == 1
 					cof = self.coefficients.p;
 					self.tensors.M_p = self.assembleMassMatrix(cof,t);
@@ -88,7 +90,7 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 
 			% assemble RHS
 			b = self.time.dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob + ...
-					vectors.uStar) - S * vectors.U_D + tensors.M_p * U_prev;
+					vectors.uStar) - S * vectors.U_D + tensors.M_p_prev * U_prev;
 
 		end
 
