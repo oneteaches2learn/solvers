@@ -18,21 +18,21 @@ alpha = 2; % <~~~ alpha = |delta Q| / |Y|
 % specify coefficients
 c = 1;
 k = 1;
-r = 1 + t;
+r = 1;
 uStar = 1;
 
 % specify source
 f = 1;
 
 % specify BCs
-bTypes = {'R' 'R' 'R' 'R'};
-bTypes2 = 'R';
+bTypes = {'D' 'D' 'D' 'D'};
+bTypes2 = 'D';
 
 % specify Dirichlet conditions
-u_D = 0;
+u_D = 1;
 
 % specify Neumann conditions
-u_N = 0;
+u_N = 1;
 
 % specify Robin conditions
 beta = 1;

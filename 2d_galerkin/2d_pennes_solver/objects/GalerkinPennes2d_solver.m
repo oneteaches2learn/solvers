@@ -36,8 +36,6 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 			self = initializeVectors@GalerkinParabolic2d_solver(self);
 
 			% create fields for vector storage
-			self.vectors.r = [];
-			self.vectors.uStar = [];
 			self.vectors.r_times_uStar = [];
 
 			% check which vectors are time-varying
@@ -74,8 +72,6 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 
 			% if first timestep, assemble r_times_uStar vector
 			if self.isFirstTimeStep == 1
-				self.vectors.r = self.compute_r;
-				self.vectors.uStar = self.compute_uStar;
 				self.vectors.r_times_uStar = self.compute_r_times_uStar;
 
 			% else, update r_times_uStar vector as needed

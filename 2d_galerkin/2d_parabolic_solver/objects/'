@@ -38,6 +38,7 @@ classdef GalerkinParabolic2d_solver
 
 		function self = solve(self)
 
+			fprintf('hi\n')
 			% load variables
 			coords = self.domain.Mesh.Nodes';
 			FreeNodes = self.domain.freeNodes;
