@@ -1,4 +1,4 @@
-% PENNES_DEMO
+% PENNESMMS_DEMO
 clear all; x = sym('x',[1 2],'real'); syms t;
 % USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % domain bounds
@@ -24,13 +24,13 @@ bTypes = {'R' 'R' 'R' 'R'};
 bTypes2 = 'R';
 
 % specify coefficients
-p = 1 + t;
-k = 1 + t;
-r = 1; 
+p = 1;
+k = 1;
+r = 1 + t; 
 uStar = 1 + t;
 
 % specify desired result
-uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2)) * t + t;
+uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2));
 
 
 % MMS TEST %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

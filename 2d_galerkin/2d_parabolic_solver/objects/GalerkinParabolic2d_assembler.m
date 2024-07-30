@@ -77,18 +77,16 @@ classdef GalerkinParabolic2d_assembler
 
 		end
 
-		function cofs = assembleCoefficients(p,k,r)
+		function cofs = assembleCoefficients(p,k)
 
 			% check function variables
 			x = sym('x',[1 2],'real'); syms t;
-			p = symfun(p,[x t]);
-			k = symfun(k,[x t]);
-			r = symfun(r,[x t]);
+			p = symfun(p,x);
+			k = symfun(k,x);
 
 			% convert to function_handles
 			cofs.p = matlabFunction(p);
 			cofs.k = matlabFunction(k);
-			cofs.r = matlabFunction(r);
 
 		end
 
@@ -117,7 +115,7 @@ classdef GalerkinParabolic2d_assembler
 
 			% check function variables
 			x = sym('x',[1 2],'real'); syms t;
-			f = symfun(f,[x t]);
+			f = symfun(f,x);
 
 			% convert to function_handle
 			f = matlabFunction(f);

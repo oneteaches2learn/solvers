@@ -11,16 +11,15 @@ classdef GalerkinPennes2d_assembler < GalerkinParabolic2d_assembler
 	methods (Static)
 		function cofs = assembleCoefficients(p,k,r,uStar)
 
+			% call superclass method
+			cofs = assembleCoefficients@GalerkinParabolic2d_assembler(p,k);
+
 			% check function variables
 			x = sym('x',[1 2],'real'); syms t;
-			p = symfun(p,[x t]);
-			k = symfun(k,[x t]);
-			r = symfun(r,[x t]);
-			uStar = symfun(uStar,[x t]);
+			r = symfun(r,x);
+			uStar = symfun(uStar,x);
 
 			% convert to function_handles
-			cofs.p = matlabFunction(p);
-			cofs.k = matlabFunction(k);
 			cofs.r = matlabFunction(r);
 			cofs.uStar = matlabFunction(uStar);
 

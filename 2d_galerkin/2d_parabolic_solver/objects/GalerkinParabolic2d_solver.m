@@ -29,6 +29,9 @@ classdef GalerkinParabolic2d_solver
 			self.uInit = uInit;
 			self.f = f;
 			
+			% TEMPORARY FOR TESTING, DELETE THIS!!!!
+			%self.f = @(x1,x2)(f(x1,x2,0));
+
 			% calculate solution
 			self = self.solve;
 
@@ -46,6 +49,7 @@ classdef GalerkinParabolic2d_solver
 
 			% initialize tensors
 			self = self.initializeTensors;
+			self = self.initializeVectors;
 
 			for n = 1:self.time.M_t
 
@@ -73,16 +77,29 @@ classdef GalerkinParabolic2d_solver
 
 			% create fields for tensor storage
 			tensors.A   = [];
-			tensors.M_p_prev = self.assembleMassMatrix(self.coefficients.p);
 			tensors.M_p = [];
 			tensors.E   = [];
+			tensors.M_p_prev = self.assembleMassMatrix(self.coefficients.p);
 
 			% check which tensors are time-varying
-			tensors.timeVarying.A   = Coefficients.checkTimeVarying(self.coefficients.k);
-			tensors.timeVarying.M_p = Coefficients.checkTimeVarying(self.coefficients.p);
+			tensors.timeVarying.A   = Coefficients.isTimeVarying(self.coefficients.k);
+			tensors.timeVarying.M_p = Coefficients.isTimeVarying(self.coefficients.p);
 
 			% update tensors property
 			self.tensors = tensors;
+
+		end
+
+		function self = initializeVectors(self)
+
+			% create fields for vector storage
+			self.vectors.b_vol = [];
+			self.vectors.U_D   = [];
+			self.vectors.b_neu = []; 
+			self.vectors.b_rob = []; 
+
+			% check which vectors are time-varying
+			self.vectors.timeVarying.b_vol = Coefficients.isTimeVarying(self.f);
 
 		end
 
@@ -117,11 +134,26 @@ classdef GalerkinParabolic2d_solver
 
 		function self = assembleVectors(self)
 
-			% assemble vectors
-			self.vectors.b_vol = self.computeVolumeForces;
-			self.vectors.U_D   = self.computeDirichletBCs;
-			self.vectors.b_neu = self.computeNeumannBCs;
-			[temp,self.vectors.b_rob] = self.computeRobinBCs;
+			% if first timestep, create vectors
+			if self.isFirstTimeStep == 1
+				self.vectors.b_vol = self.computeVolumeForces;
+				self.vectors.U_D   = self.computeDirichletBCs;
+				self.vectors.b_neu = self.computeNeumannBCs;
+				[temp,self.vectors.b_rob] = self.computeRobinBCs;
+
+			% else, update vectors as needed
+			else
+
+				% update b_vol
+				if self.vectors.timeVarying.b_vol == 1
+					self.vectors.b_vol = self.computeVolumeForces;
+				end
+
+				self.vectors.U_D   = self.computeDirichletBCs;
+				self.vectors.b_neu = self.computeNeumannBCs;
+				[temp,self.vectors.b_rob] = self.computeRobinBCs;
+
+			end
 
 		end
 
@@ -144,7 +176,7 @@ classdef GalerkinParabolic2d_solver
 			k = self.coefficients.k;
 
 			% check coefficient variables
-			if Coefficients.checkTimeVarying(k) == 0
+			if Coefficients.isTimeVarying(k) == 0
 				k = @(x1,x2,t)(k(x1,x2));
 			end
 
@@ -176,7 +208,7 @@ classdef GalerkinParabolic2d_solver
 		function B = assembleMassMatrix(self,c)
 
 			% check coefficient variables
-			if Coefficients.checkTimeVarying(c) == 0
+			if Coefficients.isTimeVarying(c) == 0
 				c = @(x1,x2,t)(c(x1,x2));
 			end
 				
@@ -217,6 +249,14 @@ classdef GalerkinParabolic2d_solver
 
 		function b = computeVolumeForces(self)
 
+			% store variables
+			f = self.f;
+
+			% check coefficient variables
+			if Coefficients.isTimeVarying(f) == 0
+				f = @(x1,x2,t)(f(x1,x2));
+			end
+
 			% unpack variables
 			nNodes    = size(self.domain.Mesh.Nodes,2);
 			nElem3    = size(self.domain.Mesh.Elements,2);
@@ -232,7 +272,7 @@ classdef GalerkinParabolic2d_solver
 				elementCoord  = coords(elementInd,:);
 				b(elementInd) = b(elementInd) + ...
 					self.domain.elemAreas(j) * ...
-					self.f(sum(elementCoord(:,1))/3,sum(elementCoord(:,2))/3,self.t) / 3;
+					f(sum(elementCoord(:,1))/3,sum(elementCoord(:,2))/3,self.t) / 3;
 			end
 
 		end

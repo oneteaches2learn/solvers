@@ -28,16 +28,16 @@ classdef Coefficients
 			end
 		end
 
-		function result = checkFunctionForVariable(f,checkVar)
+		function result = hasVariable(f,checkVar)
 
 			usedVars = Coefficients.getFunctionVariables(f);
 			result = any(strcmp(usedVars,checkVar));
 
 		end
 
-		function result = checkTimeVarying(f)
+		function result = isTimeVarying(f)
 
-			result = Coefficients.checkFunctionForVariable(f,'t');
+			result = Coefficients.hasVariable(f,'t');
 
 		end
 	end
