@@ -27,7 +27,7 @@ bTypes2 = 'R';
 p = 1 + t;
 k = 1 + t;
 r = 1; 
-uStar = 1;
+uStar = 1 + t;
 
 % specify desired result
 uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2)) * t + t;

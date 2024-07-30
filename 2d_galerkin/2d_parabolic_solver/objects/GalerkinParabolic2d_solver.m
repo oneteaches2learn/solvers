@@ -54,7 +54,7 @@ classdef GalerkinParabolic2d_solver
 
 				% assemble problem
 				self  = self.assembleTensors;
-				self  = self.assembleVectors(self.t);
+				self  = self.assembleVectors;
 				[S,b] = self.finalAssembly(self.vectors,U(:,n));
 
 				% solve and store solution
@@ -68,14 +68,14 @@ classdef GalerkinParabolic2d_solver
 
 		end
 
-		function self = assembleTensors(self,t)
+		function self = assembleTensors(self)
 
 			% NOTE: placeholder function. Actually handled by specific subclasses.
 			...
 
 		end
 
-		function self = assembleVectors(self,t)
+		function self = assembleVectors(self)
 
 			% NOTE: placeholder function. Actually handled by specific subclasses.
 			...
@@ -172,7 +172,7 @@ classdef GalerkinParabolic2d_solver
 
 		end
 
-		function b = computeVolumeForces(self,t)
+		function b = computeVolumeForces(self)
 
 			% unpack variables
 			nNodes    = size(self.domain.Mesh.Nodes,2);
@@ -189,12 +189,12 @@ classdef GalerkinParabolic2d_solver
 				elementCoord  = coords(elementInd,:);
 				b(elementInd) = b(elementInd) + ...
 					self.domain.elemAreas(j) * ...
-					self.f(sum(elementCoord(:,1))/3,sum(elementCoord(:,2))/3,t) / 3;
+					self.f(sum(elementCoord(:,1))/3,sum(elementCoord(:,2))/3,self.t) / 3;
 			end
 
 		end
 
-		function U_D = computeDirichletBCs(self,t)
+		function U_D = computeDirichletBCs(self)
 
 			% unpack variables
 			dom    = self.domain;
@@ -214,14 +214,14 @@ classdef GalerkinParabolic2d_solver
 
 					% compute value of U on nodes of i-th edge
 					U_D(bNodes_i) = dom.edges(i).boundaryCondition(...
-										coords(bNodes_i,1),coords(bNodes_i,2),t);
+										coords(bNodes_i,1),coords(bNodes_i,2),self.t);
 
 				end
 			end
 
 		end
 
-		function b_neu = computeNeumannBCs(self,t)
+		function b_neu = computeNeumannBCs(self)
 
 			% unpack variables
 			dom    = self.domain;
@@ -247,7 +247,7 @@ classdef GalerkinParabolic2d_solver
 						edgeMidPt = sum(coords(edge,:)/2);
 						edgeLength = norm(coords(edge(1),:) - coords(edge(2),:));
 						b_neu(edge) = b_neu(edge) + ...
-							edgeLength * bCond(edgeMidPt(1),edgeMidPt(2),t) / 2;
+							edgeLength * bCond(edgeMidPt(1),edgeMidPt(2),self.t) / 2;
 					end
 				end
 			end

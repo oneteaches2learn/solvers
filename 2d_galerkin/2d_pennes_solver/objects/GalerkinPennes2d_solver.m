@@ -69,13 +69,13 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 
 		end
 
-		function self = assembleVectors(self,t)
+		function self = assembleVectors(self)
 
 			% assemble vectors
-			self.vectors.uStar = self.compute_uStar(t);
-			self.vectors.b_vol = self.computeVolumeForces(t);
-			self.vectors.U_D   = self.computeDirichletBCs(t);
-			self.vectors.b_neu = self.computeNeumannBCs(t);
+			self.vectors.uStar = self.compute_uStar;
+			self.vectors.b_vol = self.computeVolumeForces;
+			self.vectors.U_D   = self.computeDirichletBCs;
+			self.vectors.b_neu = self.computeNeumannBCs;
 			[temp,self.vectors.b_rob] = self.computeRobinBCs;
 
 		end
@@ -95,22 +95,7 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 
 		end
 
-		%{
-		function vec = compute_uStar(self,t)
-
-			% store variables
-			nNodes = self.domain.nNodes;
-
-			% loop over nodes
-			vec = zeros(nNodes,1);
-			for i = 1:nNodes
-				vec(i) = self.coefficients.uStar(vec(i),vec(i),t);
-			end
-
-		end
-		%}
-
-		function b = compute_uStar(self,t)
+		function b = compute_uStar(self)
 
 
 			% check variables KLUDGE! UPDATE WHEN YOU MAKE THE VECTORS TIME VARYING OR NOT
@@ -141,8 +126,8 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 				elementCoord  = coords(elementInd,:);
 				b(elementInd) = b(elementInd) + ...
 					det([1,1,1; elementCoord']) * ...
-					r(sum(elementCoord(:,1))/3,sum(elementCoord(:,2))/3,t) * ...
-					uStar(sum(elementCoord(:,1))/3,sum(elementCoord(:,2))/3,t) / 6;
+					r(sum(elementCoord(:,1))/3,sum(elementCoord(:,2))/3,self.t) * ...
+					uStar(sum(elementCoord(:,1))/3,sum(elementCoord(:,2))/3,self.t) / 6;
 
 			end
 

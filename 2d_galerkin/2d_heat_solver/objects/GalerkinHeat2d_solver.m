@@ -57,9 +57,9 @@ classdef GalerkinHeat2d_solver < GalerkinParabolic2d_solver
 		function self = assembleVectors(self,t)
 
 			% assemble vectors
-			self.vectors.b_vol = self.computeVolumeForces(t);
-			self.vectors.U_D   = self.computeDirichletBCs(t);
-			self.vectors.b_neu = self.computeNeumannBCs(t);
+			self.vectors.b_vol = self.computeVolumeForces;
+			self.vectors.U_D   = self.computeDirichletBCs;
+			self.vectors.b_neu = self.computeNeumannBCs;
 			[temp,self.vectors.b_rob] = self.computeRobinBCs;
 
 		end
