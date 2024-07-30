@@ -6,8 +6,17 @@ classdef GalerkinParabolic2d_solver
 		coefficients
 		uInit
 		f
-		tensors
 		solution
+	end
+
+	properties (Hidden)
+		tensors
+		vectors
+		t = 0
+	end
+
+	properties (Hidden,Dependent)
+		isFirstTimeStep
 	end
 
 	methods
@@ -41,11 +50,11 @@ classdef GalerkinParabolic2d_solver
 			for n = 1:self.time.M_t
 
 				% current time
-				t = n * self.time.dt;
+				self.t = n * self.time.dt;
 
 				% assemble problem
-				self = self.assembleTensors(t);
-				vectors = self.assembleVectors(t);
+				self = self.assembleTensors;
+				vectors = self.assembleVectors(self.t);
 				[S,b]   = self.finalAssembly(vectors,U(:,n));
 
 				% solve and store solution
@@ -80,7 +89,13 @@ classdef GalerkinParabolic2d_solver
 
 		end
 
-		function A = assembleStiffnessMatrix(self,t)
+		function val = get.isFirstTimeStep(self)
+
+			val = (self.t == self.time.dt);
+
+		end
+
+		function A = assembleStiffnessMatrix(self)
 
 			% store variables
 			k = self.coefficients.k;
@@ -101,7 +116,7 @@ classdef GalerkinParabolic2d_solver
 
 			% compute k on nodes
 			for j = 1:nNodes
-				K(j) = k(coords(j,1),coords(j,2),t);
+				K(j) = k(coords(j,1),coords(j,2),self.t);
 			end
 
 			% assemble stiffness matrix
@@ -115,7 +130,7 @@ classdef GalerkinParabolic2d_solver
 
 		end
 
-		function B = assembleMassMatrix(self,c,t)
+		function B = assembleMassMatrix(self,c)
 
 			% check coefficient variables
 			if Coefficients.checkTimeVarying(c) == 0
@@ -141,7 +156,7 @@ classdef GalerkinParabolic2d_solver
 
 			% compute r on nodes
 			for j = 1:nNodes
-				C(j) = c(coords(j,1),coords(j,2),t);
+				C(j) = c(coords(j,1),coords(j,2),self.t);
 			end
 
 			% scale mass matrix by r values
@@ -240,7 +255,7 @@ classdef GalerkinParabolic2d_solver
 		end
 
 
-		function [E,b_rob] = computeRobinBCs(self,t)
+		function [E,b_rob] = computeRobinBCs(self)
 
 			% unpack variables
 			dom    = self.domain;
@@ -276,14 +291,14 @@ classdef GalerkinParabolic2d_solver
 
 						% compute RHS vector
 						b_rob(edge) = b_rob(edge) + ...
-							edgeLength * alpha(edgeMidPt(1),edgeMidPt(2),t) * ...
-							u_R(edgeMidPt(1),edgeMidPt(2),t) / 2;
+							edgeLength * alpha(edgeMidPt(1),edgeMidPt(2),self.t) * ...
+							u_R(edgeMidPt(1),edgeMidPt(2),self.t) / 2;
 
 						% compute E matrix
 						E(edge(1),edge(1)) = E(edge(1),edge(1)) + ...
-							1/2 * edgeLength * alpha(coords(edge(1),:),t);
+							1/2 * edgeLength * alpha(coords(edge(1),:),self.t);
 						E(edge(2),edge(2)) = E(edge(2),edge(2)) + ...
-							1/2 * edgeLength * alpha(coords(edge(2),:),t);
+							1/2 * edgeLength * alpha(coords(edge(2),:),self.t);
 
 					end
 				end

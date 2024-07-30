@@ -22,7 +22,7 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 			% create fields for tensor storage
 			tensors.A   = [];
 			tensors.M_r = [];
-			tensors.M_p_prev = self.assembleMassMatrix(self.coefficients.p,0);
+			tensors.M_p_prev = self.assembleMassMatrix(self.coefficients.p);
 			tensors.M_p = [];
 			tensors.E   = [];
 
@@ -33,39 +33,39 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 
 		end
 
-		function self = assembleTensors(self,t)
+		function self = assembleTensors(self)
 
 			% if first timestep, create tensors
-			if t == 1 * self.time.dt
-				self.tensors.A   = self.assembleStiffnessMatrix(t);
-				self.tensors.M_r = self.assembleMassMatrix(self.coefficients.r,t);
-				self.tensors.M_p = self.assembleMassMatrix(self.coefficients.p,t);
+			if self.isFirstTimeStep == 1
+				self.tensors.A   = self.assembleStiffnessMatrix;
+				self.tensors.M_r = self.assembleMassMatrix(self.coefficients.r);
+				self.tensors.M_p = self.assembleMassMatrix(self.coefficients.p);
 
 			% else, update tensors as needed
 			else
 
 				% update A
 				if self.tensors.timeVarying.A == 1
-					self.tensors.A = self.assembleStiffnessMatrix(t);
+					self.tensors.A = self.assembleStiffnessMatrix;
 				end
 
 				% update M_r
 				if self.tensors.timeVarying.M_r == 1
 					cof = self.coefficients.r;
-					self.tensors.M_r = self.assembleMassMatrix(cof,t);
+					self.tensors.M_r = self.assembleMassMatrix(cof);
 				end
 
 				% update M_p
 				self.tensors.M_p_prev = self.tensors.M_p;
 				if self.tensors.timeVarying.M_p == 1
 					cof = self.coefficients.p;
-					self.tensors.M_p = self.assembleMassMatrix(cof,t);
+					self.tensors.M_p = self.assembleMassMatrix(cof);
 				end
 
 			end
 
 			% update Robin boundary tensor
-			[self.tensors.E,temp] = self.computeRobinBCs(t);
+			[self.tensors.E,temp] = self.computeRobinBCs;
 
 		end
 
@@ -76,7 +76,7 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 			vectors.b_vol = self.computeVolumeForces(t);
 			vectors.U_D   = self.computeDirichletBCs(t);
 			vectors.b_neu = self.computeNeumannBCs(t);
-			[temp,vectors.b_rob] = self.computeRobinBCs(t);
+			[temp,vectors.b_rob] = self.computeRobinBCs;
 
 		end
 
