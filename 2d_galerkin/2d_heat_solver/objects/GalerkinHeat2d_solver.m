@@ -54,13 +54,13 @@ classdef GalerkinHeat2d_solver < GalerkinParabolic2d_solver
 
 		end
 
-		function vectors = assembleVectors(self,t)
+		function self = assembleVectors(self,t)
 
 			% assemble vectors
-			vectors.b_vol = self.computeVolumeForces(t);
-			vectors.U_D   = self.computeDirichletBCs(t);
-			vectors.b_neu = self.computeNeumannBCs(t);
-			[temp,vectors.b_rob] = self.computeRobinBCs;
+			self.vectors.b_vol = self.computeVolumeForces(t);
+			self.vectors.U_D   = self.computeDirichletBCs(t);
+			self.vectors.b_neu = self.computeNeumannBCs(t);
+			[temp,self.vectors.b_rob] = self.computeRobinBCs;
 
 		end
 
@@ -68,6 +68,7 @@ classdef GalerkinHeat2d_solver < GalerkinParabolic2d_solver
 
 			% store variables
 			tensors = self.tensors;
+			vectors = self.vectors;
 
 			% assemble LHS
 			S = self.time.dt * (tensors.A + tensors.E) + tensors.M_p;

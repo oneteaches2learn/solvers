@@ -53,14 +53,14 @@ classdef GalerkinParabolic2d_solver
 				self.t = n * self.time.dt;
 
 				% assemble problem
-				self = self.assembleTensors;
-				vectors = self.assembleVectors(self.t);
-				[S,b]   = self.finalAssembly(vectors,U(:,n));
+				self  = self.assembleTensors;
+				self  = self.assembleVectors(self.t);
+				[S,b] = self.finalAssembly(self.vectors,U(:,n));
 
 				% solve and store solution
 				v = sparse(self.domain.nNodes,1);
 				v(FreeNodes) = S(FreeNodes,FreeNodes) \ b(FreeNodes);
-				U(:,n+1) = v + vectors.U_D;
+				U(:,n+1) = v + self.vectors.U_D;
 
 			end
 
@@ -75,7 +75,7 @@ classdef GalerkinParabolic2d_solver
 
 		end
 
-		function vectors = assembleVectors(self,t)
+		function self = assembleVectors(self,t)
 
 			% NOTE: placeholder function. Actually handled by specific subclasses.
 			...
