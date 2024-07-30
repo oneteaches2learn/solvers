@@ -45,7 +45,7 @@ classdef GalerkinParabolic2d_solver
 			U(:,1) = self.uInit(coords(:,1),coords(:,2));
 
 			% initialize tensors
-			self.tensors = self.initializeTensors;
+			self = self.initializeTensors;
 
 			for n = 1:self.time.M_t
 
@@ -55,7 +55,7 @@ classdef GalerkinParabolic2d_solver
 				% assemble problem
 				self  = self.assembleTensors;
 				self  = self.assembleVectors;
-				[S,b] = self.finalAssembly(self.vectors,U(:,n));
+				[S,b] = self.finalAssembly(U(:,n));
 
 				% solve and store solution
 				v = sparse(self.domain.nNodes,1);
@@ -65,24 +65,67 @@ classdef GalerkinParabolic2d_solver
 			end
 
 			self.solution = U;
+			self = self.cleanup;
+
+		end
+
+		function self = initializeTensors(self)
+
+			% create fields for tensor storage
+			tensors.A   = [];
+			tensors.M_p_prev = self.assembleMassMatrix(self.coefficients.p);
+			tensors.M_p = [];
+			tensors.E   = [];
+
+			% check which tensors are time-varying
+			tensors.timeVarying.A   = Coefficients.checkTimeVarying(self.coefficients.k);
+			tensors.timeVarying.M_p = Coefficients.checkTimeVarying(self.coefficients.p);
+
+			% update tensors property
+			self.tensors = tensors;
 
 		end
 
 		function self = assembleTensors(self)
 
-			% NOTE: placeholder function. Actually handled by specific subclasses.
-			...
+			% if first timestep, create tensors
+			if self.isFirstTimeStep == 1
+				self.tensors.A   = self.assembleStiffnessMatrix;
+				self.tensors.M_p = self.assembleMassMatrix(self.coefficients.p);
+
+			% else, update tensors as needed
+			else
+
+				% update A
+				if self.tensors.timeVarying.A == 1
+					self.tensors.A = self.assembleStiffnessMatrix;
+				end
+
+				% update M_p
+				self.tensors.M_p_prev = self.tensors.M_p;
+				if self.tensors.timeVarying.M_p == 1
+					cof = self.coefficients.p;
+					self.tensors.M_p = self.assembleMassMatrix(cof);
+				end
+
+			end
+
+			% update Robin boundary tensor
+			[self.tensors.E,temp] = self.computeRobinBCs;
 
 		end
 
 		function self = assembleVectors(self)
 
-			% NOTE: placeholder function. Actually handled by specific subclasses.
-			...
+			% assemble vectors
+			self.vectors.b_vol = self.computeVolumeForces;
+			self.vectors.U_D   = self.computeDirichletBCs;
+			self.vectors.b_neu = self.computeNeumannBCs;
+			[temp,self.vectors.b_rob] = self.computeRobinBCs;
 
 		end
 
-		function [S,b] = finalAssembly(self,vectors,U_prev)
+		function [S,b] = finalAssembly(self,U_prev)
 
 			% NOTE: placeholder function. Actually handled by specific subclasses.
 			...
@@ -335,6 +378,13 @@ classdef GalerkinParabolic2d_solver
 					bcNodes = [bcNodes; nodes(j) nodes(j+1)];
 				end
 			end
+		end
+
+		function self = cleanup(self)
+
+			self.tensors = [];
+			self.vectors = [];
+
 		end
 
 

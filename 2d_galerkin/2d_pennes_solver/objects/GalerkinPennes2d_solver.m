@@ -17,70 +17,50 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 
 		end
 
-		function tensors = initializeTensors(self,t)
+		function self = initializeTensors(self,t)
 			
+			% Call superclass method
+			self = initializeTensors@GalerkinParabolic2d_solver(self);
+
 			% create fields for tensor storage
-			tensors.A   = [];
-			tensors.M_r = [];
-			tensors.M_p_prev = self.assembleMassMatrix(self.coefficients.p);
-			tensors.M_p = [];
-			tensors.E   = [];
+			self.tensors.M_r = [];
 
 			% check which tensors are time-varying
-			tensors.timeVarying.A   = Coefficients.checkTimeVarying(self.coefficients.k);
-			tensors.timeVarying.M_r = Coefficients.checkTimeVarying(self.coefficients.r);
-			tensors.timeVarying.M_p = Coefficients.checkTimeVarying(self.coefficients.p);
+			self.tensors.timeVarying.M_r = Coefficients.checkTimeVarying(self.coefficients.r);
 
 		end
 
 		function self = assembleTensors(self)
 
+			% call superclass method
+			self = assembleTensors@GalerkinParabolic2d_solver(self);
+
 			% if first timestep, create tensors
 			if self.isFirstTimeStep == 1
-				self.tensors.A   = self.assembleStiffnessMatrix;
 				self.tensors.M_r = self.assembleMassMatrix(self.coefficients.r);
-				self.tensors.M_p = self.assembleMassMatrix(self.coefficients.p);
 
 			% else, update tensors as needed
 			else
-
-				% update A
-				if self.tensors.timeVarying.A == 1
-					self.tensors.A = self.assembleStiffnessMatrix;
-				end
-
 				% update M_r
 				if self.tensors.timeVarying.M_r == 1
 					cof = self.coefficients.r;
 					self.tensors.M_r = self.assembleMassMatrix(cof);
 				end
-
-				% update M_p
-				self.tensors.M_p_prev = self.tensors.M_p;
-				if self.tensors.timeVarying.M_p == 1
-					cof = self.coefficients.p;
-					self.tensors.M_p = self.assembleMassMatrix(cof);
-				end
-
 			end
-
-			% update Robin boundary tensor
-			[self.tensors.E,temp] = self.computeRobinBCs;
 
 		end
 
 		function self = assembleVectors(self)
 
-			% assemble vectors
+			% call superclass method
+			self = assembleVectors@GalerkinParabolic2d_solver(self);
+
+			% assemble uStar vector
 			self.vectors.uStar = self.compute_uStar;
-			self.vectors.b_vol = self.computeVolumeForces;
-			self.vectors.U_D   = self.computeDirichletBCs;
-			self.vectors.b_neu = self.computeNeumannBCs;
-			[temp,self.vectors.b_rob] = self.computeRobinBCs;
 
 		end
 
-		function [S,b] = finalAssembly(self,vectors,U_prev)
+		function [S,b] = finalAssembly(self,U_prev)
 
 			% store variables
 			tensors = self.tensors;
@@ -96,7 +76,6 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 		end
 
 		function b = compute_uStar(self)
-
 
 			% check variables KLUDGE! UPDATE WHEN YOU MAKE THE VECTORS TIME VARYING OR NOT
 			uStar     = self.coefficients.uStar;
