@@ -36,13 +36,14 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 			self = initializeVectors@GalerkinParabolic2d_solver(self);
 
 			% create fields for vector storage
+			self.vectors.r = [];
+			self.vectors.uStar = [];
 			self.vectors.r_times_uStar = [];
 
 			% check which vectors are time-varying
 			self.vectors.timeVarying.r_times_uStar = ...
 				(Coefficients.isTimeVarying(self.coefficients.uStar) || ...
 				Coefficients.isTimeVarying(self.coefficients.r));
-			self.vectors.timeVarying.r_times_uStar
 
 		end
 
@@ -59,7 +60,6 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 			else
 				% update M_r
 				if self.tensors.timeVarying.M_r == 1
-					fprintf('   Updating Tensor\n')
 					cof = self.coefficients.r;
 					self.tensors.M_r = self.assembleMassMatrix(cof);
 				end
@@ -74,12 +74,13 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 
 			% if first timestep, assemble r_times_uStar vector
 			if self.isFirstTimeStep == 1
+				self.vectors.r = self.compute_r;
+				self.vectors.uStar = self.compute_uStar;
 				self.vectors.r_times_uStar = self.compute_r_times_uStar;
 
 			% else, update r_times_uStar vector as needed
 			else
 				if self.vectors.timeVarying.r_times_uStar == 1
-					fprintf('    computing uStar\n')
 					self.vectors.r_times_uStar = self.compute_r_times_uStar;
 				end
 
