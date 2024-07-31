@@ -1,4 +1,4 @@
-classdef GalerkinHeat2d_mms < GalerkinParabolic2d_mms
+classdef GalerkinRxndiff2d_mms < GalerkinParabolic2d_mms
 % DOCUMENTATION NEEDED! In the meantime, see the documentation for
 % poissonFD1d_finegrid, which is a very similar object. 
 %
@@ -12,12 +12,12 @@ classdef GalerkinHeat2d_mms < GalerkinParabolic2d_mms
 	end
 
 	methods
-		function self = GalerkinHeat2d_mms(dom,time,auxfun,mmsparams,NameValueArgs)
+		function self = GalerkinRxndiff2d_mms(dom,time,auxfun,mmsparams,NameValueArgs)
 
 			arguments
 				dom 		Domain2d
 				time		TimeStepping
-				auxfun  	AuxFunctions2d_heat
+				auxfun  	ManufacturedFunctions2d_rxndiff
 				mmsparams 	MMSParams
 				NameValueArgs.errType = "Linfty(L2)"
 			end
@@ -29,7 +29,7 @@ classdef GalerkinHeat2d_mms < GalerkinParabolic2d_mms
 
 		function prob = solve(self,dom,time,cofs,uInit,f)
 
-			prob = GalerkinHeat2d_solver(dom,time,cofs,uInit,f);
+			prob = GalerkinRxndiff2d_solver(dom,time,cofs,uInit,f);
 
 		end
 

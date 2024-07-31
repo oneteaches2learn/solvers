@@ -1,4 +1,4 @@
-% HEAT_DEMO
+% NONLINEARMMS_DEMO
 clear all; x = sym('x',[1 2],'real'); syms t;
 % USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % domain bounds
@@ -9,8 +9,8 @@ yLim = [0 1];
 T = 1;
 
 % number of inclusions
-N_x = 2;
-N_y = 2;
+N_x = 0;
+N_y = 0;
 alpha = 2; % <~~~ alpha = |delta Q| / |Y|
 
 % mms parameters
@@ -47,7 +47,7 @@ fprintf(' Contructing Domain:'), tic
 	incMod = InclusionModule1(alpha);
 	dom    = PuncturedDomain2d(xLim,yLim,N_x,N_y,incMod);
 	dom    = dom.setEdgeBCTypes(bound);
-executionTime = toc; 
+	executionTime = toc; 
 fprintf(' %f s\n',executionTime)
 
 % run mms test

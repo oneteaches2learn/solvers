@@ -45,10 +45,9 @@ mmsparams = MMSParams(base,demo=demo,timeOffset=timeOffset,timeFactor=timeFactor
 % build domain
 fprintf('Initialization\n')
 fprintf(' Contructing Domain:'), tic
-incMod = InclusionModule1(alpha);
-dom    = PuncturedDomain2d(xLim,yLim,N_x,N_y,incMod);
-%dom    = Domain2d(xLim,yLim);
-dom = dom.setEdgeBCTypes(bound);
+	incMod = InclusionModule1(alpha);
+	dom    = PuncturedDomain2d(xLim,yLim,N_x,N_y,incMod);
+	dom    = dom.setEdgeBCTypes(bound);
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
 
