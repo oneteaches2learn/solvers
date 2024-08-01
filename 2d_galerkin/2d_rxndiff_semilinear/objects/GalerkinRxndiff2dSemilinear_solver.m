@@ -1,4 +1,4 @@
-classdef GalerkinRxndiff2d_solver < GalerkinParabolic2d_solver
+classdef GalerkinRxndiff2dSemilinear_solver < GalerkinParabolic2dSemilinear_solver
 
 	properties
 		%domain
@@ -10,17 +10,17 @@ classdef GalerkinRxndiff2d_solver < GalerkinParabolic2d_solver
 	end
 
 	methods
-		function self = GalerkinRxndiff2d_solver(dom,time,cofs,uInit,f)
+		function self = GalerkinRxndiff2dSemilinear_solver(dom,time,cofs,uInit,f)
 			
 			% call superclass constructor
-			self@GalerkinParabolic2d_solver(dom,time,cofs,uInit,f);
+			self@GalerkinParabolic2dSemilinear_solver(dom,time,cofs,uInit,f);
 
 		end
 
 		function self = initializeTensors(self,t)
 			
 			% call superclass method
-			self = initializeTensors@GalerkinParabolic2d_solver(self);
+			self = initializeTensors@GalerkinParabolic2dSemilinear_solver(self);
 
 			% create fields for tensor storage
 			self.tensors.M_r = [];
@@ -33,16 +33,16 @@ classdef GalerkinRxndiff2d_solver < GalerkinParabolic2d_solver
 		function self = assembleTensors(self)
 
 			% call superclass method
-			self = assembleTensors@GalerkinParabolic2d_solver(self);
+			self = assembleTensors@GalerkinParabolic2dSemilinear_solver(self);
 
 			% if first timestep, create tensors
-			if self.isFirstTimeStep == 1
+			if self.isFirstTimeStep == 1 && self.isFirstIter == 1
 				self.tensors.M_r = self.assembleMassMatrix(self.coefficients.r);
 
 			% else, update tensors as needed
 			else
 				% update M_r
-				if self.tensors.timeVarying.M_r == 1
+				if self.tensors.timeVarying.M_r == 1 && self.isFirstIter == 1
 					cof = self.coefficients.r;
 					self.tensors.M_r = self.assembleMassMatrix(cof);
 				end
@@ -50,7 +50,7 @@ classdef GalerkinRxndiff2d_solver < GalerkinParabolic2d_solver
 
 		end
 
-		function [S,b] = finalAssembly(self,U_prev)
+		function [S,b] = finalAssembly(self)
 
 			% store variables
 			tensors = self.tensors;
@@ -61,7 +61,7 @@ classdef GalerkinRxndiff2d_solver < GalerkinParabolic2d_solver
 
 			% assemble RHS
 			b = self.time.dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob) - ...
-				 		 					S * vectors.U_D + tensors.M_p_prev * U_prev;
+				 		 	S * vectors.U_D + tensors.M_p_prevTime * vectors.U_prevTime;
 
 		end
 

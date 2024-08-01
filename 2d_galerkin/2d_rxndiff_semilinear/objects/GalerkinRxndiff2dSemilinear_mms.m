@@ -1,4 +1,4 @@
-classdef GalerkinRxndiff2d_mms < GalerkinParabolic2d_mms
+classdef GalerkinRxndiff2dSemilinear_mms < GalerkinParabolic2d_mms
 % DOCUMENTATION NEEDED! In the meantime, see the documentation for
 % poissonFD1d_finegrid, which is a very similar object. 
 %
@@ -12,7 +12,7 @@ classdef GalerkinRxndiff2d_mms < GalerkinParabolic2d_mms
 	end
 
 	methods
-		function self = GalerkinRxndiff2d_mms(dom,time,auxfun,mmsparams,NameValueArgs)
+		function self = GalerkinRxndiff2dSemilinear_mms(dom,time,auxfun,mmsparams,NameValueArgs)
 
 			arguments
 				dom 		Domain2d
@@ -29,7 +29,7 @@ classdef GalerkinRxndiff2d_mms < GalerkinParabolic2d_mms
 
 		function prob = solve(self,dom,time,cofs,uInit,f)
 
-			prob = GalerkinRxndiff2d_solver(dom,time,cofs,uInit,f);
+			prob = GalerkinRxndiff2dSemilinear_solver(dom,time,cofs,uInit,f);
 
 		end
 

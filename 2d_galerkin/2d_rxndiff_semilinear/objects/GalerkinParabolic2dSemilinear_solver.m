@@ -1,4 +1,4 @@
-classdef GalerkinParabolic2d_solver
+classdef GalerkinParabolic2dSemilinear_solver
 
 	properties
 		domain
@@ -12,17 +12,20 @@ classdef GalerkinParabolic2d_solver
 	properties (Hidden)
 		tensors
 		vectors
+		timestep
 		t = 0
-		timeWaste1 = 0
-		timeWaste2 = 0
+		iter 
+		tolerance = 1e-6
 	end
 
 	properties (Hidden,Dependent)
 		isFirstTimeStep
+		isFirstIter
+		stoppingCriterion
 	end
 
 	methods
-		function self = GalerkinParabolic2d_solver(dom,time,cofs,uInit,f)
+		function self = GalerkinParabolic2dSemilinear_solver(dom,time,cofs,uInit,f)
 			
 			% store inputs
 			self.domain = dom;
@@ -42,30 +45,42 @@ classdef GalerkinParabolic2d_solver
 			FreeNodes = self.domain.freeNodes;
 			self = self.initializeProblem;
 
-			for n = 1:self.time.M_t
+			% loop on timesteps
+			for timestep = 1:self.time.M_t
 
-				% current time
-				self.t = n * self.time.dt;
-				self.vectors.U_prevTime = self.solution(:,n);
+				self.timestep = timestep;
+				self = self.initializeTimestep;
 
-				% assemble problem
-				self  = self.assembleTensors;
-				self  = self.assembleVectors;
-				self  = self.assembleBCs;
-				[S,b] = self.finalAssembly;
+				% resolve potential nonlinearity
+				while self.stoppingCriterion == 0
 
-				% solve and store solution
-				v = sparse(self.domain.nNodes,1);
-				v(FreeNodes) = S(FreeNodes,FreeNodes) \ b(FreeNodes);
-				self.solution(:,n+1) = v + self.vectors.U_D;
+					% prepare iteration
+					self = self.initializeIteration;
+					
+					% assemble problem
+					self  = self.assembleTensors;
+					self  = self.assembleVectors;
+					self  = self.assembleBCs;
+					[S,b] = self.finalAssembly;
+
+					% solve and store solution
+					v = sparse(self.domain.nNodes,1);
+					v(FreeNodes) = S(FreeNodes,FreeNodes) \ b(FreeNodes);
+					self.vectors.U_currIter = v + self.vectors.U_D;
+
+				end
+
+				% store result
+				self.solution(:,self.timestep) = self.vectors.U_currIter;
 
 			end
 
-			%self.solution = U;
 			self = self.cleanup;
 
 		end
 
+
+		% INITIALIZATION FUNCTIONS -------------------------------------------%
 		function self = initializeProblem(self)
 
 			% Record first timestep
@@ -85,7 +100,7 @@ classdef GalerkinParabolic2d_solver
 			tensors.A   = [];
 			tensors.M_p = [];
 			tensors.E   = [];
-			tensors.M_p_prev = self.assembleMassMatrix(self.coefficients.p);
+			tensors.M_p_prevTime = self.assembleMassMatrix(self.coefficients.p);
 
 			% check which tensors are time-varying
 			tensors.timeVarying.A   = Coefficients.isTimeVarying(self.coefficients.k);
@@ -103,17 +118,52 @@ classdef GalerkinParabolic2d_solver
 			self.vectors.U_D   = [];
 			self.vectors.b_neu = []; 
 			self.vectors.b_rob = []; 
-			self.vectors.U_prevTime = []; 
+			self.vectors.U_prevTime = [];
+			self.vectors.U_prevIter = [];
+			self.vectors.U_currIter = [];
 
 			% check which vectors are time-varying
 			self.vectors.timeVarying.b_vol = Coefficients.isTimeVarying(self.f);
 
 		end
 
+		function self = initializeTimestep(self)
+
+			% store solution at previous timestep
+			self.vectors.U_prevTime = self.solution(:,self.timestep);
+
+			% update time stepping
+			self.t = self.timestep * self.time.dt;
+			self.timestep = self.timestep + 1;
+
+			% update vectors for next iteration
+			self.vectors.U_prevIter = self.vectors.U_prevTime;
+			self.vectors.U_currIter = [];
+
+			% reset iteration counter
+			self.iter = 0;
+
+		end
+
+		function self = initializeIteration(self)
+
+			% update iteration counter
+			self.iter = self.iter + 1;
+
+			% if past first iteration, shuffle vectors for next iteration
+			if self.iter ~= 1
+				self.vectors.U_prevIter = self.vectors.U_currIter;
+				self.vectors.U_currIter = [];
+			end
+
+		end
+
+
+		% ASSEMBLY FUNCTIONS -------------------------------------------------%
 		function self = assembleTensors(self)
 
 			% if first timestep, create tensors
-			if self.isFirstTimeStep == 1
+			if self.isFirstTimeStep == 1 && self.isFirstIter == 1
 				self.tensors.A   = self.assembleStiffnessMatrix;
 				self.tensors.M_p = self.assembleMassMatrix(self.coefficients.p);
 
@@ -121,19 +171,17 @@ classdef GalerkinParabolic2d_solver
 			else
 
 				% update A
-				if self.tensors.timeVarying.A == 1
+				if self.tensors.timeVarying.A == 1 && self.isFirstIter == 1
 					self.tensors.A = self.assembleStiffnessMatrix;
 				end
 
 				% update M_p
-				if self.tensors.timeVarying.M_p == 1
-					self.tensors.M_p_prev = self.tensors.M_p;
+				if self.tensors.timeVarying.M_p == 1 && self.isFirstIter == 1
+					self.tensors.M_p_prevTime = self.tensors.M_p;
 					cof = self.coefficients.p;
 					self.tensors.M_p = self.assembleMassMatrix(cof);
 				end
-
 			end
-
 
 		end
 
@@ -167,12 +215,6 @@ classdef GalerkinParabolic2d_solver
 
 			% NOTE: placeholder function. Actually handled by specific subclasses.
 			...
-
-		end
-
-		function val = get.isFirstTimeStep(self)
-
-			val = (self.t == self.time.dt);
 
 		end
 
@@ -391,6 +433,45 @@ classdef GalerkinParabolic2d_solver
 					end
 				end
 			end
+		end
+
+		% GETTERS ------------------------------------------------------------%
+		function val = get.isFirstTimeStep(self)
+
+			val = (self.t == self.time.dt);
+
+		end
+
+		function val = get.isFirstIter(self)
+
+			val = (self.iter == 1);
+
+		end
+
+		function val = get.stoppingCriterion(self)
+
+			% if entering first iteration, proceed
+			if self.iter == 0
+				
+				val = 0;
+
+			% else check L2 norm of difference between successive iterations
+			else
+
+				% compute L2 error
+				iterDiff = self.vectors.U_currIter - self.vectors.U_prevIter;
+				iterErr  = self.domain.L2norm_piecewiseLinear(iterDiff);
+
+				% if less then tolerance, break iteration
+				if iterErr < self.tolerance
+					val = 1;
+
+				% else proceed
+				else
+					val = 0;
+				end
+			end
+
 		end
 
 		function bcNodes = getBCnodes(self)

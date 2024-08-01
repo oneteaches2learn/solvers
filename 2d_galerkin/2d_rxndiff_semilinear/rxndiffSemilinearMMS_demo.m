@@ -1,5 +1,5 @@
-% RXNDIFFMMS_DEMO
-clear all; x = sym('x',[1 2],'real'); syms t;
+% RXNDIFF_SEMILINEAR_MMS_DEMO
+clear all; x = sym('x',[1 2],'real'); syms t; syms u;
 % USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % domain bounds
 xLim = [0 1];
@@ -9,8 +9,8 @@ yLim = [0 1];
 T = 1;
 
 % number of inclusions
-N_x = 2;
-N_y = 2;
+N_x = 0;
+N_y = N_x;
 alpha = 2; % <~~~ alpha = |delta Q| / |Y|
 
 % mms parameters
@@ -20,16 +20,16 @@ timeOffset = 1;
 timeFactor = 2;
 
 % specify BCs
-bTypes = {'R' 'R' 'R' 'R'};
-bTypes2 = 'R';
+bTypes = {'D' 'D' 'D' 'D'};
+bTypes2 = 'D';
 
 % specify coefficients
 p = 1 + x(1) * x(2) * t;
 k = 1 + x(1) * x(2) * t;
-r = 1 + x(1) * x(2) * t; 
+r = 1 + x(1) * x(2) * t + u; 
 
 % specify desired result
-uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2));
+uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2)) * t + t;
 
 
 % MMS TEST %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -37,9 +37,9 @@ fprintf('MMS Test Begun\n')
 
 % assemble inputs
 bound     = PuncturedBoundary2d(bTypes,{@()(0.0),@()(0.0),@()(0.0),@()(0.0)},bTypes2,{@()(0.0)});
-auxfun    = ManufacturedFunctions2d_rxndiff(p,k,r,uTrue);
+auxfun    = ManufacturedFunctions2dSemilinear_rxndiff(p,k,r,uTrue);
 time      = TimeStepping(T,1);
-mmsparams = MMSParams(base,demo=demo,timeOffset=timeOffset,timeFactor=timeFactor,pmax=4);
+mmsparams = MMSParams(base,demo=demo,timeOffset=timeOffset,timeFactor=timeFactor,pmax=5);
 
 % build domain
 fprintf('Initialization\n')
@@ -53,10 +53,10 @@ fprintf(' %f s\n',executionTime)
 
 % run mms test
 if demo == 0
-	mms = GalerkinRxndiff2d_mms(dom,time,auxfun,mmsparams,errType="Linfty(L2)")
+	mms = GalerkinRxndiff2dSemilinear_mms(dom,time,auxfun,mmsparams,errType="Linfty(L2)")
 
 % run demo test
 else
-	mms = GalerkinRxndiff2d_mms(dom,time,auxfun,mmsparams);
+	mms = GalerkinRxndiff2dSemilinear_mms(dom,time,auxfun,mmsparams);
 	prob = mms.problems{1};
 end

@@ -7,7 +7,7 @@ xLim = [0 1];
 yLim = [0 1];
 
 % number of inclusions
-N_x = 2;
+N_x = 0;
 N_y = N_x;
 
 % mesh parameters
