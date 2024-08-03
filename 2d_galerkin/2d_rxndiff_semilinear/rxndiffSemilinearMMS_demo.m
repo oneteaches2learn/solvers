@@ -24,9 +24,9 @@ bTypes = {'D' 'D' 'D' 'D'};
 bTypes2 = 'D';
 
 % specify coefficients
-p = 1 + x(1) * x(2) * t;
-k = 1 + x(1) * x(2) * t;
-r = 1 + x(1) * x(2) * t + u; 
+p = 1;
+k = 1;
+r = 1*u; 
 
 % specify desired result
 uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2)) * t + t;

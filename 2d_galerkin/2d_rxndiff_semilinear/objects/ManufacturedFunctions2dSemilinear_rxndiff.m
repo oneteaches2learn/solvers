@@ -19,7 +19,7 @@ classdef ManufacturedFunctions2dSemilinear_rxndiff < ManufacturedFunctions2d_rxn
 		% ManufacturedFunctions2d_pennes(p,k,r,uTrue) inputs are symfun objects
 			
 			% call superclass constructor
-			self@ManufacturedFunctions2d_rxndiff(p,k,r,uTrue)
+			self@ManufacturedFunctions2d_rxndiff(p,k,r,uTrue);
 
 			% manufacture RHS
 			self.f = self.manufactureRHS; 
@@ -31,7 +31,7 @@ classdef ManufacturedFunctions2dSemilinear_rxndiff < ManufacturedFunctions2d_rxn
 
 			% manufacture RHS
 			x = sym('x',[1 2]); syms t;
-			f = self.pu_t + self.divq + self.r * self.uTrue;
+			f = self.pu_t + self.divq + self.r;
 
 		end
 

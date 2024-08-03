@@ -11,7 +11,7 @@ classdef GalerkinHeat2d_solver < GalerkinParabolic2d_solver
 
 		end
 
-		function [S,b] = finalAssembly(self,U_prev)
+		function [S,b] = finalAssembly(self)
 
 			% store variables
 			tensors = self.tensors;
@@ -22,7 +22,7 @@ classdef GalerkinHeat2d_solver < GalerkinParabolic2d_solver
 
 			% assemble RHS
 			b = self.time.dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob) - ... 
-					S * vectors.U_D + tensors.M_p_prev * U_prev;
+					S * vectors.U_D + tensors.M_p_prev * vectors.U_prevTime;
 
 		end
 
