@@ -26,7 +26,7 @@ bTypes2 = 'D';
 % specify coefficients
 p = 1;
 k = 1;
-r = 1*u; 
+r = 1; 
 
 % specify desired result
 uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2)) * t + t;
@@ -39,7 +39,7 @@ fprintf('MMS Test Begun\n')
 bound     = PuncturedBoundary2d(bTypes,{@()(0.0),@()(0.0),@()(0.0),@()(0.0)},bTypes2,{@()(0.0)});
 auxfun    = ManufacturedFunctions2dSemilinear_rxndiff(p,k,r,uTrue);
 time      = TimeStepping(T,1);
-mmsparams = MMSParams(base,demo=demo,timeOffset=timeOffset,timeFactor=timeFactor,pmax=5);
+mmsparams = MMSParams(base,demo=demo,timeOffset=timeOffset,timeFactor=timeFactor,pmax=4);
 
 % build domain
 fprintf('Initialization\n')

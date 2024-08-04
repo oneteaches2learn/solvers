@@ -128,7 +128,7 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 
 			% assemble RHS
 			b = self.time.dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob + ...
-			 		 vectors.r_times_uStar) - S * vectors.U_D + tensors.M_p_prev * vectors.U_prevTime;
+			 		 vectors.r_times_uStar) - S * vectors.U_D + tensors.M_p_prevTime * vectors.U_prevTime;
 
 		end
 

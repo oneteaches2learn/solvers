@@ -12,7 +12,6 @@ classdef GalerkinParabolic2d_solver
 	properties (Hidden)
 		tensors
 		vectors
-		timestep
 		t = 0
 		timeWaste1 = 0
 		timeWaste2 = 0
@@ -43,11 +42,11 @@ classdef GalerkinParabolic2d_solver
 			FreeNodes = self.domain.freeNodes;
 			self = self.initializeProblem;
 
-			for timestep = 1:self.time.M_t
+			for n = 1:self.time.M_t
 
-				% initialize timestep
-				self.timestep = timestep;
-				self = self.initializeTimestep;
+				% current time
+				self.t = n * self.time.dt;
+				self.vectors.U_prevTime = self.solution(:,n);
 
 				% assemble problem
 				self  = self.assembleTensors;
@@ -58,7 +57,7 @@ classdef GalerkinParabolic2d_solver
 				% solve and store solution
 				v = sparse(self.domain.nNodes,1);
 				v(FreeNodes) = S(FreeNodes,FreeNodes) \ b(FreeNodes);
-				self.solution(:,self.timestep) = v + self.vectors.U_D;
+				self.solution(:,n+1) = v + self.vectors.U_D;
 
 			end
 
@@ -86,7 +85,7 @@ classdef GalerkinParabolic2d_solver
 			tensors.A   = [];
 			tensors.M_p = [];
 			tensors.E   = [];
-			tensors.M_p_prevTime = self.assembleMassMatrix(self.coefficients.p);
+			tensors.M_p_prev = self.assembleMassMatrix(self.coefficients.p);
 
 			% check which tensors are time-varying
 			tensors.timeVarying.A   = Coefficients.isTimeVarying(self.coefficients.k);
@@ -108,17 +107,6 @@ classdef GalerkinParabolic2d_solver
 
 			% check which vectors are time-varying
 			self.vectors.timeVarying.b_vol = Coefficients.isTimeVarying(self.f);
-
-		end
-
-		function self = initializeTimestep(self)
-
-			% store solution at previous timestep
-			self.vectors.U_prevTime = self.solution(:,self.timestep);
-
-			% update time stepping
-			self.t = self.timestep * self.time.dt;
-			self.timestep = self.timestep + 1;
 
 		end
 
