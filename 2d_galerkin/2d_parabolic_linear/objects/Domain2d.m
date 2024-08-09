@@ -242,6 +242,7 @@ classdef Domain2d < fegeometry
 		end			
 
 		function edges = getMeshEdges(self)
+		% get a list of all edges, ordered lexicographically
 
 			% generate graph from mesh
 			G = getMeshGraph(self);
@@ -250,6 +251,62 @@ classdef Domain2d < fegeometry
 			edges = table2array(G.Edges);
 
 		end
+
+		%{
+		% DEPRECATED! Nonvectorized version of script -------------------------%
+		function elemEdges = getElementEdges(self)
+		% creates a matrix of edges where each row represents an element and
+		% each entry in that row is the lexicographic number of an edge of that
+		% element
+
+			% get edge and element data
+			edges     = self.getMeshEdges;
+			elemNodes = self.Mesh.Elements';
+
+			% extend elemNodes for looping
+			elemNodes(:,4) = elemNodes(:,1);
+
+			% loop on elements
+			for i = 1:self.nElem
+
+				% construct matrix of element nodes, one edge per row
+				elemNodeMatrix = [elemNodes(i,1:3)', elemNodes(i,2:4)'];
+
+				% ensure nodes are in ascending order
+				elemNodeMatrix = sort(elemNodeMatrix,2);
+
+				% loc is the lexicographic index of the given edge
+				[lia,loc] = ismember(elemNodeMatrix,edges,"rows");
+
+				% store lexicographic indices as rows
+				elemEdges(i,:) = loc';
+
+			end
+
+		end 
+		%----------------------------------------------------------------------%
+		%}
+
+		function elemEdges = getElementEdges(self)
+		% creates a matrix of edges where each row represents an element and
+		% each entry in that row is the lexicographic number of an edge of that
+		% element
+
+			% get edge and element data
+			edges     = self.getMeshEdges;
+			elemNodes = sort(self.Mesh.Elements',2);
+			
+			% store individual edges by element
+			edge1 = [elemNodes(:,1),elemNodes(:,2)];
+			edge2 = [elemNodes(:,1),elemNodes(:,3)];
+			edge3 = [elemNodes(:,2),elemNodes(:,3)];
+
+			% store edge locations
+			[lia,elemEdges(:,1)] = ismember(edge1,edges,"rows");
+			[lia,elemEdges(:,2)] = ismember(edge2,edges,"rows");
+			[lia,elemEdges(:,3)] = ismember(edge3,edges,"rows");
+		
+		end 
 
 		function midptCoords = getMeshEdgeMidpoints(self,edges)
 

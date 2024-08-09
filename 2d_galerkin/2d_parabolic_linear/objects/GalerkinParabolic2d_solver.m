@@ -651,21 +651,24 @@ classdef GalerkinParabolic2d_solver
 			if NameValueArgs.quadOrder == 1
 			
 				% loop over timesteps
-				int = zeros(1,time_stop - time_start + 1);
-				for n = time_start:time_stop
+				%int = zeros(1,time_stop - time_start + 1);
+				parfor n = time_start:time_stop
 
 					% store numerical solution
 					U_n = self.solution(:,n);
 
 					% loop over elements
 					ind = n - time_start + 1;
+					int(n) = 0;
 					for j = 1:self.domain.nElem
 						elemInd = self.domain.Mesh.Elements(:,j);
-						int(ind) = int(ind) + (sum(U_n(elemInd)) / 3) * ...
+						int(n) = int(n) + (sum(U_n(elemInd)) / 3) * ...
 							self.domain.elemAreas(j);
 					end
+					%temp(ind) = tot;
 
 				end
+				int = 0;
 
 			% else run slower algorithm for higher order quadrature
 			else
