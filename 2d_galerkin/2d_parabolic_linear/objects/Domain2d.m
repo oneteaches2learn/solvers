@@ -301,6 +301,22 @@ classdef Domain2d < fegeometry
 
 		end
 
+		function centroids = getCentroids(self)
+
+				% get centroid coordinates
+				elemNodes = self.Mesh.Elements';
+				elemCoord = self.Mesh.Nodes';
+
+				% isolate coordanates of each node for each element
+				nodes1 = elemCoord(elemNodes(:,1),:);
+				nodes2 = elemCoord(elemNodes(:,2),:);
+				nodes3 = elemCoord(elemNodes(:,3),:);
+
+				% compute average of element nodes for each element
+				centroids = (nodes1 + nodes2 + nodes3) / 3;
+				
+		end
+
 		% PLOTTING FUNCTIONS
 		function h = plot(self,NameValueArgs)
 
@@ -361,6 +377,20 @@ classdef Domain2d < fegeometry
 		
 		% ANALYSIS FUNCTIONS
 		function int = nodalQuadrature(self,f)
+		% Computes nodal quadrature on elements of the mesh.
+		% Input f should be either a function_handle, a symbolic function, or a
+		% vector of function evaluations on the nodes of the mesh. If:
+		%
+		%	(1) f is a function_handle, then f will be evaluated on the
+		%		nodes of the mesh.
+		%	(2) f is a symbolic function, then f will be converted to a
+		%		function_handle and evaluated on the nodes of the mesh.
+		%	(3) f is a vector, then f should be indexed so that f(i) stores the
+		%		function evaluation on the i-th node of the mesh, where the
+		%		node ordering is determined by self.Mesh.Nodes
+		%
+		% Note: Nodal quadrature has order two convergence as the mesh is
+		% refined. It is accurate to machine precision for order 1 polynomials. 
 			
 			% if f is a function
 			if isa(f,'function_handle') || isa(f,'symfun')
@@ -392,46 +422,43 @@ classdef Domain2d < fegeometry
 		end
 
 		function int = centroidQuadrature(self,f)
+		% Computes centroid quadrature on elements of the mesh.
+		% Input f should be either a function_handle, a symbolic function, or a
+		% vector of function evaluations on the centroids of the mesh. If:
+		%
+		%	(1) f is a function_handle, then f will be evaluated on the
+		%		centroids of the mesh.
+		%	(2) f is a symbolic function, then f will be converted to a
+		%		function_handle and evaluated on the centroids of the mesh.
+		%	(3) f is a vector, then f should be indexed so that f(i) stores the
+		%		function evaluation on the centroid of the i-th element of the
+		%		mesh, where the ordering of the elements is the same as in
+		%		self.Mesh.Elements
+		%
+		% Note: Centroid quadrature has order two convergence as the mesh is
+		% refined. It is accurate to machine precision for order 1 polynomials. 
 			
-			% compute element centroids
-			centroids = zeros(self.nElem,2);
-			elemNodes = self.Mesh.Elements';
-			elemCoord = self.Mesh.Nodes';
-			for i = 1:self.nElem
-				centroids(i,:) = sum(elemCoord(elemNodes(i,:),:)) / 3;
-			end
+			if isa(f,'function_handle') || isa(f,'symfun')
 
-			% if f is function_handle
-			if isa(f,'function_handle')
-
+				% convert symfun to function_handle
+				if isa(f,'symfun'), f = matlabFunction(f); end
+				
+				% compute F on centroids
+				centroids = self.getCentroids;
 				F = f(centroids(:,1),centroids(:,2));
 
-			% if f is symbolic function
-			elseif isa(f,'sym')
-
-				f = matlabFunction(f);
-				F = f(centroids(:,1),centroids(:,2));
-
-			% if f is vector of nodal values
+			% else if f is a vector of centroid values
 			elseif isvector(f)
 
-				if isrow(f), F = f'; else, F = f; end
+				F = f; 
 
-			elseif isdouble(f)
-
-				F = f * ones(self.nElem,1);
-
-			end
-
-			% loop over elements
-			int = 0;
-			elemInd = self.Mesh.Elements';
-			for i = 1:self.nElem
-
-				% nodal quadrature on element
-				int = int + self.elemAreas(i) * F(i);
+				% convert to column, if necessary
+				if isrow(F), F = F'; end 
 
 			end
+			% compute centroid quadrature
+			int = sum(self.elemAreas' .* F);
+
 		end
 
 		function int = threePointQuadrature(self,f)
@@ -445,14 +472,18 @@ classdef Domain2d < fegeometry
 		%	(2) f is a symbolic function, then f will be converted to a
 		%		function_handle and evaluated on the midpoints of the edges of
 		%		the mesh.
-		%	(3) f is a vector, then f should be index so that f(i) stores the
-		%		function evaluation on the i-th edge of the mesh, when the
+		%	(3) f is a vector, then f should be indexed so that f(i) stores the
+		%		function evaluation on the i-th edge of the mesh, where the
 		%		edges are ordered lexicographically. 
 		%
 		% Note: if f is a vector of function evaluations on the nodes of the
-		% mesh (rather than on the midpoints), use threePointQuadrature_nodal.
+		% mesh (rather than on the midpoints), use nodalQuadrature.
+		%
+		% Note: Gaussian three point quadrature has order two convergence as
+		% the mesh is refined. It is accurate to machine precision for
+		% polynomials up to order 2. 
 
-
+			% if f is a function
 			if isa(f,'function_handle') || isa(f,'symfun')
 
 				% convert symfun to function_handle
@@ -467,6 +498,7 @@ classdef Domain2d < fegeometry
 				% compute F on edge midpoints 
 				F = f(midpts(:,1),midpts(:,2));
 
+			% else if f is a vector of midpoint values
 			elseif isvector(f)
 
 				F = f; 
@@ -483,6 +515,13 @@ classdef Domain2d < fegeometry
 
 		end
 
+
+		%{
+		% NOTE: I believe this function is mathematically equivalent to
+		% nodalQuadrature, except it takes longer to run. I haven't done
+		% testing to confirm this. But in the meantime, do not use this
+		% function; rather, prefer nodalQuadrature.
+		%----------------------------------------------------------------------%
 
 		function int = threePointQuadrature_nodes(self,F_nodal)
 		% Computes Gaussian three point quadrature on elements of the mesh.
@@ -502,6 +541,8 @@ classdef Domain2d < fegeometry
 			int = self.threePointQuadrature(F_midpts);
 			
 		end
+		%----------------------------------------------------------------------%
+		%}
 
 
 		function IP = L2_IP_piecewiseLinear(self,arg1,arg2)
