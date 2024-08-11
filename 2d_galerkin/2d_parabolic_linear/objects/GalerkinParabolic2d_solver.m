@@ -750,6 +750,7 @@ classdef GalerkinParabolic2d_solver
 
 		end
 
+		% DEPRECATED! Nonvectorized version of script -------------------------%
 		function [t,timestep] = getConvergenceTime(self,tol)
 
 			% default tolerance = 10^-6
@@ -781,7 +782,6 @@ classdef GalerkinParabolic2d_solver
 			timestep = NaN;
 			fprintf('WARNING: Tolerance not reached during time-series\n');
 		end
-
 
 	end
 end

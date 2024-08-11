@@ -9,6 +9,7 @@ classdef Domain2d < fegeometry
 		nNodes
 		nElem
 		elemAreas
+		elemEdges
 		domainArea
 		boundaryNodes
 		freeNodes
@@ -31,6 +32,7 @@ classdef Domain2d < fegeometry
 
 			% set and store edges
 			self.edges = self.setEdgeGeometry;
+
 
 		end
 
@@ -115,6 +117,9 @@ classdef Domain2d < fegeometry
 
 			% store domain and element areas
 			[self.domainArea,self.elemAreas] = area(self.Mesh);
+
+			% store element edge numbers
+			self.elemEdges = self.getElementEdges;
 
 			% distribute boundary nodes to edges
 			for i = 1:self.NumEdges
@@ -252,41 +257,6 @@ classdef Domain2d < fegeometry
 
 		end
 
-		%{
-		% DEPRECATED! Nonvectorized version of script -------------------------%
-		function elemEdges = getElementEdges(self)
-		% creates a matrix of edges where each row represents an element and
-		% each entry in that row is the lexicographic number of an edge of that
-		% element
-
-			% get edge and element data
-			edges     = self.getMeshEdges;
-			elemNodes = self.Mesh.Elements';
-
-			% extend elemNodes for looping
-			elemNodes(:,4) = elemNodes(:,1);
-
-			% loop on elements
-			for i = 1:self.nElem
-
-				% construct matrix of element nodes, one edge per row
-				elemNodeMatrix = [elemNodes(i,1:3)', elemNodes(i,2:4)'];
-
-				% ensure nodes are in ascending order
-				elemNodeMatrix = sort(elemNodeMatrix,2);
-
-				% loc is the lexicographic index of the given edge
-				[lia,loc] = ismember(elemNodeMatrix,edges,"rows");
-
-				% store lexicographic indices as rows
-				elemEdges(i,:) = loc';
-
-			end
-
-		end 
-		%----------------------------------------------------------------------%
-		%}
-
 		function elemEdges = getElementEdges(self)
 		% creates a matrix of edges where each row represents an element and
 		% each entry in that row is the lexicographic number of an edge of that
@@ -305,6 +275,17 @@ classdef Domain2d < fegeometry
 			[lia,elemEdges(:,1)] = ismember(edge1,edges,"rows");
 			[lia,elemEdges(:,2)] = ismember(edge2,edges,"rows");
 			[lia,elemEdges(:,3)] = ismember(edge3,edges,"rows");
+
+			% store as 'large enough' integer type
+			if size(edges,1) > intmax("uint32")
+				elemEdges = uint64(elemEdges);
+			elseif size(edges,1) > intmax("uint16")
+				elemEdges = uint32(elemEdges);
+			elseif size(edges,1) > intmax("uint8")
+				elemEdges = uint16(elemEdges);
+			else
+				elemEdges = uint8(elemEdges);
+			end
 		
 		end 
 
@@ -381,37 +362,33 @@ classdef Domain2d < fegeometry
 		% ANALYSIS FUNCTIONS
 		function int = nodalQuadrature(self,f)
 			
-			% if f is function_handle
-			if isa(f,'function_handle')
+			% if f is a function
+			if isa(f,'function_handle') || isa(f,'symfun')
 
+				% convert symfun to function_handle
+				if isa(f,'symfun'), f = matlabFunction(f); end
+
+				% compute F on edge midpoints 
 				F = f(self.Mesh.Nodes(1,:)',self.Mesh.Nodes(2,:)');
 
-			% if f is symbolic function
-			elseif isa(f,'sym')
-
-				f = matlabFunction(f);
-				F = f(self.Mesh.Nodes(1,:)',self.Mesh.Nodes(2,:)');
-
-			% if f is vector of nodal values
+			% else if f is a vector of nodal values
 			elseif isvector(f)
 
-				if isrow(f), F = f'; else, F = f; end
+				F = f; 
 
-			elseif isdouble(f)
-
-				F = f * ones(self.nNodes,1);
+				% convert to column, if necessary
+				if isrow(F), F = F'; end 
 
 			end
 
-			% loop over elements
-			int = 0;
+			% compute average nodal values on each element
 			elemNodes = self.Mesh.Elements';
-			for i = 1:self.nElem
+			elemAvg = sum([F(elemNodes(:,1)), ...
+					F(elemNodes(:,2)),F(elemNodes(:,3))],2) / 3;
 
-				% nodal quadrature on element
-				int = int + self.elemAreas(i) * sum(F(elemNodes(i,:))) / 3;
+			% dot product with element areas
+			int = sum(self.elemAreas' .* elemAvg);
 
-			end
 		end
 
 		function int = centroidQuadrature(self,f)
@@ -458,13 +435,31 @@ classdef Domain2d < fegeometry
 		end
 
 		function int = threePointQuadrature(self,f)
+		% Computes Gaussian three point quadrature on elements of the mesh.
+		% Input f should be either a function_handle, a symbolic function, or a
+		% vector of function evaluations on the midpoints of the edges of the
+		% mesh. If:
+		%
+		%	(1) f is a function_handle, then f will be evaluated on the
+		%		midpoints of the edges of the mesh.
+		%	(2) f is a symbolic function, then f will be converted to a
+		%		function_handle and evaluated on the midpoints of the edges of
+		%		the mesh.
+		%	(3) f is a vector, then f should be index so that f(i) stores the
+		%		function evaluation on the i-th edge of the mesh, when the
+		%		edges are ordered lexicographically. 
+		%
+		% Note: if f is a vector of function evaluations on the nodes of the
+		% mesh (rather than on the midpoints), use threePointQuadrature_nodal.
 
-			edges = self.getMeshEdges;
 
 			if isa(f,'function_handle') || isa(f,'symfun')
 
 				% convert symfun to function_handle
 				if isa(f,'symfun'), f = matlabFunction(f); end
+
+				% get edge midpoints
+				edges = self.getMeshEdges;
 
 				% get edge midpoints
 				midpts = self.getMeshEdgeMidpoints(edges);
@@ -481,29 +476,33 @@ classdef Domain2d < fegeometry
 
 			end
 
-			% store F as sparse, symmetric, weighted adjacency matrix
-			F = sparse([edges(:,1);edges(:,2)], ...
-					[edges(:,2);edges(:,1)], ...
-					[F(:);F(:)]);
-
-			% loop on elements
-			elemNodes = self.Mesh.Elements';
-			elemNodes(:,4) = elemNodes(:,1);
-			int = 0;
-			for i = 1:self.nElem
-
-				% loop on edges
-				tot = 0;
-				for j = 1:3
-					tot = tot + F(elemNodes(i,j),elemNodes(i,j+1));
-				end
-				
-				% compute three pt quadrature on element
-				int = int + self.elemAreas(i) * tot/3;
-
-			end
+			% compute quadrature
+			elemAvg = sum([F(self.elemEdges(:,1)), ...
+					F(self.elemEdges(:,2)),F(self.elemEdges(:,3))],2) / 3;
+			int = sum(self.elemAreas' .* elemAvg);
 
 		end
+
+
+		function int = threePointQuadrature_nodes(self,F_nodal)
+		% Computes Gaussian three point quadrature on elements of the mesh.
+		% Input F_nodal should be a vector of values computed on the nodes of
+		% the mesh. It is assumed that F_nodal represents a solution to a
+		% finite element problem using piecewise linear elements. Therefore,
+		% the solution values on the midpoints of the triangles can be
+		% calculated and used for Gaussian three point quadrature. 
+
+			% get edge list
+			edges = self.getMeshEdges;
+
+			% compute F on midpoints
+			F_midpts = (F_nodal(edges(:,1)) + F_nodal(edges(:,2))) / 2;
+
+			% compute quadrature
+			int = self.threePointQuadrature(F_midpts);
+			
+		end
+
 
 		function IP = L2_IP_piecewiseLinear(self,arg1,arg2)
 		% arg1, arg2 should be a vectors of values on the nodes of the mesh,
