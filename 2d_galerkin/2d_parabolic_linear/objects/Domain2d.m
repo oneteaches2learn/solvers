@@ -246,6 +246,48 @@ classdef Domain2d < fegeometry
 
 		end			
 
+		function G = getMeshGraph_E(self)
+
+			% get mesh edges
+			edges = self.getMeshEdges;
+
+			% generate graph
+			G = graph(edges(:,1),edges(:,2));
+
+		end			
+
+
+		function edges = getMeshEdges(self)
+		% get a list of all edges, ordered lexicographically
+
+
+			% get list of all element edges
+			elemNodesOrig = self.Mesh.Elements;
+			elemNodesPerm = elemNodesOrig([2 3 1],:);
+			r = reshape(elemNodesOrig,[],1);
+			s = reshape(elemNodesPerm,[],1);
+			edges = [r,s];
+
+			% edge nodes should be listed in ascending order
+			edges = sort(edges,2);
+
+			% remove duplicate edges (also sorts lexicographically)
+			edges = unique(edges,'rows');
+
+			% store as 'large enough' integer type
+			if self.nNodes > intmax("uint32")
+				edges = uint64(edges);
+			elseif self.nNodes > intmax("uint16")
+				edges = uint32(edges);
+			elseif self.nNodes > intmax("uint8")
+				edges = uint16(edges);
+			else
+				edges = uint8(edges);
+			end
+	
+		end
+
+		%{
 		function edges = getMeshEdges(self)
 		% get a list of all edges, ordered lexicographically
 
@@ -255,7 +297,19 @@ classdef Domain2d < fegeometry
 			% store edges as an array
 			edges = table2array(G.Edges);
 
+			% store as 'large enough' integer type
+			if self.nNodes > intmax("uint32")
+				edges = uint64(edges);
+			elseif self.nNodes > intmax("uint16")
+				edges = uint32(edges);
+			elseif self.nNodes > intmax("uint8")
+				edges = uint16(edges);
+			else
+				edges = uint8(edges);
+			end
+	
 		end
+		%}
 
 		function elemEdges = getElementEdges(self)
 		% creates a matrix of edges where each row represents an element and
@@ -296,7 +350,7 @@ classdef Domain2d < fegeometry
 
 			% compute midpoints
 			startCoords = elemCoord(edges(:,1),:);
-			endCoords = elemCoord(edges(:,2),:);
+			endCoords   = elemCoord(edges(:,2),:);
 			midptCoords = (startCoords + endCoords) / 2;
 
 		end
