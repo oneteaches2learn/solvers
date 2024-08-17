@@ -10,10 +10,10 @@ classdef InclusionModule1 < InclusionModule
 %	unit cell Y. This unit cell is then scaled and copied to produce a set of
 %	inclusions called Q_eps, a Robin boundary condition is placed on the
 %	boundary of Q_eps, and the solution of a sequence of such problems
-%	converges to the a solution of the bioheat transfer equation, where the
+%	converges to a solution of the bioheat transfer equation, where the
 %	coefficient scaling the energy exchange term is 
 %
-%						alpha = |partial Q| / |Y|
+%						incRatio = |partial Q| / |Y|
 %
 %	the purpose of the InclusionModule objects is to dictate the size of the
 %	inclusions comprising Q_eps. Various methods will be tested for generating
@@ -32,7 +32,7 @@ classdef InclusionModule1 < InclusionModule
 %	inclusions, and the parameters stored in the InclusionModule instance. The
 %	output will be the geometry description matrix. 
 %
-%	(3) The InclusionModule1 object sets alpha = |partial Q| / |Y| per the
+%	(3) The InclusionModule1 object sets incRatio = |partial Q| / |Y| per the
 %	following procedure:
 %
 %		(*) Assume that Omega is a rectangular domain with dimensions w x h.
@@ -41,21 +41,21 @@ classdef InclusionModule1 < InclusionModule
 %		(*) Assume Y has dimensions (w / Nx) x (h / Ny). 
 %		(*) Assume Q is rectangular and the height-width ratio of Q matches
 %		that of Y.
-%		(*) Set dimensions of Q so that |partial Q| / |Y| = alpha. Don't worry
-%		about keeping alpha constant as you scale. 
+%		(*) Set dimensions of Q so that |partial Q| / |Y| = incRatio. Don't
+%		worry about keeping incRatio constant as you scale. 
 %
 %	(4) JULY 3: For now, we assume that Omega is square (and therefore so also
 %	are Y and Q). We assume that Omega = (0,1) x (0,1).
 %-----------------------------------------------------------------------------%
 
 	properties
-		alpha
+		incRatio	
 	end
 
 	methods
-		function self = InclusionModule1(alpha)
+		function self = InclusionModule1(incRatio)
 
-			self.alpha = alpha;
+			self.incRatio = incRatio;
 		
 		end
 
@@ -71,8 +71,8 @@ classdef InclusionModule1 < InclusionModule
 			if (N_x ~= 0) && (N_y ~= 0)
 
 				% get coordinates of puncture in unit cell
-				q1 = (1/2 - 1/8 * self.alpha);
-				q2 = (1/2 + 1/8 * self.alpha);
+				q1 = (1/2 - 1/8 * self.incRatio);
+				q2 = (1/2 + 1/8 * self.incRatio);
 
 				% scale coordinates
 				q1 = q1 / N_x;

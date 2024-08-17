@@ -206,7 +206,7 @@ classdef PuncturedDomain2d < Domain2d & fegeometry
 
 		end
 
-		function edges = setEdgeGeometry(self)
+		function edges = setEdgeGeometry_C(self)
 
 			% store variables
 			gd = self.geometryMatrix;
@@ -253,6 +253,57 @@ classdef PuncturedDomain2d < Domain2d & fegeometry
 
 			end
 
+		end
+
+		function edges = setEdgeGeometry(self)
+		% NOTE: On 8/13/24, I vectorized the procedure by which edge_ids are
+		% calculated. This caused a greater than 10x speedup in the wall-clock
+		% time for this function. I have retained the loop that sets the edges
+		% because that loop is significantly less time consuming.
+		% However, even more speedup might be possible if that loop is
+		% also vectorized. 
+
+			% store variables
+			gd = self.geometryMatrix;
+			coord = self.geometryMatrix(3:10,:);
+
+			% find midpoints
+			permuteRows = [[2 3 4 1], [2 3 4 1] + 4];
+			midpts   = (coord + coord(permuteRows,:)) / 2;
+			midpts_x = reshape(midpts([1:4],:),[],1);
+			midpts_y = reshape(midpts([1:4]+4,:),[],1);
+
+			% use midpoints to get edge ids
+			edge_ids = self.nearestEdge([midpts_x,midpts_y]);
+			edge_ids = reshape(edge_ids,4,[]);
+
+			% loop over columns of geometry description matrix
+			edges = [];
+			for j = 1:size(gd,2);
+
+				edge_id = edge_ids(:,j)';
+
+				% get normal vectors
+				% if j == 1, normal vectors are for outer boundary
+				n = [0 -1; 1 0; 0 1; -1 0];
+				if j == 1
+					...
+
+				% else, normal vectors are for inclusion, so reverse their direction
+				else
+					n = -n;
+				end
+
+				% set edges
+				vert = [gd([1:4]+2,j),gd([1:4]+6,j)];
+				vert(5,:) = vert(1,:);
+				for i = 1:4
+					edge_i = BoundaryEdge2d(vert(i,:),vert(i+1,:),n(i,:));
+					edge_i.ID = edge_id(i);
+					edges = [edges edge_i];
+				end
+
+			end
 		end
 
 		function self = setEdgeBCTypes(self,boundary)

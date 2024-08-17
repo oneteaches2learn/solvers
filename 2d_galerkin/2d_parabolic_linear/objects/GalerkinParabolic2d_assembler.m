@@ -101,10 +101,14 @@ classdef GalerkinParabolic2d_assembler
 
 		end
 
-		function time = assembleTimeStepping(T,dt)
+		function time = assembleTimeStepping(T,dt,eq)
 
 			% create time-stepping object
-			time = TimeStepping(T,dt);
+			if nargin == 2
+				time = TimeStepping(T,dt);
+			elseif nargin == 3
+				time = TimeStepping(T,dt,eq);
+			end
 
 			% set time-stepping mesh
 			time = time.setMesh;

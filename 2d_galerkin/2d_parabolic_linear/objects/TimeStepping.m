@@ -5,21 +5,27 @@ classdef TimeStepping
 		M_t  % <~~ number of time steps
 		N_t  % <~~ total number of time points
 		dt
+		equilibrium
 	end
 
 	methods
-		function self = TimeStepping(T,dt)
+		function self = TimeStepping(T,dt,eq)
 			arguments
 				T 		double
 				dt 		double
+				eq
 			end
 
-			self.T     = T;
+			self.T = T;
 
-			if nargin == 2
-				self.dt    = dt;
-				self.M_t = int32(T / dt);
-				self.N_t = self.M_t + 1;
+			self.dt    = dt;
+			self.M_t = int32(T / dt);
+			self.N_t = self.M_t + 1;
+
+			if nargin == 3
+				self.equilibrium = eq;
+			else
+				self.equilibrium = [];
 			end
 
 		end

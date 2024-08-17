@@ -14,8 +14,6 @@ classdef GalerkinParabolic2d_solver
 		vectors
 		timestep
 		t = 0
-		timeWaste1 = 0
-		timeWaste2 = 0
 	end
 
 	properties (Hidden,Dependent)
@@ -60,7 +58,11 @@ classdef GalerkinParabolic2d_solver
 				v(FreeNodes) = S(FreeNodes,FreeNodes) \ b(FreeNodes);
 				self.solution(:,self.timestep) = v + self.vectors.U_D;
 
+				% break at equilibrium
+				if self.equilibrium == 1, break; end
+
 			end
+
 
 			%self.solution = U;
 			self = self.cleanup;
@@ -437,10 +439,46 @@ classdef GalerkinParabolic2d_solver
 			end
 		end
 
+		function result = equilibrium(self)
+
+			% default value is zero
+			result = 0;
+
+			% check if solver should break
+			if strcmp(self.time.equilibrium.atEq,"break") == 1
+				
+				% get error between subsequent timesteps
+				arg1 = self.solution(:,self.timestep);
+				arg2 = self.solution(:,self.timestep-1);
+				errVec = arg1 - arg2;
+				err = self.domain.L2norm_threePointQuadrature_nodal(errVec);
+
+				% if error < tolerance, break
+				if err < self.time.equilibrium.tolerance
+					result = 1;
+				end
+
+				% issue `no equilibrium' warning
+				if self.timestep == self.time.N_t
+					warn = " WARNING, Trial terminated without reaching equilibrium, ";
+					fprintf(warn);
+				end
+				
+			end
+
+		end
+
 		function self = cleanup(self)
 
 			self.tensors = [];
 			self.vectors = [];
+
+			% update stored parameters
+			self.time.N_t = self.timestep;
+			self.time.M_t = self.time.N_t - 1;
+			self.time.T   = self.time.M_t * self.time.dt;
+			self.solution = self.solution(:,1:self.time.N_t);
+			self.time.equilibrium.t_eq = self.time.M_t * self.time.dt;
 
 		end
 
@@ -472,7 +510,7 @@ classdef GalerkinParabolic2d_solver
 			title('Solution of the Problem')
 		end
 
-		function plotPatch(self,timestep)
+		function h = plotPatch(self,timestep)
 
 			% plot final time point unless otherwise specified
 			if nargin < 2, timestep = self.time.N_t; end
@@ -493,6 +531,8 @@ classdef GalerkinParabolic2d_solver
 				  'FaceColor','interp');
 			clim([u_min u_max])
 			colorbar
+
+			h = gcf;
 
 		end
 
@@ -552,7 +592,7 @@ classdef GalerkinParabolic2d_solver
 
 			% animate remaining steps
 			for i = 1:N_t
-				self.plotPatch(i)
+				self.plotPatch(i);
 				pause(1/N_t)
 			end
 
@@ -635,6 +675,36 @@ classdef GalerkinParabolic2d_solver
 				NameValueArgs.quadOrder double = 1
 			end
 
+			% if no timestep passed, loop over all time steps
+			if NameValueArgs.timestep == 0
+				time_start = 1;
+				time_stop = self.time.N_t;
+
+			% else compute at a specific timestep
+			else
+				time_start = NameValueArgs.timestep;
+				time_stop = NameValueArgs.timestep;
+			end
+
+			% call quadrature
+			for i = time_start:time_stop
+
+				int(i) = self.domain.nodalQuadrature(self.solution(:,i));
+			
+			end
+	
+		end
+
+		%{
+		% DEPRECATED! ---------------------------------------------------------%
+		function int = getsolutionintegral(self,NameValueArgs)
+
+			arguments
+				self
+				NameValueArgs.timestep double = 0
+				NameValueArgs.quadOrder double = 1
+			end
+
 			tic
 			% if no timestep passed, loop over all time steps
 			if NameValueArgs.timestep == 0
@@ -698,9 +768,13 @@ classdef GalerkinParabolic2d_solver
 					end
 				end
 			end
-
+	
 		end
+		%----------------------------------------------------------------------%
+		%}
 
+		%{
+		% DEPRECATED! Use L2 inner products in Domain2d instead----------------%
 		function IP = L2_IP(self,arg1,arg2,NameValueArgs)
 
 			arguments
@@ -749,8 +823,9 @@ classdef GalerkinParabolic2d_solver
 			end
 
 		end
+		%---------------------------------------------------------------------%
+		%}
 
-		% DEPRECATED! Nonvectorized version of script -------------------------%
 		function [t,timestep] = getConvergenceTime(self,tol)
 
 			% default tolerance = 10^-6
