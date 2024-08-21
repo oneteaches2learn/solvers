@@ -161,6 +161,86 @@ classdef GalerkinParabolic2d_mms
 
 		end
 
+		function dom = setEdgeNormalVectors_outerBoundary(self,dom)
+
+			% store variables
+			dl = dom.dl;
+
+			% get normal vectors
+			n_lower = [0; -1];
+			n_right = [1; 0];
+			n_upper = [0; 1];
+			n_left  = [-1; 0];
+
+			n_vectors = [n_lower, n_right, n_upper, n_left];
+
+			% loop over columns of decomposed geometry description matrix
+			for j = 1:4;
+
+				% for now, it is assumed the outer boundary is rectangular
+				if dl(1,j) == 2
+
+					n = n_vectors(:,mod(j-1,4)+1);
+
+				end
+				
+				% store normal vector
+				dom.edges(j).outwardNormal = n;
+
+			end
+
+		end
+
+		function dom = setEdgeNormalVectors_inclusions(self,dom)
+
+			% store variables
+			dl = dom.dl;
+			scale_eps = 1 / dom.epsilon;
+
+			% setup symbolic functions for circle edges
+			x = sym('x',[1 2],'real'); syms t;
+
+			% if unit vectors to circle are needed, store in advance
+			if sum(find(dl(1,:) == 1)) > 0
+				n_lower = dom.inclusion.Q.unitNormal_lower;
+				n_upper = dom.inclusion.Q.unitNormal_upper;
+			end
+
+			% loop over columns of decomposed geometry description matrix
+			for j = 5:size(dl,2);
+
+				% if edge corresponds to circle
+				if dl(1,j) == 1 
+
+					% set x-translation
+					x_translate = dl(8,j);
+					x_transformed = scale_eps * (x(1) - x_translate);
+
+					% if lower edge of circle
+					if mod(j,4) == 1 || mod(j,4) == 2
+
+						n = symfun(n_lower(x_transformed,x(2)),[x t]);
+
+					% else upper edge of circle
+					else
+
+						n = symfun(n_upper(x_transformed,x(2)),[x t]);
+
+					end
+
+				% if edge corresonds to a line segment	
+				elseif dl(1,j) == 2
+
+					n = self.inclusion.Q.unitNormal(:,mod(j-1,4)+1);
+					
+				end
+				
+				% store normal vector
+				dom.edges(j).outwardNormal = n;
+
+			end
+		end
+
 		function dom = manufactureBoundaryConditions(self,dom,auxfun);
 
 			% unpack coefficients
@@ -168,6 +248,10 @@ classdef GalerkinParabolic2d_mms
 			uTrue = self.auxFunctions.uTrue;
 			q = self.auxFunctions.q;
 			nEdges = dom.NumEdges;
+
+			% set edge normal vectors
+			dom = self.setEdgeNormalVectors_outerBoundary(dom);
+			dom = self.setEdgeNormalVectors_inclusions(dom);
 
 			% Manufacture Dirichlet BC
 			u_d = uTrue;

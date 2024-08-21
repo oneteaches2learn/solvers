@@ -223,22 +223,19 @@ classdef Domain2d_punctured < Domain2d & fegeometry
 					% if lower edge of circle
 					if mod(j,4) == 1 || mod(j,4) == 2
 
-						n = symfun(n_lower(x_transformed,x(2)),[x t]);
-						edge_j = BoundaryEdge2d(vert(1,:),vert(2,:),n);
+						edge_j = BoundaryEdge2d(vert(1,:),vert(2,:));
 
 					% else upper edge of circle
 					else
 
-						n = symfun(n_upper(x_transformed,x(2)),[x t]);
-						edge_j = BoundaryEdge2d(vert(1,:),vert(2,:),n);
+						edge_j = BoundaryEdge2d(vert(1,:),vert(2,:));
 
 					end
 
 				% if edge corresonds to a line segment	
 				elseif dl(1,j) == 2
 
-					n = self.inclusion.Q.unitNormal(:,mod(j,4)+1);
-					edge_j = BoundaryEdge2d(vert(1,:),vert(2,:),n);
+					edge_j = BoundaryEdge2d(vert(1,:),vert(2,:));
 					
 				end
 				

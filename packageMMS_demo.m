@@ -59,7 +59,6 @@ fprintf(' Contructing Domain:'), tic
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
 
-
 % run mms test
 if demo == 0
 	mms = GalerkinPennes2d_mms(dom,time,auxfun,mmsparams,errType="Linfty(L2)")

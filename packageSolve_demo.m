@@ -42,8 +42,8 @@ u_R = uStar;
 
 % time-stepping parameters
 u_o = 0;
-T  = 1;
-dt = 0.001;
+T  = 0.5;
+dt = 0.01;
 eq.atEq = "break";
 eq.tolerance = 1e-5;
 
@@ -78,7 +78,7 @@ executionTime = toc;
 fprintf(' %f s\n',executionTime)
 
 % PLOT RESULTS
-fprintf(' Plotting Results')
-	prob.dom.plot; pause(); close();
-	prob.animate; close();
-	prob.animatePatch; close();
+fprintf(' Plotting Results\n')
+	prob.domain.plot; pause(); close();
+	prob.animate; pause(); close();
+	prob.animatePatch; pause(); close();

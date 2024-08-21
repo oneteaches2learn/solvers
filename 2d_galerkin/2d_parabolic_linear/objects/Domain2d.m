@@ -59,13 +59,10 @@ classdef Domain2d < fegeometry
 				edge_id(i) = self.nearestEdge(mdpt(i,:));
 			end
 
-			% get normal vectors
-			n = [0 -1; 1 0; 0 1; -1 0];
-
 			% set edges
 			edges = [];
 			for i = 1:self.NumEdges
-				edge_i = BoundaryEdge2d(vert(i,:),vert(i+1,:),n(i,:)');
+				edge_i = BoundaryEdge2d(vert(i,:),vert(i+1,:));
 				edge_i.ID = edge_id(i);
 				edges = [edges edge_i];
 			end

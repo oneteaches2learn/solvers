@@ -12,18 +12,11 @@ classdef BoundaryEdge2d
 	end
 
 	methods
-		function self = BoundaryEdge2d(vertex1,vertex2,n)
+		function self = BoundaryEdge2d(vertex1,vertex2)
 
 			self.vertex1 = vertex1;
 			self.vertex2 = vertex2;
-			self.outwardNormal = n;
 
-		end
-
-		function self = setNodes()
-		end
-
-		function self = setBCs()
 		end
 
 	end
