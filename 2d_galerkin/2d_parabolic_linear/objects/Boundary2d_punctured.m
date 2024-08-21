@@ -1,4 +1,4 @@
-classdef PuncturedBoundary2d < Boundary2d
+classdef Boundary2d_punctured < Boundary2d
 
 	properties
 		boundaryTypesInclusions
@@ -6,7 +6,7 @@ classdef PuncturedBoundary2d < Boundary2d
 	end
 
 	methods
-		function self = PuncturedBoundary2d(bcTypes,bcConds,bcTypesInc,bcCondsInc)
+		function self = Boundary2d_punctured(bcTypes,bcConds,bcTypesInc,bcCondsInc)
 
 			self@Boundary2d(bcTypes,bcConds);
 			self.boundaryTypesInclusions = bcTypesInc;

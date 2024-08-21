@@ -77,7 +77,7 @@ classdef UnitCell2d
 
 
 		% UTILITY FUNCTIONS
-		% DEPRECATED: this method is now the responsibility of PuncturedDomain2d
+		% DEPRECATED: this method is now the responsibility of Domain2d_punctured
 		function Yeps_centers = Yeps_centers(self,epsilon,xCopies,yCopies)
 
 			xCoord = epsilon * ([0:1:xCopies-1] + 0.5 * self.xWidth);

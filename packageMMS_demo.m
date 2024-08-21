@@ -44,7 +44,7 @@ fprintf(' Expected Runtime: 1 to 2 minutes\n')
 fprintf(' First run will take ~30s longer because parallel pool must be initiated.\n')
 
 % assemble inputs
-bound     = PuncturedBoundary2d(bTypes,{@()(0.0),@()(0.0),@()(0.0),@()(0.0)},bTypes2,{@()(0.0)});
+bound     = Boundary2d_punctured(bTypes,{@()(0.0),@()(0.0),@()(0.0),@()(0.0)},bTypes2,{@()(0.0)});
 auxfun    = ManufacturedFunctions2d_pennes(p,k,r,uStar,uTrue);
 time      = TimeStepping(T,1);
 mmsparams = MMSParams(base,demo=demo,timeOffset=timeOffset,timeFactor=timeFactor,pmin=2,pmax=5);
@@ -54,7 +54,7 @@ fprintf('Initialization\n')
 fprintf(' Contructing Domain:'), tic
 	inc = Inclusion2d_circle(xLim_Y,yLim_Y,incRatio);
 	%inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
-	dom = PuncturedDomain2d(xLim_dom,yLim_dom,inc,eps);
+	dom = Domain2d_punctured(xLim_dom,yLim_dom,inc,eps);
 	dom = dom.setEdgeBCTypes(bound);
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)

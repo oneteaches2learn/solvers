@@ -1,4 +1,4 @@
-classdef PuncturedDomain2d < Domain2d & fegeometry
+classdef Domain2d_punctured < Domain2d & fegeometry
 %PuncturedMesh is a punctured mesh for 2d Galerkin FEM
 %	
 % mesh = PuncturedMesh(xBounds,yBounds,h,N_x,N_y) generates a quasiuniform
@@ -159,17 +159,17 @@ classdef PuncturedDomain2d < Domain2d & fegeometry
 	end
 
 	methods
-		function self = PuncturedDomain2d(x,y,inc,eps)
+		function self = Domain2d_punctured(x,y,inc,eps)
 		
 			% call Domain2d superclass constructor
 			self@Domain2d(x,y);
 
 			% create decomposed geometry description matrix 
-			dl_domain = PuncturedDomain2d.dl_domain(x,y);
+			dl_domain = Domain2d_punctured.dl_domain(x,y);
 			if nargin == 2
 				dl_Qeps = [];
 			else
-				dl_Qeps = PuncturedDomain2d.dl_Qeps(x,y,inc,eps);
+				dl_Qeps = Domain2d_punctured.dl_Qeps(x,y,inc,eps);
 			end
 			dl = [dl_domain dl_Qeps];
 
@@ -421,8 +421,8 @@ classdef PuncturedDomain2d < Domain2d & fegeometry
 
 		function col = boundsToGeometryDescriptionColumn(x,y)
 
-			vert = PuncturedDomain2d.boundsToVertices(x,y);
-			col  = PuncturedDomain2d.vertToGeometryDescriptionColumn(vert);
+			vert = Domain2d_punctured.boundsToVertices(x,y);
+			col  = Domain2d_punctured.vertToGeometryDescriptionColumn(vert);
 		
 		end
 	
@@ -433,7 +433,7 @@ classdef PuncturedDomain2d < Domain2d & fegeometry
 			gd = zeros(10,N_x*N_y+1);
 
 			% put boundary rectangle in column 1 of gd
-			gd(:,1) = PuncturedDomain2d.boundsToGeometryDescriptionColumn(xBounds,yBounds);
+			gd(:,1) = Domain2d_punctured.boundsToGeometryDescriptionColumn(xBounds,yBounds);
 
 			% if nonzero number of inclusions
 			if (N_x ~= 0) && (N_y ~= 0)
@@ -455,7 +455,7 @@ classdef PuncturedDomain2d < Domain2d & fegeometry
 					yPunc = [yVert(2*i+1) yVert(2*i+2)];
 
 					% add column to geometry description matrix
-					gd(:,col) = PuncturedDomain2d.boundsToGeometryDescriptionColumn(xPunc,yPunc);
+					gd(:,col) = Domain2d_punctured.boundsToGeometryDescriptionColumn(xPunc,yPunc);
 
 				end, end
 			end
@@ -561,8 +561,8 @@ classdef PuncturedDomain2d < Domain2d & fegeometry
 			xWidth_Y = inc.Y.xWidth;
 			yWidth_Y = inc.Y.yWidth;
 			 
-			xCopies = PuncturedDomain2d.Qeps_xCopies(xLim,inc,eps);
-			yCopies = PuncturedDomain2d.Qeps_yCopies(yLim,inc,eps);
+			xCopies = Domain2d_punctured.Qeps_xCopies(xLim,inc,eps);
+			yCopies = Domain2d_punctured.Qeps_yCopies(yLim,inc,eps);
 
 			xCoord = eps * (xWidth_Y * [0:1:xCopies-1] + inc.center(1));
 			yCoord = eps * (yWidth_Y * [0:1:yCopies-1] + inc.center(2));
@@ -576,7 +576,7 @@ classdef PuncturedDomain2d < Domain2d & fegeometry
 		function dl = dl_Qeps(xLim,yLim,inc,eps)
 	
 			% get centers of inclusions
-			combos = PuncturedDomain2d.Qeps_centers(xLim,yLim,inc,eps);
+			combos = Domain2d_punctured.Qeps_centers(xLim,yLim,inc,eps);
 
 			% copy each column of combos four times
 			combos = repmat(combos,4,1);
@@ -587,8 +587,8 @@ classdef PuncturedDomain2d < Domain2d & fegeometry
 			translate_y = combos(2,:);
 
 			% make raw dl matrix
-			xCopies = PuncturedDomain2d.Qeps_xCopies(xLim,inc,eps);
-			yCopies = PuncturedDomain2d.Qeps_yCopies(yLim,inc,eps);
+			xCopies = Domain2d_punctured.Qeps_xCopies(xLim,inc,eps);
+			yCopies = Domain2d_punctured.Qeps_yCopies(yLim,inc,eps);
 			dl = repmat(inc.Q.dl,1,xCopies * yCopies);
 
 			% scale dl matrix

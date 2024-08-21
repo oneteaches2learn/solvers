@@ -15,7 +15,7 @@ classdef GalerkinParabolic2d_assembler
 			if nargin == 2
 				dom = Domain2d(xLim,yLim);
 			elseif nargin == 4
-				dom = PuncturedDomain2d(xLim,yLim,inc,eps);
+				dom = Domain2d_punctured(xLim,yLim,inc,eps);
 			end
 
 		end
@@ -59,7 +59,7 @@ classdef GalerkinParabolic2d_assembler
 
 			% create Boundary2d object
 			if nargin == 7
-				bound = PuncturedBoundary2d(bcTypes,bcConds,bcTypes_inc,bcConds_inc);
+				bound = Boundary2d_punctured(bcTypes,bcConds,bcTypes_inc,bcConds_inc);
 			else
 				bound = Boundary2d(bcTypes,bcConds);
 			end
