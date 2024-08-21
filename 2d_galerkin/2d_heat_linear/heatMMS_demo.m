@@ -25,7 +25,7 @@ bTypes = {'D' 'D' 'D' 'D'};
 bTypes2 = 'D';
 
 % specify coefficients
-p = 1;
+p = 1 + x(1) * x(2) * t;
 k = 1 + x(1) * x(2) + t;
 
 % specify desired result

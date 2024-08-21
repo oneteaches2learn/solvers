@@ -21,7 +21,7 @@ bTypes = {'R' 'R' 'R' 'R'};
 bTypes2 = 'R';
 
 % specify coefficients
-p = 1 + x(1) * x(2);
+p = 1 + x(1) * x(2) * t;
 k = 1 + x(1) * x(2) * t;
 r = 1 + x(1) * x(2) * t; 
 uStar = 1 + x(1) * x(2) * t;

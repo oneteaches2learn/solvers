@@ -141,7 +141,7 @@ classdef GalerkinParabolic2d_solver
 
 				% update M_p
 				if self.tensors.timeVarying.M_p == 1
-					self.tensors.M_p_prev = self.tensors.M_p;
+					self.tensors.M_p_prevTime = self.tensors.M_p;
 					cof = self.coefficients.p;
 					self.tensors.M_p = self.assembleMassMatrix(cof);
 				end
