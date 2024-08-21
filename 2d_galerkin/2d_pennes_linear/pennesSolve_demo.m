@@ -1,20 +1,21 @@
-% PENNESSOLVE_DEMO
-
+% pennesSolve_demo
 clear all; x = sym('x',[1 2],'real'); syms t;
 % USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % domain bounds
-xLim = [0 1];
-yLim = [0 1];
+xLim_dom = [0 3];
+yLim_dom = [0 1];
+
+% Y bounds
+xLim_Y = [0 1/2];
+yLim_Y = [0 1];
 
 % number of inclusions
-N_x = 2;
-N_y = N_x;
+eps = 1/3;
+incRatio = pi/2; % <~~~ incRatio = |delta Q| / |Y|
 
 % mesh parameters
 p = 4;
 base = 2;
-incRatio = 2; % <~~~ incRatio = |delta Q| / |Y|
-eps = 1;
 
 % specify coefficients
 c = 1;
@@ -53,8 +54,9 @@ fprintf('Pennes Trial Begun\n')
 
 % assemble domain
 fprintf(' Contructing Domain:'), tic
-	incMod = InclusionModule_square(incRatio,eps);
-	dom = GalerkinPennes2d_assembler.assembleDomainGeometry(xLim,yLim,incMod);
+	%inc = Inclusion2d_circle(xLim_Y,yLim_Y,incRatio);
+	inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
+	dom = GalerkinPennes2d_assembler.assembleDomainGeometry(xLim_dom,yLim_dom,inc,eps);
 	dom = GalerkinPennes2d_assembler.assembleBoundary(dom,bTypes,u_D,u_N,beta,u_R,bTypes2); 
 	dom = GalerkinPennes2d_assembler.assembleMesh(dom,p,base); 
 executionTime = toc; 

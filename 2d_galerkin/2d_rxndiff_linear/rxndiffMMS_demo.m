@@ -1,30 +1,31 @@
-% RXNDIFFMMS_DEMO
+% rxndiffMMS_demo
 clear all; x = sym('x',[1 2],'real'); syms t;
 % USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % domain bounds
-xLim = [0 1];
-yLim = [0 1];
+xLim_dom = [0 3];
+yLim_dom = [0 1];
+
+% Y bounds
+xLim_Y = [0 1/2];
+yLim_Y = [0 1];
 
 % time stepping
 T = 1;
 
 % number of inclusions
-N_x = 0;
-N_y = N_x;
-alpha = 2; % <~~~ alpha = |delta Q| / |Y|
+eps = 1/3;
+incRatio = pi/2; % <~~~ incRatio = |delta Q| / |Y|
 
 % mms parameters
 base = 2;
 demo = 0;
-timeOffset = 1;
-timeFactor = 2;
 
 % specify BCs
 bTypes = {'D' 'D' 'D' 'D'};
 bTypes2 = 'D';
 
 % specify coefficients
-p = 1 + x(1) * x(2) * t;
+p = 1 + x(1) * x(2);
 k = 1 + x(1) * x(2) * t;
 r = 1 + x(1) * x(2) * t; 
 
@@ -39,14 +40,15 @@ fprintf('MMS Test Begun\n')
 bound     = PuncturedBoundary2d(bTypes,{@()(0.0),@()(0.0),@()(0.0),@()(0.0)},bTypes2,{@()(0.0)});
 auxfun    = ManufacturedFunctions2d_rxndiff(p,k,r,uTrue);
 time      = TimeStepping(T,1);
-mmsparams = MMSParams(base,demo=demo,timeOffset=timeOffset,timeFactor=timeFactor,pmax=5);
+mmsparams = MMSParams(base,demo=demo,timeOffset=4,timeFactor=2,pmin=4,pmax=6);
 
 % build domain
 fprintf('Initialization\n')
 fprintf(' Contructing Domain:'), tic
-	incMod = InclusionModule1(alpha);
-	dom    = PuncturedDomain2d(xLim,yLim,N_x,N_y,incMod);
-	dom    = dom.setEdgeBCTypes(bound);
+	%inc = Inclusion2d_circle(xLim_Y,yLim_Y,incRatio);
+	inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
+	dom = PuncturedDomain2d(xLim_dom,yLim_dom,inc,eps);
+	dom = dom.setEdgeBCTypes(bound);
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
 

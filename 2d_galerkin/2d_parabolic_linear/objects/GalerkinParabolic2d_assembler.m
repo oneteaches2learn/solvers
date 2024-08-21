@@ -9,13 +9,13 @@ classdef GalerkinParabolic2d_assembler
 	end
 
 	methods (Static)
-		function dom = assembleDomainGeometry(xLim,yLim,incMod)
+		function dom = assembleDomainGeometry(xLim,yLim,inc,eps)
 
 			% create domain object
 			if nargin == 2
 				dom = Domain2d(xLim,yLim);
-			elseif nargin == 3
-				dom = PuncturedDomain2d(xLim,yLim,incMod);
+			elseif nargin == 4
+				dom = PuncturedDomain2d(xLim,yLim,inc,eps);
 			end
 
 		end

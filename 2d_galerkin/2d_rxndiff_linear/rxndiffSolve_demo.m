@@ -1,19 +1,21 @@
-% RXNDIFFSOLVE_DEMO
-
+% rxndiffSolve_demo 
 clear all; x = sym('x',[1 2],'real'); syms t;
 % USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % domain bounds
-xLim = [0 1];
-yLim = [0 1];
+xLim_dom = [0 3];
+yLim_dom = [0 1];
+
+% Y bounds
+xLim_Y = [0 1/2];
+yLim_Y = [0 1];
 
 % number of inclusions
-N_x = 0;
-N_y = N_x;
+eps = 1/3;
+incRatio = pi/2; % <~~~ incRatio = |delta Q| / |Y|
 
 % mesh parameters
 p = 5;
 base = 2;
-alpha = 2; % <~~~ alpha = |delta Q| / |Y|
 
 % specify coefficients
 c = 1;
@@ -41,6 +43,8 @@ u_R = 1;
 u_o = 0;
 T  = 1;
 dt = 0.001;
+eq.atEq = "break";
+eq.tolerance = 1e-5;
 
 
 % RUN TRIAL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,8 +53,9 @@ fprintf('RxnDiff Trial Begun\n')
 
 % assemble domain
 fprintf(' Contructing Domain:'), tic
-	incMod = InclusionModule1(alpha);
-	dom = GalerkinRxndiff2d_assembler.assembleDomainGeometry(xLim,yLim,N_x,N_y,incMod);
+	%inc = Inclusion2d_circle(xLim_Y,yLim_Y,incRatio);
+	inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
+	dom = GalerkinRxndiff2d_assembler.assembleDomainGeometry(xLim_dom,yLim_dom,inc,eps);
 	dom = GalerkinRxndiff2d_assembler.assembleBoundary(dom,bTypes,u_D,u_N,beta,u_R,bTypes2); 
 	dom = GalerkinRxndiff2d_assembler.assembleMesh(dom,p,base); 
 executionTime = toc; 
