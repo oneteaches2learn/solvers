@@ -1,4 +1,4 @@
-classdef PuncturedDomain2d < Domain2d & fegeometry
+classdef PuncturedDomain2d_test < Domain2d & fegeometry
 %PuncturedMesh is a punctured mesh for 2d Galerkin FEM
 %	
 % mesh = PuncturedMesh(xBounds,yBounds,h,N_x,N_y) generates a quasiuniform
@@ -150,54 +150,109 @@ classdef PuncturedDomain2d < Domain2d & fegeometry
 
 
 	properties
-		inclusionModule
+		epsilon
+		inclusion
 		nInclusions
 		xLim
 		yLim
-	end
-
-	properties (Hidden)
-%		dl_inclusion
-%		dl_domain
+		dl
 	end
 
 	methods
-		function self = PuncturedDomain2d(x,y,incMod)
-
+		function self = PuncturedDomain2d_test(x,y,inc,eps)
+		
 			% call Domain2d superclass constructor
 			self@Domain2d(x,y);
 
 			% create decomposed geometry description matrix 
-			dl_domain = PuncturedDomain2d.dl_domain(x,y);
-			if nargin == 3
-				dl_inclusions = PuncturedDomain2d.dl_inclusions(x,y,incMod);
+			dl_domain = PuncturedDomain2d_test.dl_domain(x,y);
+			if nargin == 2
+				dl_Qeps = [];
 			else
-				dl_inclusions = [];
+				dl_Qeps = PuncturedDomain2d_test.dl_Qeps(x,y,inc,eps);
 			end
-			dl = [dl_domain dl_inclusions];
+			dl = [dl_domain dl_Qeps];
 
 			% call fegeometry superclass constructor
 			self@fegeometry(dl);
-			executionTime = toc;
 
 			% set properties related to domain and inclusions
 			self.xLim = x;
 			self.yLim = y;
-			self.inclusionModule = incMod;
-
-			% set geometry matrix
-			self.geometryMatrix = Domain2d.gd_from_vertices(self.Vertices);
-
-			% set inclusion number
-			self.nInclusions = size(self.geometryMatrix,2) - 1;
+			self.epsilon = eps;
+			self.inclusion = inc;
+			self.dl = dl;
 
 			% generate and store edges
-			self.edges = self.setEdgeGeometry;
-			self.edges(5)
+			self.edges = self.setEdgeGeometry_inclusions;
+
+			% set inclusion number
+			self.nInclusions = size(self.dl,2) / 4 - 1;
 
 		end
 
-		function edges = setEdgeGeometry_C(self)
+		function edges = setEdgeGeometry_inclusions(self)
+
+			% store variables
+			dl = self.dl;
+			scale_eps = 1 / self.epsilon;
+			edges = self.edges;
+
+			% setup symbolic functions for circle edges
+			x = sym('x',[1 2],'real'); syms t;
+
+			% if unit vectors to circle are needed, store in advance
+			if sum(find(dl(1,:) == 1)) > 0
+				n_lower = self.inclusion.Q.unitNormal_lower;
+				n_upper = self.inclusion.Q.unitNormal_upper;
+			end
+
+			% loop over columns of decomposed geometry description matrix
+			for j = 5:size(dl,2);
+
+				% get vertices
+				vert = reshape(dl(2:5,j),2,2);
+
+				% if edge corresponds to circle
+				if dl(1,j) == 1 
+
+					% set x-translation
+					x_translate = self.dl(8,j);
+					x_transformed = scale_eps * (x(1) - x_translate);
+
+					% if lower edge of circle
+					if mod(j,4) == 1 || mod(j,4) == 2
+
+						n = symfun(n_lower(x_transformed,x(2)),[x t]);
+						edge_j = BoundaryEdge2d(vert(1,:),vert(2,:),n);
+
+					% else upper edge of circle
+					else
+
+						n = symfun(n_upper(x_transformed,x(2)),[x t]);
+						edge_j = BoundaryEdge2d(vert(1,:),vert(2,:),n);
+
+					end
+
+				% if edge corresonds to a line segment	
+				elseif dl(1,j) == 2
+
+					n = self.inclusion.Q.unitNormal(:,mod(j,4)+1);
+					edge_j = BoundaryEdge2d(vert(1,:),vert(2,:),n);
+					
+				end
+				
+				% store edge
+				edge_j.ID = j;
+				edges = [edges edge_j];
+
+			end
+
+		end
+
+
+		%{
+		function edges = setEdgeGeometry_C2(self)
 
 			% store variables
 			gd = self.geometryMatrix;
@@ -246,7 +301,7 @@ classdef PuncturedDomain2d < Domain2d & fegeometry
 
 		end
 
-		function edges = setEdgeGeometry(self)
+		function edges = setEdgeGeometry_C(self)
 		% NOTE: On 8/13/24, I vectorized the procedure by which edge_ids are
 		% calculated. This caused a greater than 10x speedup in the wall-clock
 		% time for this function. I have retained the loop that sets the edges
@@ -297,6 +352,7 @@ classdef PuncturedDomain2d < Domain2d & fegeometry
 			end
 
 		end
+		%}
 
 		function self = setEdgeBCTypes(self,boundary)
 
@@ -479,6 +535,118 @@ classdef PuncturedDomain2d < Domain2d & fegeometry
 			dl_inclusions = dl_inclusions(:,keep_cols);
 
 		end
+
+		function nCopies = Qeps_nCopies(bound,epsilon)
+
+			nCopies = ceil(abs(diff(bound)) / epsilon);
+
+		end
+
+		function xCopies = Qeps_xCopies(xLim_dom,inc,eps)
+
+			xWidth_Y = inc.Y.xWidth;
+			xCopies = ceil(abs(diff(xLim_dom)) / eps / xWidth_Y);
+
+		end
+
+		function yCopies = Qeps_yCopies(yLim_dom,inc,eps)
+
+			yWidth_Y = inc.Y.yWidth;
+			yCopies = ceil(abs(diff(yLim_dom)) / eps / yWidth_Y);
+
+		end
+
+		function Qeps_centers = Qeps_centers(xLim,yLim,inc,eps)
+
+			xWidth_Y = inc.Y.xWidth;
+			yWidth_Y = inc.Y.yWidth;
+			 
+			xCopies = PuncturedDomain2d_test.Qeps_xCopies(xLim,inc,eps);
+			yCopies = PuncturedDomain2d_test.Qeps_yCopies(yLim,inc,eps);
+
+			xCoord = eps * (xWidth_Y * [0:1:xCopies-1] + inc.center(1));
+			yCoord = eps * (yWidth_Y * [0:1:yCopies-1] + inc.center(2));
+
+			Qeps_centers = table2array(combinations(yCoord,xCoord))';
+			Qeps_centers = Qeps_centers([2 1],:);
+
+		end
+
+	
+		function dl = dl_Qeps(xLim,yLim,inc,eps)
+	
+			% get centers of inclusions
+			combos = PuncturedDomain2d_test.Qeps_centers(xLim,yLim,inc,eps);
+
+			% copy each column of combos four times
+			combos = repmat(combos,4,1);
+			combos = reshape(combos,2,[]);
+
+			% isolate x- and y-translations
+			translate_x = combos(1,:);
+			translate_y = combos(2,:);
+
+			% make raw dl matrix
+			xCopies = PuncturedDomain2d_test.Qeps_xCopies(xLim,inc,eps);
+			yCopies = PuncturedDomain2d_test.Qeps_yCopies(yLim,inc,eps);
+			dl = repmat(inc.Q.dl,1,xCopies * yCopies);
+
+			% scale dl matrix
+			scaledRows = inc.Q.dl_scaledRows;
+			dl(scaledRows,:) = eps * dl(scaledRows,:);
+
+			% translate dl matrix
+			xRows = inc.Q.dl_xRows;
+			yRows = inc.Q.dl_yRows;
+			dl(xRows,:) = dl(xRows,:) + translate_x;
+			dl(yRows,:) = dl(yRows,:) + translate_y;
+
+		end
+
+		function orientation = orientation(self,P,Q,R)
+
+			orientation = sign(det([R;Q] - [Q;P]));
+
+		end
+
+		function on_segment = on_segment(self,P,Q,R)
+
+
+			on_segment = Q(1) <= max(P(1),R(1)) && ... 
+						 	Q(1) >= min(P(1),R(1)) && ...
+							Q(2) <= max(P(2),R(2)) && ...
+							Q(2) >= max(P(2),R(2));
+
+		end
+
+		function intersect = intersect(self,p1,q1,p2,q2)
+
+			o1 = self.orientation(p1,q1,p2);
+			o2 = self.orientation(p1,q1,q2);
+			o3 = self.orientation(p2,q2,p1);
+			o4 = self.orientation(p2,q2,q1);
+
+			% check if segments intersect 
+			if o1 ~= o2 && o3 ~= o4
+				intersect = 1;
+
+			% check if segments overlap
+			elseif o1 == 0 && self.on_segment(p1,p2,q1)
+				intersect = 1;
+			elseif o2 == 0 && self.on_segment(p1,q2,q1)
+				intersect = 1;
+			elseif o3 == 0 && self.on_segment(p2,p1,q2)
+				intersect = 1;
+			elseif o4 == 0 && self.on_segment(p2,q1,q2)
+				intersect = 1;
+
+			% else they do not intersect
+			else
+				intersect = 0;
+			end
+
+		end
+			
 
 	end
 

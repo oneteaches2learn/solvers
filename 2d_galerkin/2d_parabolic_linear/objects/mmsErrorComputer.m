@@ -9,6 +9,7 @@ classdef mmsErrorComputer
 		function self = mmsErrorComputer(mmsObj)
 
 			self.mmsObj = mmsObj;
+			pmin = mmsObj.mmsParams.pmin;
 
 			% determine number of trials stored in mmsObj
 			trials = length(mmsObj.problems);
@@ -17,7 +18,7 @@ classdef mmsErrorComputer
 			fprintf('Computing Errors\n');
 			self.errors = zeros(1,trials);
 			for i = 1:trials
-				fprintf(' p = %i computed: ',i);
+				fprintf(' p = %i computed: ',i + pmin - 1);
 				self.errors(i) = self.computeError(i);
 			end
 
@@ -98,16 +99,23 @@ classdef mmsErrorComputer
 			N_t = prob.time.N_t;
 
 			% compute error
-			wait = waitbar(0,'Computing Error, Please Wait');
-			err = 0;
-			for i = 1:N_t
-				err_i = sqrt(self.L2_IP(prob,quadOrder,i));
-				if err_i > err
-					err = err_i;
+			err = zeros(1,N_t);
+
+			% for small N_t, parallel processing adds time
+			if N_t < 100
+				for i = 1:N_t
+					err(i) = sqrt(self.L2_IP(prob,quadOrder,i));
 				end
-				waitbar(i/(N_t+1),wait,'Computing Error, Please Wait');
+
+			% else, use parallel processing
+			else
+				parfor i = 1:N_t
+					err(i) = sqrt(self.L2_IP(prob,quadOrder,i));
+				end
+
 			end
-			close(wait)
+
+			err = max(err);
 
 		end
 
@@ -136,10 +144,17 @@ classdef mmsErrorComputer
 			if timeVarying == 1, uTrue = @(x1,x2)(uTrue(x1,x2,t)); end
 			UTrue = uTrue(prob.domain.Mesh.Nodes(1,:)',prob.domain.Mesh.Nodes(2,:)');
 
+			if sum(size(UTrue)) == 2
+				UTrue = UTrue * ones(size(prob.solution,1),1);
+			end
+
 			% store numerical solution
 			if timeVarying == 1, u_h = prob.solution(:,timestep);
 			else u_h = full(prob.solution); end
 
+			L2_IP = prob.domain.L2_IP_nodalQuadrature(UTrue-u_h,UTrue-u_h);
+
+			%{
 			% loop over elements
 			L2_IP = 0;
 			nElem = prob.domain.nElem; 
@@ -157,6 +172,7 @@ classdef mmsErrorComputer
 				L2_IP = L2_IP + prob.domain.elemAreas(i) * sum(err_Qp.^2) / 3; 
 
 			end
+			%}
 
 		end
 

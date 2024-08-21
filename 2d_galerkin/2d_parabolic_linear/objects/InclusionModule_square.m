@@ -1,4 +1,4 @@
-classdef InclusionModule_circle < InclusionModule
+classdef InclusionModule_square < InclusionModule
 
 	properties
 	end
@@ -10,8 +10,9 @@ classdef InclusionModule_circle < InclusionModule
 	end
 
 	properties (Hidden)
-		Q_radius
+		Q_sideLength
 		Q_center
+		Q_domain
 		Q_circumference
 		dl_inclusion
 		gm_inclusion
@@ -19,16 +20,23 @@ classdef InclusionModule_circle < InclusionModule
 
 	methods
 		% CONSTRUCTOR
-		function self = InclusionModule_circle(incRatio,epsilon)
+		function self = InclusionModule_square(incRatio,epsilon)
 
 			self = self@InclusionModule(incRatio,epsilon);
 
 		end
 
 		% GETTERS
-		function rad = get.Q_radius(self)
+		function rad = get.Q_sideLength(self)
 
-			rad = self.Q_circumference / 2 / pi;
+			rad = self.Q_circumference / 4;
+
+		end
+
+		function Q_domain = get.Q_domain(self)
+
+			Q_domain = [self.Q_center - self.Q_sideLength / 2, ...
+						self.Q_center + self.Q_sideLength / 2];
 
 		end
 
@@ -46,7 +54,16 @@ classdef InclusionModule_circle < InclusionModule
 
 		function gm_inclusion = get.gm_inclusion(self)
 
-			gm_inclusion = [1,self.Q_center(1),self.Q_center(2),self.Q_radius,0,0,0,0,0,0]';
+			% get x and y ranges
+			xLim = self.Q_domain(1,:);
+			yLim = self.Q_domain(2,:);
+
+			% convert into vector of coordinates
+			coord_vector = table2array(combinations(xLim,yLim));
+			coord_vector = coord_vector([1 3 4 2],:);
+			coord_vector = reshape(coord_vector,[],1);
+
+			gm_inclusion = [3;4;coord_vector];
 
 		end
 
@@ -60,13 +77,13 @@ classdef InclusionModule_circle < InclusionModule
 		% it is actually the region to the right that is the interior of the
 		% domain. So, rows 6 and 7 must be interchanged for an inclusion.
 
-			dl_inclusion = decsg(self.gm_inclusion);
+			dl_inclusion = [decsg(self.gm_inclusion);zeros(3,4)];
 			dl_inclusion([6 7],:) = dl_inclusion([7 6],:);
 
 		end
 
 	end
-	
+
 	methods (Static)
 		function nor = outward_normal(nod1,nod2)
 
@@ -79,4 +96,7 @@ classdef InclusionModule_circle < InclusionModule
 		end
 
 	end
+
+
+
 end

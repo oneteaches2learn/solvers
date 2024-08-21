@@ -444,6 +444,10 @@ classdef GalerkinParabolic2d_solver
 			% default value is zero
 			result = 0;
 
+			try % <~~~ if equilibrium is not set, then the code block below
+				%	   produces an error. Using the "try" statement allows to
+				%	   skip the following block of code in this case. 
+
 			% check if solver should break
 			if strcmp(self.time.equilibrium.atEq,"break") == 1
 				
@@ -464,6 +468,7 @@ classdef GalerkinParabolic2d_solver
 					fprintf(warn);
 				end
 				
+			end
 			end
 
 		end

@@ -130,9 +130,11 @@ classdef GalerkinParabolic2d_mms
 			fprintf('Solving Problems\n')
 
 			% run mms test
+			ind = 1;
 			for p = pmin:pmax
-
+				
 				tic 
+				fprintf(' p = %i solved:',p)
 				% successively refine mesh and time-stepping 
 				dom_p  = self.domain.setMesh(p,base);
 				time_p = self.timeStepping.setMesh(tFac*(p-tOff),base); %<~~ NOTE: time stepping one order higher
@@ -141,12 +143,13 @@ classdef GalerkinParabolic2d_mms
 				prob_p = self.solve(dom_p,time_p,cofs,uInit,f);
 
 				% store results
-				if self.mmsParams.demo == 0, problems{p} = prob_p;
+				if self.mmsParams.demo == 0, problems{ind} = prob_p;
 				else problems{1} = prob_p;
 				end
 
+				ind = ind + 1;
 				executionTime = toc;
-				fprintf(' p = %i solved: %f s\n',p,executionTime)
+				fprintf(' %f s\n',executionTime)
 			end
 
 		end
@@ -180,7 +183,7 @@ classdef GalerkinParabolic2d_mms
 				% assign Neumann BC
 				elseif dom.edges(i).boundaryType == 'N'
 					n_i = dom.edges(i).outwardNormal;
-					g_i = symfun(dot(q,n_i),[x t])
+					g_i = symfun(sum(q.*n_i),[x t]);
 					g_i = matlabFunction(g_i);
 					dom.edges(i).boundaryCondition = g_i;
 
@@ -188,7 +191,7 @@ classdef GalerkinParabolic2d_mms
 				elseif dom.edges(i).boundaryType == 'R'
 					alpha_i = symfun(1.0,[x t]);
 					n_i = dom.edges(i).outwardNormal;
-					g_i = symfun(uTrue - dot(q,n_i) / alpha_i,[x t]);
+					g_i = symfun(uTrue - sum(q .* n_i) / alpha_i,[x t]);
 					alpha_i = matlabFunction(alpha_i);
 					g_i = matlabFunction(g_i);
 					dom.edges(i).boundaryCondition = {alpha_i,g_i};

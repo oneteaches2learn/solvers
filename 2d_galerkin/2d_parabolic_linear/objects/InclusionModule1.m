@@ -1,4 +1,4 @@
-classdef InclusionModule1 < InclusionModule
+classdef InclusionModule1
 % INCLUSIONMODULE1() creates inclusions where the ratio of |partial Q| / |Y|
 % set by the unit cell. 
 %

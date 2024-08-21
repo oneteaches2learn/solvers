@@ -65,7 +65,7 @@ classdef Domain2d < fegeometry
 			% set edges
 			edges = [];
 			for i = 1:self.NumEdges
-				edge_i = BoundaryEdge2d(vert(i,:),vert(i+1,:),n(i,:));
+				edge_i = BoundaryEdge2d(vert(i,:),vert(i+1,:),n(i,:)');
 				edge_i.ID = edge_id(i);
 				edges = [edges edge_i];
 			end
@@ -834,6 +834,31 @@ classdef Domain2d < fegeometry
 
 			% set function
 			sf = 'BD';
+
+		end
+
+		function gd = gd_from_vertices(vertices)
+
+			nSquares = size(vertices,1) / 4;
+			gd = zeros(10,nSquares);
+
+			for i = 0:nSquares-1
+				
+				% get x and y limits
+				coord = vertices([1:4] + 4*i,:);
+				xLim = [min(coord(:,1)) max(coord(:,1))];
+				yLim = [min(coord(:,2)) max(coord(:,2))];
+
+				% set gd column
+				gd(:,i+1) = [3; 4; Domain2d.vertices_from_bounds(xLim,yLim)];
+
+			end
+
+		end
+
+		function vert = vertices_from_bounds(xLim,yLim)
+
+			vert = [xLim(1) xLim(2) xLim(2) xLim(1) yLim(1) yLim(1) yLim(2) yLim(2)]';
 
 		end
 
