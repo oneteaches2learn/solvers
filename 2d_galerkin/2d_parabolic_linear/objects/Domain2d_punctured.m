@@ -210,146 +210,15 @@ classdef Domain2d_punctured < Domain2d & fegeometry
 			% loop over columns of decomposed geometry description matrix
 			for j = 5:size(dl,2);
 
-				% get vertices
+				% create new edge
 				vert = reshape(dl(2:5,j),2,2);
-
-				% if edge corresponds to circle
-				if dl(1,j) == 1 
-
-					% set x-translation
-					x_translate = self.dl(8,j);
-					x_transformed = scale_eps * (x(1) - x_translate);
-
-					% if lower edge of circle
-					if mod(j,4) == 1 || mod(j,4) == 2
-
-						edge_j = BoundaryEdge2d(vert(1,:),vert(2,:));
-
-					% else upper edge of circle
-					else
-
-						edge_j = BoundaryEdge2d(vert(1,:),vert(2,:));
-
-					end
-
-				% if edge corresonds to a line segment	
-				elseif dl(1,j) == 2
-
-					edge_j = BoundaryEdge2d(vert(1,:),vert(2,:));
-					
-				end
-				
-				% store edge
+				edge_j = BoundaryEdge2d(vert(1,:),vert(2,:));
 				edge_j.ID = j;
 				edges = [edges edge_j];
 
 			end
 
 		end
-
-
-		%{
-		function edges = setEdgeGeometry_C2(self)
-
-			% store variables
-			gd = self.geometryMatrix;
-
-			% loop over columns of geometry description matrix
-			edges = [];
-			for j = 1:size(gd,2);
-
-				% get vertices
-				vert = zeros(4,2);
-				for i = 1:4
-					vert(i,1) = gd(i+2,j);
-					vert(i,2) = gd(i+6,j);
-				end
-				vert(5,:) = vert(1,:);
-
-				% get midpoints
-				for i = 1:4
-					mdpt(i,:) = [(vert(i,1) + vert(i+1,1))/2, (vert(i,2) + vert(i+1,2))/2];
-				end
-
-				% get edge IDs
-				for i = 1:4
-					edge_id(i) = self.nearestEdge(mdpt(i,:));
-				end
-
-				% get normal vectors
-				% if j == 1, normal vectors are for outer boundary
-				n = [0 -1; 1 0; 0 1; -1 0];
-				if j == 1
-					...
-
-				% else, normal vectors are for inclusion, so reverse their direction
-				else
-					n = -n;
-				end
-
-				% set edges
-				for i = 1:4
-					edge_i = BoundaryEdge2d(vert(i,:),vert(i+1,:),n(i,:));
-					edge_i.ID = edge_id(i);
-					edges = [edges edge_i];
-				end
-
-			end
-
-		end
-
-		function edges = setEdgeGeometry_C(self)
-		% NOTE: On 8/13/24, I vectorized the procedure by which edge_ids are
-		% calculated. This caused a greater than 10x speedup in the wall-clock
-		% time for this function. I have retained the loop that sets the edges
-		% because that loop is significantly less time consuming.
-		% However, even more speedup might be possible if that loop is
-		% also vectorized. 
-
-			% store variables
-			gd = self.geometryMatrix;
-			coord = self.geometryMatrix(3:10,:);
-
-			% find midpoints
-			permuteRows = [[2 3 4 1], [2 3 4 1] + 4];
-			midpts   = (coord + coord(permuteRows,:)) / 2;
-			midpts_x = reshape(midpts([1:4],:),[],1);
-			midpts_y = reshape(midpts([1:4]+4,:),[],1);
-
-			% use midpoints to get edge ids
-			edge_ids = self.nearestEdge([midpts_x,midpts_y]);
-			edge_ids = reshape(edge_ids,4,[]);
-
-			% loop over columns of geometry description matrix
-			edges = [];
-			for j = 1:size(gd,2);
-
-				edge_id = edge_ids(:,j)';
-
-				% get normal vectors
-				% if j == 1, normal vectors are for outer boundary
-				n = [0 -1; 1 0; 0 1; -1 0];
-				if j == 1
-					...
-
-				% else, normal vectors are for inclusion, so reverse their direction
-				else
-					n = -n;
-				end
-
-				% set edges
-				vert = [gd([1:4]+2,j),gd([1:4]+6,j)];
-				vert(5,:) = vert(1,:);
-				for i = 1:4
-					edge_i = BoundaryEdge2d(vert(i,:),vert(i+1,:),n(i,:));
-					edge_i.ID = edge_id(i);
-					edges = [edges edge_i];
-				end
-
-			end
-
-		end
-		%}
 
 		function self = setEdgeBCTypes(self,boundary)
 
