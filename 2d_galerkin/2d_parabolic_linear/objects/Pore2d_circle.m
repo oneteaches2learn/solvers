@@ -159,6 +159,7 @@ classdef Pore2d_circle < Pore2d
 					 0    0    0    0;   % <~~x coordinate of circle center
 					 0    0    0    0;   % <~~y coordinate of circle center
 				   rad  rad  rad  rad];  % <~~radius
+
 		end
 
 		function output = get.dl_scaledRows(self)

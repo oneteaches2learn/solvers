@@ -13,6 +13,8 @@ classdef Domain2d < fegeometry
 		domainArea
 		boundaryNodes
 		freeNodes
+		xLim
+		yLim
 	end
 
 	methods
@@ -29,6 +31,10 @@ classdef Domain2d < fegeometry
 
 			% store geometry matrix
 			self.geometryMatrix = gd;
+
+			% store xLim and yLim
+			self.xLim = x;
+			self.yLim = y;
 
 			% set and store edges
 			self.edges = self.setEdgeGeometry;
@@ -346,8 +352,6 @@ classdef Domain2d < fegeometry
 
 			hold off
 
-			pause();
-			close();
 		end
 
 		function h = plotGeometry(self,NameValueArgs)

@@ -153,8 +153,6 @@ classdef Domain2d_punctured < Domain2d & fegeometry
 		epsilon
 		inclusion
 		nInclusions
-		xLim
-		yLim
 		dl
 	end
 
@@ -195,26 +193,15 @@ classdef Domain2d_punctured < Domain2d & fegeometry
 
 			% store variables
 			dl = self.dl;
-			scale_eps = 1 / self.epsilon;
-			edges = self.edges;
 
-			% setup symbolic functions for circle edges
-			x = sym('x',[1 2],'real'); syms t;
-
-			% if unit vectors to circle are needed, store in advance
-			if sum(find(dl(1,:) == 1)) > 0
-				n_lower = self.inclusion.Q.unitNormal_lower;
-				n_upper = self.inclusion.Q.unitNormal_upper;
-			end
-
-			% loop over columns of decomposed geometry description matrix
-			for j = 5:size(dl,2);
+			edges(size(dl,2)) = BoundaryEdge2d_test;
+			for j = 1:size(dl,2);
 
 				% create new edge
 				vert = reshape(dl(2:5,j),2,2);
-				edge_j = BoundaryEdge2d(vert(1,:),vert(2,:));
-				edge_j.ID = j;
-				edges = [edges edge_j];
+				edges(j).vertex1 = vert(1,:);
+				edges(j).vertex2 = vert(2,:);
+				edges(j).ID = j;
 
 			end
 
