@@ -4,14 +4,6 @@ classdef Domain2d_onOff < Domain2d_punctured & fegeometry
 % Author: Tyler Fara					Date: August 21, 2024
 %-----------------------------------------------------------------------------%
 
-	properties
-	end
-
-	properties (Dependent)
-		elements_Qeps
-		elements_Omega
-	end
-
 	methods
 		% CONSTRUCTOR
 		function self = Domain2d_onOff(x,y,inc,eps)
@@ -31,19 +23,23 @@ classdef Domain2d_onOff < Domain2d_punctured & fegeometry
 			% modify dl to include Q^epsilon
 			dl = Domain2d_onOff.modify_dl(dl);
 
+			% call fegeometry superclass constructor
 			self@fegeometry(dl);
+
+			% store geometry matrix
+			self.dl = dl;
 
 		end
 
 		% GETTERS
-		function elemIDs = get.elements_Omega(self)
+		function elemIDs = elements_Omega(self)
 			
 			mesh = self.Mesh;
 			elemIDs = findElements(mesh,"region",Face=1);
 
 		end
 
-		function elemIDs = get.elements_Qeps(self)
+		function elemIDs = elements_Qeps(self)
 
 			elemIDs = setdiff([1:1:self.nElem],self.elements_Omega);
 

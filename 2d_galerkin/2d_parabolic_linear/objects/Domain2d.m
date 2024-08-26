@@ -124,17 +124,13 @@ classdef Domain2d < fegeometry
 			self.elemEdges = self.getElementEdges;
 
 			% distribute boundary nodes to edges
-			for i = 1:self.NumEdges
-				edgeID = self.edges(i).ID;
-				self.edges(i).nodes = self.Mesh.findNodes('region','Edge',edgeID);
-				self.edges(i).nNodes = length(self.edges(i).nodes);
-			end
+			self.edges = self.distributeBoundaryNodes;
 
 			% compile boundary node lists
 			self.boundaryNodes.D = [];
 			self.boundaryNodes.N = [];
 			self.boundaryNodes.R = [];
-			for i = 1:self.NumEdges
+			for i = 1:length(self.edges)
 				if strcmp(self.edges(i).boundaryType,'D')
 					self.boundaryNodes.D = [self.boundaryNodes.D self.edges(i).nodes];
 				elseif strcmp(self.edges(i).boundaryType,'N')
@@ -321,6 +317,18 @@ classdef Domain2d < fegeometry
 				% compute average of element nodes for each element
 				centroids = (nodes1 + nodes2 + nodes3) / 3;
 				
+		end
+
+		% UTILITY FUNCTIONS
+		function edges = distributeBoundaryNodes(self)
+
+			edges = self.edges;
+			for i = 1:length(self.edges)
+				edgeID = edges(i).ID;
+				edges(i).nodes = self.Mesh.findNodes('region','Edge',edgeID);
+				edges(i).nNodes = length(edges(i).nodes);
+			end
+
 		end
 
 		% PLOTTING FUNCTIONS
