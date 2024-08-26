@@ -1,4 +1,4 @@
-classdef Domain2d_punctured < Domain2d & fegeometry
+classdef Domain2d_punctured < Domain2d
 %PuncturedMesh is a punctured mesh for 2d Galerkin FEM
 %	
 % mesh = PuncturedMesh(xBounds,yBounds,h,N_x,N_y) generates a quasiuniform
@@ -153,7 +153,6 @@ classdef Domain2d_punctured < Domain2d & fegeometry
 		epsilon
 		inclusion
 		nInclusions
-		dl
 	end
 
 	methods
@@ -172,17 +171,16 @@ classdef Domain2d_punctured < Domain2d & fegeometry
 			dl = [dl_domain dl_Qeps];
 
 			% call fegeometry superclass constructor
-			self@fegeometry(dl);
+			%self@fegeometry(dl);
 
 			% set properties related to domain and inclusions
-			self.xLim = x;
-			self.yLim = y;
 			self.epsilon = eps;
 			self.inclusion = inc;
 			self.dl = dl;
 
 			% generate and store edges
 			self.edges = self.setEdgeGeometry_inclusions;
+			self.nEdges = self.get_nEdges;
 
 			% set inclusion number
 			self.nInclusions = size(self.dl,2) / 4 - 1;
@@ -219,7 +217,7 @@ classdef Domain2d_punctured < Domain2d & fegeometry
 			% set boundary types on inclusions
 			incBCTypes = boundary.boundaryTypesInclusions;
 			if sum(size(incBCTypes)) == 2
-				for i = 5:self.NumEdges
+				for i = 5:self.nEdges
 					edges(i).boundaryType = incBCTypes;
 				end
 			else
@@ -244,7 +242,7 @@ classdef Domain2d_punctured < Domain2d & fegeometry
 			% set boundary types on inclusions
 			incBCCond = boundary.boundaryConditionsInclusions;
 			if sum(size(incBCCond)) == 2 || sum(size(incBCCond)) == 3 
-				for i = 5:self.NumEdges
+				for i = 5:self.nEdges
 					edges(i).boundaryCondition = incBCCond;
 				end
 			else

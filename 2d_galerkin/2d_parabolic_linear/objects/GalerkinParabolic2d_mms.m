@@ -247,7 +247,7 @@ classdef GalerkinParabolic2d_mms
 			x = sym('x',[1 2]); syms t;
 			uTrue = self.auxFunctions.uTrue;
 			q = self.auxFunctions.q;
-			nEdges = dom.NumEdges;
+			nEdges = dom.nEdges;
 
 			% set edge normal vectors
 			dom = self.setEdgeNormalVectors_outerBoundary(dom);

@@ -1,4 +1,4 @@
-classdef Domain2d_onOff_split < Domain2d_onOff & fegeometry
+classdef Domain2d_onOff_split < Domain2d_onOff
 % Domain2d_onOff is a domain with inclusions that can be turned on or off
 %	
 % Author: Tyler Fara					Date: August 21, 2024
@@ -17,15 +17,6 @@ classdef Domain2d_onOff_split < Domain2d_onOff & fegeometry
 
 			% call Domain2d superclass constructor
 			self@Domain2d_onOff(x,y,inc,eps);
-
-			% create decomposed geometry description matrix 
-			dl_split = Domain2d_onOff_split.subdivide_dl(dl);
-			
-			% remove duplicate edge
-			dl_trim = [dl_split(:,1:4),dl_split(:,6:end)];
-
-			% call fegeometry constructor
-			self@fegeometry(dl_trim);
 
 			% store decomposed matrix
 			self.dl = dl;
@@ -46,11 +37,25 @@ classdef Domain2d_onOff_split < Domain2d_onOff & fegeometry
 		% UTILITY FUNCTIONS
 		function edges = distributeBoundaryNodes(self)
 
-			edges = self.edges
+			edges = self.edges;
 			for i = 1:length(self.edges)
 				edges(i).nodes = self.Mesh.findNodes('region','Edge',self.edgeID(i));
 				edges(i).nNodes = length(edges(i).nodes);
 			end
+
+		end
+
+		function mesh = generateMesh(self)
+
+			% create decomposed geometry description matrix for split domain
+			dl_split = Domain2d_onOff_split.subdivide_dl(self.dl);
+			
+			% remove duplicate edge
+			dl_trim = [dl_split(:,1:4),dl_split(:,6:end)];
+
+			geo = fegeometry(dl_trim);
+			geo = geo.generateMesh(Hmax=self.h,GeometricOrder='linear');
+			mesh = geo.Mesh;
 
 		end
 
@@ -97,7 +102,7 @@ classdef Domain2d_onOff_split < Domain2d_onOff & fegeometry
 			dl_upper(7,1) = 1.0;
 
 			% manipulate decomposed geometry matrix for inclusions
-			nInc = (size(dl,2)) - 8 / 4;
+			nInc = ((size(dl,2)) - 4) / 4;
 			if nInc > 0 
 				dl_inc = dl(:,5:end);
 				dl_inc(7,end/2+1:end) = 2.0;

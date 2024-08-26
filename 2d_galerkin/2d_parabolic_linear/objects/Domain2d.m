@@ -1,11 +1,15 @@
-classdef Domain2d < fegeometry
+classdef Domain2d
 
 	properties
 		geometryMatrix
+		dl
 		base
 		p
 		h
 		edges
+		effectiveNodes
+		effectiveElems
+		nEdges
 		nNodes
 		nElem
 		elemAreas
@@ -15,19 +19,18 @@ classdef Domain2d < fegeometry
 		freeNodes
 		xLim
 		yLim
+		Mesh
 	end
 
 	methods
 		% CONSTRUCTOR
 		function self = Domain2d(x,y)
 
+			% set deconstructed geometry description matrix
 			gd = Domain2d.getGeometryDescriptionMatrix(x,y);
 			ns = Domain2d.getNameSpace;
 			sf = Domain2d.getSetFunction;
-
-			% call fegeometry superclass constructor
-			g = decsg(gd,sf,ns);
-			self@fegeometry(g);
+			self.dl = decsg(gd,sf,ns);
 
 			% store geometry matrix
 			self.geometryMatrix = gd;
@@ -38,6 +41,7 @@ classdef Domain2d < fegeometry
 
 			% set and store edges
 			self.edges = self.setEdgeGeometry;
+			self.nEdges = self.get_nEdges;
 
 		end
 
@@ -60,16 +64,11 @@ classdef Domain2d < fegeometry
 				mdpt(i,:) = [(vert(i,1) + vert(i+1,1))/2, (vert(i,2) + vert(i+1,2))/2];
 			end
 
-			% get edge IDs
-			for i = 1:4
-				edge_id(i) = self.nearestEdge(mdpt(i,:));
-			end
-
 			% set edges
 			edges = [];
-			for i = 1:self.NumEdges
+			for i = 1:4
 				edge_i = BoundaryEdge2d(vert(i,:),vert(i+1,:));
-				edge_i.ID = edge_id(i);
+				edge_i.ID = i;
 				edges = [edges edge_i];
 			end
 
@@ -79,7 +78,7 @@ classdef Domain2d < fegeometry
 
 			edges = self.edges;
 
-			for i = 1:self.NumEdges
+			for i = 1:self.nEdges
 				edges(i).boundaryType = boundary.boundaryTypes{i};
 			end
 
@@ -91,7 +90,7 @@ classdef Domain2d < fegeometry
 
 			edges = self.edges;
 
-			for i = 1:self.NumEdges
+			for i = 1:self.nEdges
 				edges(i).boundaryCondition = boundary.boundaryConditions{i};
 			end
 
@@ -108,14 +107,16 @@ classdef Domain2d < fegeometry
 			% compute h
 			self.h = base^-p;
 			
-			% generate mesh
-			self = self.generateMesh(Hmax=self.h,GeometricOrder='linear');
+			% generate the mesh
+			self.Mesh = self.generateMesh;
 
-			% store number of nodes
+			% store node data
 			self.nNodes = size(self.Mesh.Nodes,2);
+			self.effectiveNodes = [1:1:self.nNodes];
 
-			% store number of elements
+			% store element data
 			self.nElem = size(self.Mesh.Elements,2);
+			self.effectiveElems = [1:1:self.nElem];
 
 			% store domain and element areas
 			[self.domainArea,self.elemAreas] = area(self.Mesh);
@@ -160,13 +161,19 @@ classdef Domain2d < fegeometry
 			nearestEdge = [];
 
 			% collect node pairs for each edge
-			for edgeID = 1:self.NumEdges
+			for edgeID = 1:self.nEdges
 				edgeNodes = self.Mesh.findNodes('region','Edge',edgeID);
 				for j = 1:length(edgeNodes)-1
 					bNodes = [bNodes; edgeNodes(j) edgeNodes(j+1)];
 					nearestEdge = [nearestEdge; edgeID];
 				end
 			end
+		end
+
+		function nEdges = get_nEdges(self)
+
+			nEdges = length(self.edges);
+
 		end
 
 		function output = getElementCoordinates(self,nElem,requestedCoord)
@@ -331,6 +338,14 @@ classdef Domain2d < fegeometry
 
 		end
 
+		function mesh = generateMesh(self)
+
+			geo = fegeometry(self.dl);
+			geo = geo.generateMesh(Hmax=self.h,GeometricOrder='linear');
+			mesh = geo.Mesh;
+
+		end
+
 		% PLOTTING FUNCTIONS
 		function h = plot(self,NameValueArgs)
 
@@ -344,8 +359,7 @@ classdef Domain2d < fegeometry
 
 			% Plot mesh
 			hold on
-			h = self.pdemesh( ...
-					ElementLabels=x.ElementLabels);
+			h = pdemesh(self.Mesh,ElementLabels=x.ElementLabels);
 
 			% Label nodes, optional
 			if x.NodeLabels == "on"
@@ -371,7 +385,7 @@ classdef Domain2d < fegeometry
 			end
 			x = NameValueArgs;
 
-			h = self.pdegplot(FaceLabels=x.FaceLabels,EdgeLabels=x.EdgeLabels)
+			h = pdegplot(self.dl,FaceLabels=x.FaceLabels,EdgeLabels=x.EdgeLabels)
 
 		end
 

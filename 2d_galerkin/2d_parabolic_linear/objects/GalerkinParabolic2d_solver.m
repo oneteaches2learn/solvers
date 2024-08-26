@@ -308,7 +308,7 @@ classdef GalerkinParabolic2d_solver
 			U_D = sparse(nNodes,1);
 
 			% compute Dirichlet boundary conditions
-			for i = 1:dom.NumEdges
+			for i = 1:dom.nEdges
 				
 				if dom.edges(i).boundaryType == 'D'
 
@@ -335,7 +335,7 @@ classdef GalerkinParabolic2d_solver
 			b_neu = sparse(nNodes,1);
 
 			% compute boundary conditions
-			for i = 1:self.domain.NumEdges
+			for i = 1:self.domain.nEdges
 				
 				% compute Neumann condition
 				if dom.edges(i).boundaryType == 'N'
@@ -369,7 +369,7 @@ classdef GalerkinParabolic2d_solver
 			E = sparse(nNodes,nNodes);
 
 			% compute boundary conditions
-			for i = 1:self.domain.NumEdges
+			for i = 1:self.domain.nEdges
 				
 				% compute Dirichlet condition
 				if dom.edges(i).boundaryType == 'R'

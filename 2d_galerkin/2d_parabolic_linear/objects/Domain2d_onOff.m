@@ -1,4 +1,4 @@
-classdef Domain2d_onOff < Domain2d_punctured & fegeometry
+classdef Domain2d_onOff < Domain2d_punctured
 % Domain2d_onOff is a domain with inclusions that can be turned on or off
 %	
 % Author: Tyler Fara					Date: August 21, 2024
@@ -22,9 +22,6 @@ classdef Domain2d_onOff < Domain2d_punctured & fegeometry
 
 			% modify dl to include Q^epsilon
 			dl = Domain2d_onOff.modify_dl(dl);
-
-			% call fegeometry superclass constructor
-			self@fegeometry(dl);
 
 			% store geometry matrix
 			self.dl = dl;
@@ -58,7 +55,7 @@ classdef Domain2d_onOff < Domain2d_punctured & fegeometry
 
 			% Plot mesh
 			hold on
-			h = self.pdemesh( ...
+			h = pdemesh(self.Mesh,...
 					ElementLabels=x.ElementLabels);
 
 			% Label nodes, optional
