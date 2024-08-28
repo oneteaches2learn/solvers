@@ -30,7 +30,16 @@ classdef Domain2d_onOff_split < Domain2d_onOff
 			mesh = self.Mesh;
 			elemIDs_lower = findElements(mesh,"region",Face=1);
 			elemIDs_upper = findElements(mesh,"region",Face=2);
-			elemIDs = [elemIDs_lower,elemIDs_upper];
+			elemIDs = unique([elemIDs_lower,elemIDs_upper]);
+
+		end
+
+		function nodeIDs = nodes_Omega(self)
+
+			mesh = self.Mesh;
+			nodeIDs_lower = findNodes(mesh,"region",Face=1);
+			nodeIDs_upper = findNodes(mesh,"region",Face=2);
+			nodeIDs = unique([nodeIDs_lower,nodeIDs_upper]);
 
 		end
 
@@ -72,6 +81,28 @@ classdef Domain2d_onOff_split < Domain2d_onOff
 			else
 				edgeID = i + 3;
 			end
+
+		end
+
+		function dom_on = get_ON(self)
+
+			dom_on = self;
+			dom_on.dl = self.dl(:,1:4);
+			dom_on.edges = self.edges(1:4);
+			dom_on.nEdges = length(dom_on.edges);
+
+		end
+
+		function dom_off = get_OFF(self)
+
+			dom_off = self;
+			dom_off.effectiveNodes = dom_off.nodes_Omega;
+			dom_off.effectiveElems = dom_off.elements_Omega;
+			dom_off.unusedNodes = dom_off.get_unusedNodes;
+			dom_off.unusedElems = dom_off.get_unusedElems;
+			dom_off.nNodes = length(dom_off.effectiveNodes);
+			dom_off.nElems = length(dom_off.effectiveElems);
+			dom_off.freeNodes = intersect(dom_off.freeNodes,dom_off.effectiveNodes);
 
 		end
 
@@ -117,19 +148,5 @@ classdef Domain2d_onOff_split < Domain2d_onOff
 		end
 
 
-		%{
-		function dl = modify_dl(dl)
-
-			% get number of inclusions
-			nInc = size(dl,2) / 4 - 1;
-
-			incLabels = [1:1:nInc] + 1;
-			incLabels = repmat(incLabels,4,1);
-			incLabels = reshape(incLabels,1,[]);
-
-			dl(6,5:end) = incLabels;
-
-		end
-		%}
 	end
 end

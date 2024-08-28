@@ -201,8 +201,8 @@ classdef GalerkinParabolic2d_solver
 			end
 
 			% unpack variables
-			nNodes    = size(self.domain.Mesh.Nodes,2);
-			nElem3    = size(self.domain.Mesh.Elements,2);
+			nNodes    = self.domain.nNodes;
+			nElem3    = self.domain.nElems;
 			coords    = self.domain.Mesh.Nodes';
 			elements3 = self.domain.Mesh.Elements';
 
@@ -210,12 +210,12 @@ classdef GalerkinParabolic2d_solver
 			A = sparse(nNodes,nNodes);
 
 			% compute k on nodes
-			for j = 1:nNodes
+			for j = self.domain.effectiveNodes
 				K(j) = k(coords(j,1),coords(j,2),self.t);
 			end
 
 			% assemble stiffness matrix
-			for j = 1:nElem3
+			for j = self.domain.effectiveElems;
 				elementInd   = elements3(j,:);
 				elementCoord = coords(elementInd,:);
 				K_j = (1/3) * sum(K(elementInd));
@@ -233,8 +233,8 @@ classdef GalerkinParabolic2d_solver
 			end
 				
 			% unpack variables
-			nNodes    = size(self.domain.Mesh.Nodes,2);
-			nElem3    = size(self.domain.Mesh.Elements,2);
+			nNodes    = self.domain.nNodes;
+			nElem3    = self.domain.nElems;
 			coords 	  = self.domain.Mesh.Nodes';
 			elements3 = self.domain.Mesh.Elements';
 
@@ -242,7 +242,7 @@ classdef GalerkinParabolic2d_solver
 			B = sparse(nNodes,nNodes);
 			
 			% assemble base mass matrix
-			for j = 1:nElem3
+			for j = self.domain.effectiveElems
 				elementInd = elements3(j,:);
 				elementCoord = coords(elementInd,:);
 				B(elementInd,elementInd) = B(elementInd,elementInd) + ...
@@ -250,7 +250,7 @@ classdef GalerkinParabolic2d_solver
 			end
 
 			% compute r on nodes
-			for j = 1:nNodes
+			for j = self.domain.effectiveNodes
 				C(j) = c(coords(j,1),coords(j,2),self.t);
 			end
 
@@ -278,8 +278,8 @@ classdef GalerkinParabolic2d_solver
 			end
 
 			% unpack variables
-			nNodes    = size(self.domain.Mesh.Nodes,2);
-			nElem3    = size(self.domain.Mesh.Elements,2);
+			nNodes    = self.domain.nNodes;
+			nElem3    = self.domain.nElems;
 			coords    = self.domain.Mesh.Nodes';
 			elements3 = self.domain.Mesh.Elements';
 
@@ -287,7 +287,7 @@ classdef GalerkinParabolic2d_solver
 			b = sparse(nNodes,1);
 
 			% compute volume forces
-			for j = 1:nElem3
+			for j = self.domain.effectiveElems
 				elementInd    = elements3(j,:);
 				elementCoord  = coords(elementInd,:);
 				b(elementInd) = b(elementInd) + ...
@@ -444,32 +444,34 @@ classdef GalerkinParabolic2d_solver
 			% default value is zero
 			result = 0;
 
-			try % <~~~ if equilibrium is not set, then the code block below
+%			try % <~~~ if equilibrium is not set, then the code block below
 				%	   produces an error. Using the "try" statement allows to
 				%	   skip the following block of code in this case. 
 
-			% check if solver should break
-			if strcmp(self.time.equilibrium.atEq,"break") == 1
-				
-				% get error between subsequent timesteps
-				arg1 = self.solution(:,self.timestep);
-				arg2 = self.solution(:,self.timestep-1);
-				errVec = arg1 - arg2;
-				err = self.domain.L2norm_threePointQuadrature_nodal(errVec);
+				% check if solver should break
+				if strcmp(self.time.equilibrium.atEq,"break") == 1
+					
+					% get error between subsequent timesteps
+					arg1 = self.solution(:,self.timestep);
+					arg2 = self.solution(:,self.timestep-1);
+					errVec = arg1 - arg2;
+					errVec(self.domain.effectiveNodes) = errVec;
+					errVec(self.domain.unusedNodes) = NaN;
+					err = self.domain.L2norm_threePointQuadrature_nodal(errVec);
 
-				% if error < tolerance, break
-				if err < self.time.equilibrium.tolerance
-					result = 1;
-				end
+					% if error < tolerance, break
+					if err < self.time.equilibrium.tolerance
+						result = 1;
+					end
 
-				% issue `no equilibrium' warning
-				if self.timestep == self.time.N_t
-					warn = " WARNING, Trial terminated without reaching equilibrium, ";
-					fprintf(warn);
+					% issue `no equilibrium' warning
+					if self.timestep == self.time.N_t
+						warn = " \n\tWARNING, Trial terminated without reaching equilibrium.\n ";
+						fprintf(warn);
+					end
+					
 				end
-				
-			end
-			end
+%			end
 
 		end
 
@@ -485,11 +487,15 @@ classdef GalerkinParabolic2d_solver
 			self.solution = self.solution(:,1:self.time.N_t);
 			self.time.equilibrium.t_eq = self.time.M_t * self.time.dt;
 
+			% add NaN for unused nodes
+			self.solution(self.domain.effectiveNodes,:) = self.solution;
+			self.solution(self.domain.unusedNodes,:) = NaN;
+
 		end
 
 
 		% PLOTTING FUNCTIONS
-		function plot(self,timestep)
+		function h = plot(self,timestep)
 
 			% plot final time point unless otherwise specified
 			if nargin < 2, timestep = self.time.N_t; end
@@ -512,7 +518,9 @@ classdef GalerkinParabolic2d_solver
 
 			% format plot
 			view(10,40);
-			title('Solution of the Problem')
+			%title('Solution of the Problem')
+
+			h = gcf;
 		end
 
 		function h = plotPatch(self,timestep)
@@ -580,8 +588,8 @@ classdef GalerkinParabolic2d_solver
 
 			% animate remaining steps
 			for i = 1:N_t
-				self.plot(i)
-				zlim([u_min u_max])
+				self.plot(i);
+				zlim([u_min u_max]);
 				pause(1/N_t)
 			end
 

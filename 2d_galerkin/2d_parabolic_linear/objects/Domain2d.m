@@ -9,9 +9,11 @@ classdef Domain2d
 		edges
 		effectiveNodes
 		effectiveElems
+		unusedNodes
+		unusedElems
 		nEdges
 		nNodes
-		nElem
+		nElems
 		elemAreas
 		elemEdges
 		domainArea
@@ -113,10 +115,12 @@ classdef Domain2d
 			% store node data
 			self.nNodes = size(self.Mesh.Nodes,2);
 			self.effectiveNodes = [1:1:self.nNodes];
+			self.unusedNodes = [];
 
 			% store element data
-			self.nElem = size(self.Mesh.Elements,2);
-			self.effectiveElems = [1:1:self.nElem];
+			self.nElems = size(self.Mesh.Elements,2);
+			self.effectiveElems = [1:1:self.nElems];
+			self.unusedElems = [];
 
 			% store domain and element areas
 			[self.domainArea,self.elemAreas] = area(self.Mesh);
@@ -326,6 +330,20 @@ classdef Domain2d
 				
 		end
 
+		function unusedNodes = get_unusedNodes(self)
+
+			nodeList = [1:1:size(self.Mesh.Nodes,2)];
+			unusedNodes = setdiff(nodeList,self.effectiveNodes);
+
+		end
+
+		function unusedElems = get_unusedElems(self)
+
+			elemList = [1:1:size(self.Mesh.Elements,2)];
+			unusedElems = setdiff(elemList,self.effectiveElems);
+
+		end
+
 		% UTILITY FUNCTIONS
 		function edges = distributeBoundaryNodes(self)
 
@@ -440,7 +458,7 @@ classdef Domain2d
 					F(elemNodes(:,2)),F(elemNodes(:,3))],2) / 3;
 
 			% dot product with element areas
-			int = sum(self.elemAreas' .* elemAvg);
+			int = sum(self.elemAreas' .* elemAvg,"omitnan");
 
 		end
 
@@ -534,7 +552,7 @@ classdef Domain2d
 			% compute quadrature
 			elemAvg = sum([F(self.elemEdges(:,1)), ...
 					F(self.elemEdges(:,2)),F(self.elemEdges(:,3))],2) / 3;
-			int = sum(self.elemAreas' .* elemAvg);
+			int = sum(self.elemAreas' .* elemAvg,"omitnan");
 
 		end
 

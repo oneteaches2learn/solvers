@@ -24,36 +24,62 @@ classdef GalerkinParabolic2d_assembler
 
 			% check function variables
 			x = sym('x',[1 2],'real'); syms t;
-			u_D = symfun(u_D,[x t]);
-			u_N = symfun(u_N,[x t]);
-			u_R = symfun(u_R,[x t]);
-			alpha = symfun(alpha,[x t]);
-
-			% convert to function_handles
-			u_D = matlabFunction(u_D);
-			u_N = matlabFunction(u_N);
-			u_R = matlabFunction(u_R);
-			alpha = matlabFunction(alpha);
+			u_D = GalerkinParabolic2d_assembler.getFunctionHandles(u_D);
+			u_N = GalerkinParabolic2d_assembler.getFunctionHandles(u_N);
+			u_R = GalerkinParabolic2d_assembler.getFunctionHandles(u_R);
+			alpha = GalerkinParabolic2d_assembler.getFunctionHandles(alpha);
 
 			% set boundary conditions on outer boundary
 			for i = 1:4
 				if bcTypes{i} == 'D'
-					bcConds{i} = u_D;
+					if iscell(u_D)
+						bcConds{i} = u_D{i};
+					else
+						bcConds{i} = u_D;
+					end
 				elseif bcTypes{i} == 'N'
-					bcConds{i} = u_N;
+					if iscell(u_N)
+						bcConds{i} = u_N{i};
+					else
+						bcConds{i} = u_N;
+					end
 				elseif bcTypes{i} == 'R'
-					bcConds{i} = {alpha,u_R};
+					if iscell(alpha) && ~iscell(u_R)
+						bcConds{i} = {alpha{i},u_R};
+					elseif ~iscell(alpha) && iscell(u_R)
+						bcConds{i} = {alpha,u_R{i}};
+					elseif iscell(alpha) && iscell(u_R)
+						bcConds{i} = {alpha{i},u_R{i}};
+					else
+						bcConds{i} = {alpha,u_R};
+					end
 				end
 			end
 
 			% set boundary conditions on inclusions
 			if nargin == 7
 				if bcTypes_inc == 'D'
-					bcConds_inc = u_D;
+					if iscell(u_D)
+						bcConds_inc = u_D{5};
+					else
+						bcConds_inc = u_D;
+					end
 				elseif bcTypes_inc == 'N'
-					bcConds_inc = u_N;
+					if iscell(u_N)
+						bcConds_inc = u_N{5};
+					else
+						bcConds_inc = u_N;
+					end
 				elseif bcTypes_inc == 'R'
-					bcConds_inc = {alpha,u_R};
+					if iscell(alpha) && ~iscell(u_R)
+						bcConds_inc = {alpha{5},u_R};
+					elseif ~iscell(alpha) && iscell(u_R)
+						bcConds_inc = {alpha,u_R{5}};
+					elseif iscell(alpha) && iscell(u_R)
+						bcConds_inc = {alpha{5},u_R{5}};
+					else
+						bcConds_inc = {alpha,u_R};
+					end
 				end
 			end
 
@@ -67,6 +93,29 @@ classdef GalerkinParabolic2d_assembler
 			% set boundary conditions on domain
 			dom = dom.setEdgeBCTypes(bound);
 			dom = dom.setEdgeBCConditions(bound);
+
+		end
+
+		function f = getFunctionHandles(f)
+
+			% check function variables
+			x = sym('x',[1 2],'real'); syms t;
+			if iscell(f)
+				for i = 1:length(f)
+					f{i} = symfun(f{i},[x t]);
+				end
+			else
+				f = symfun(f,[x t]);
+			end
+
+			% convert to function handles
+			if iscell(f)
+				for i = 1:length(f)
+					f{i} = matlabFunction(f{i});
+				end
+			else
+				f = matlabFunction(f);
+			end
 
 		end
 

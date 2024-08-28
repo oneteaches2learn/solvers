@@ -170,9 +170,6 @@ classdef Domain2d_punctured < Domain2d
 			end
 			dl = [dl_domain dl_Qeps];
 
-			% call fegeometry superclass constructor
-			%self@fegeometry(dl);
-
 			% set properties related to domain and inclusions
 			self.epsilon = eps;
 			self.inclusion = inc;
