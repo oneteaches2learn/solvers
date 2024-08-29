@@ -1,8 +1,8 @@
-classdef GalerkinParabolic2d_mms
-% GALERKINPARABOLIC2D_MMS(DOM,TIME,AUXFUN,MMSPARAMS,NAMEVALUEARGS) runs an MMS
+classdef Galerkin2d_mms
+% GALERKIN2D_MMS(DOM,AUXFUN,MMSPARAMS,NAMEVALUEARGS) runs an MMS
 % test on a parabolic PDE
 %
-% author: Tyler Fara				Date: July 11, 2024
+% author: Tyler Fara				Date: August 29, 2024
 %-----------------------------------------------------------------------------%
 %
 % required arguments
@@ -78,7 +78,6 @@ classdef GalerkinParabolic2d_mms
 		problems
 		auxFunctions
 		domain
-		timeStepping
 		mmsParams
 		errType
 		errors
@@ -87,12 +86,11 @@ classdef GalerkinParabolic2d_mms
 	end
 
 	methods
-		function self = GalerkinParabolic2d_mms(dom,time,auxfun,mmsparams,NameValueArgs)
+		function self = Galerkin2d_mms(dom,auxfun,mmsparams,NameValueArgs)
 
 			% store inputs
 			self.auxFunctions = auxfun;
 			self.errType = NameValueArgs.errType;
-			self.timeStepping = time;
 			self.mmsParams = mmsparams;
 
 			% manufacture boundary conditions

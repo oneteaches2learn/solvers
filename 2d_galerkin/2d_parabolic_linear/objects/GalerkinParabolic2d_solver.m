@@ -59,7 +59,7 @@ classdef GalerkinParabolic2d_solver
 				self.solution(:,self.timestep) = v + self.vectors.U_D;
 
 				% break at equilibrium
-				if self.equilibrium == 1, break; end
+				if self.time.equilibrium == 1, break; end
 
 			end
 

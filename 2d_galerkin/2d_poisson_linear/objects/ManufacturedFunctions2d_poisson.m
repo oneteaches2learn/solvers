@@ -1,4 +1,4 @@
-classdef PoissonAuxFunctions2d
+classdef ManufacturedFunctions2d_poisson
 
 	properties
 		k
@@ -11,7 +11,7 @@ classdef PoissonAuxFunctions2d
 	end
 
 	methods
-		function self = PoissonAuxFunctions2d(k,r,uTrue)
+		function self = ManufacturedFunctions2d_poisson(k,r,uTrue)
 			
 			% store inputs
 			x = sym('x',[1 2]);

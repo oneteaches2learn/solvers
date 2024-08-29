@@ -46,6 +46,10 @@ classdef (Abstract) Inclusion2d
 		Q_circumference
 	end
 
+	properties (Dependent)
+		volumeFraction
+	end
+
 	methods
 		function self = Inclusion2d(xLim,yLim,incRatio)
 
@@ -57,11 +61,22 @@ classdef (Abstract) Inclusion2d
 
 		end
 
+		% GETTERS
 		function Q_circ = get.Q_circumference(self)
 
 			Q_circ = self.incRatio * self.Y.area;
 
 		end
+
+		function frac = get.volumeFraction(self)
+
+			measY = self.Y.area;
+			measQ = self.Q.area;
+			measYstar = measY - measQ;
+			frac = measYstar / measY;
+
+		end
+
 	end
 
 end
