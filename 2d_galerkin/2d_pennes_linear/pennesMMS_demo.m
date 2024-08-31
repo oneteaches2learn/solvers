@@ -40,7 +40,6 @@ fprintf('MMS Test Begun\n')
 % assemble inputs
 bound     = Boundary2d_punctured(bTypes,{@()(0.0),@()(0.0),@()(0.0),@()(0.0)},bTypes2,{@()(0.0)});
 auxfun    = ManufacturedFunctions2d_pennes(p,k,r,uStar,uTrue);
-time      = TimeStepping(T,1);
 mmsparams = MMSParams(base,demo=demo,timeOffset=3,timeFactor=2,pmin=3,pmax=5);
 
 % build domain

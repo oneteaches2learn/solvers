@@ -39,7 +39,6 @@ fprintf('MMS Test Begun\n')
 % assemble inputs
 bound     = Boundary2d_punctured(bTypes,{@()(0.0),@()(0.0),@()(0.0),@()(0.0)},bTypes2,{@()(0.0)});
 auxfun    = ManufacturedFunctions2d_rxndiff(p,k,r,uTrue);
-time      = TimeStepping(T,1);
 mmsparams = MMSParams(base,demo=demo,timeOffset=4,timeFactor=2,pmin=4,pmax=6);
 
 % build domain
@@ -49,16 +48,17 @@ fprintf(' Contructing Domain:'), tic
 	inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
 	dom = Domain2d_punctured(xLim_dom,yLim_dom,inc,eps);
 	dom = dom.setEdgeBCTypes(bound);
+	dom.time = TimeStepping(T,1);
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
 
 
 % run mms test
 if demo == 0
-	mms = GalerkinRxndiff2d_mms(dom,time,auxfun,mmsparams,errType="Linfty(L2)")
+	mms = GalerkinRxndiff2d_mms(dom,auxfun,mmsparams,errType="Linfty(L2)")
 
 % run demo test
 else
-	mms = GalerkinRxndiff2d_mms(dom,time,auxfun,mmsparams);
+	mms = GalerkinRxndiff2d_mms(dom,auxfun,mmsparams);
 	prob = mms.problems{1};
 end

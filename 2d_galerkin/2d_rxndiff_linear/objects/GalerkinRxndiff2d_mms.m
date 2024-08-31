@@ -12,24 +12,23 @@ classdef GalerkinRxndiff2d_mms < GalerkinParabolic2d_mms
 	end
 
 	methods
-		function self = GalerkinRxndiff2d_mms(dom,time,auxfun,mmsparams,NameValueArgs)
+		function self = GalerkinRxndiff2d_mms(dom,auxfun,mmsparams,NameValueArgs)
 
 			arguments
 				dom 		Domain2d
-				time		TimeStepping
 				auxfun  	ManufacturedFunctions2d_rxndiff
 				mmsparams 	MMSParams
 				NameValueArgs.errType = "Linfty(L2)"
 			end
 
 			% call superclass constructor
-			self@GalerkinParabolic2d_mms(dom,time,auxfun,mmsparams,NameValueArgs)
+			self@GalerkinParabolic2d_mms(dom,auxfun,mmsparams,NameValueArgs)
 
 		end
 
-		function prob = solve(self,dom,time,cofs,uInit,f)
+		function prob = solve(self,dom,cofs)
 
-			prob = GalerkinRxndiff2d_solver(dom,time,cofs,uInit,f);
+			prob = GalerkinRxndiff2d_solver(dom,cofs);
 
 		end
 

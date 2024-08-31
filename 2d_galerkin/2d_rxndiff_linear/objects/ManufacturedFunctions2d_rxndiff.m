@@ -1,4 +1,4 @@
-classdef ManufacturedFunctions2d_rxndiff < ManufacturedFunctions2d
+classdef ManufacturedFunctions2d_rxndiff < ManufacturedFunctions2d_parabolic
 % ManufacturedFunctions2d_rxndiff(p,k,r,uTrue) manufactures the source for a reaction-diffusion equation MMS test.
 %
 % The linear reaction-diffusion equation is 
@@ -20,7 +20,7 @@ classdef ManufacturedFunctions2d_rxndiff < ManufacturedFunctions2d
 		% ManufacturedFunctions2d_pennes(p,k,r,uTrue) inputs are symfun objects
 			
 			% call superclass constructor
-			self@ManufacturedFunctions2d(p,k,uTrue)
+			self@ManufacturedFunctions2d_parabolic(p,k,uTrue)
 
 			% store additional coefficients
 			self.r = r;
@@ -39,16 +39,14 @@ classdef ManufacturedFunctions2d_rxndiff < ManufacturedFunctions2d
 
 		end
 
-		function cofs = coefficients2FunctionHandles(self)
-		% Converts symfun coefficients p, k, r to structure containing function_handles
-		%	For cofs = self.coefficients2FunctionHandles outputs will be of
-		%	format cofs.k, cofs.r, cofs.p;
+		function funcs = functionHandles(self)
+
+			% call superclass method
+			funcs = functionHandles@ManufacturedFunctions2d_parabolic(self);
 
 			% convert coefficients to function handles, store as struct
 			x = sym('x',[1 2]);
-			cofs.k = matlabFunction(symfun(self.k,x));
-			cofs.r = matlabFunction(symfun(self.r,x));
-			cofs.p = matlabFunction(symfun(self.p,x));
+			funcs.cofs.r = matlabFunction(symfun(self.r,x));
 
 		end
 

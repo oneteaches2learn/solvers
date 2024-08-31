@@ -21,8 +21,8 @@ base = 2;
 demo = 0;
 
 % specify BCs
-bTypes = {'D' 'D' 'D' 'D'};
-bTypes2 = 'D';
+bTypes = {'R' 'N' 'D' 'D'};
+bTypes2 = 'R';
 
 % specify coefficients
 p = 1 + x(1) * x(2) * t;
@@ -39,7 +39,7 @@ fprintf('MMS Test Begun\n')
 bound     = Boundary2d_punctured(bTypes,{@()(0.0),@()(0.0),@()(0.0),@()(0.0)},bTypes2,{@()(0.0)});
 auxfun    = ManufacturedFunctions2d_heat(p,k,uTrue);
 time      = TimeStepping(T,1);
-mmsparams = MMSParams(base,demo=demo,timeOffset=4,timeFactor=2,pmin=4,pmax=6);
+mmsparams = MMSParams(base,demo=demo,timeOffset=3,timeFactor=2,pmin=4,pmax=6);
 
 % build domain
 fprintf('Initialization\n')
@@ -48,15 +48,16 @@ fprintf(' Contructing Domain:'), tic
 	inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
 	dom = Domain2d_punctured(xLim_dom,yLim_dom,inc,eps);
 	dom = dom.setEdgeBCTypes(bound);
+	dom.time = TimeStepping(T,1);
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
 
 % run mms test
 if demo == 0
-	mms = GalerkinHeat2d_mms(dom,time,auxfun,mmsparams,errType="Linfty(L2)")
+	mms = GalerkinHeat2d_mms(dom,auxfun,mmsparams,errType="Linfty(L2)")
 
 % run demo test
 else
-	mms = GalerkinHeat2d_mms(dom,time,auxfun,mmsparams);
+	mms = GalerkinHeat2d_mms(dom,auxfun,mmsparams);
 	prob = mms.problems{1};
 end

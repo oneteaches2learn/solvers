@@ -1,4 +1,4 @@
-classdef ManufacturedFunctions2d_heat < ManufacturedFunctions2d
+classdef ManufacturedFunctions2d_heat < ManufacturedFunctions2d_parabolic
 % ManufacturedFunctions2d_heat(p,k,uTrue) manufactures the source for a heat equation MMS test.
 %
 % The heat equation is 
@@ -28,7 +28,7 @@ classdef ManufacturedFunctions2d_heat < ManufacturedFunctions2d
 		% ManufacturedFunctions2d_heat(p,k,uTrue) inputs are symfun objects
 			
 			% call superclass constructor
-			self@ManufacturedFunctions2d(p,k,uTrue)
+			self@ManufacturedFunctions2d_parabolic(p,k,uTrue)
 
 			% manufacture RHS
 			self.f = self.manufactureRHS;
@@ -44,16 +44,10 @@ classdef ManufacturedFunctions2d_heat < ManufacturedFunctions2d
 
 		end
 
+		function funcs = functionHandles(self)
 
-		function cofs = coefficients2FunctionHandles(self)
-		% Converts symfun coefficients p and k to structure containing function_handles
-		%	For cofs = self.coefficients2FunctionHandles outputs will be of
-		%	format cofs.k and cofs.r
-
-			% convert coefficients to function handles, store as struct
-			x = sym('x',[1 2]); 
-			cofs.k = matlabFunction(symfun(self.k,x));
-			cofs.p = matlabFunction(symfun(self.p,x));
+			% call superclass method
+			funcs = functionHandles@ManufacturedFunctions2d_parabolic(self);
 
 		end
 

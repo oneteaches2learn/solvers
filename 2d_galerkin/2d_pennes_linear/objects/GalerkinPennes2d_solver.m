@@ -1,14 +1,5 @@
 classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 
-	properties
-		%domain
-		%time
-		%coefficients
-		%uInit
-		%f
-		%solution
-	end
-
 	methods
 		function self = GalerkinPennes2d_solver(dom,cofs)
 			
