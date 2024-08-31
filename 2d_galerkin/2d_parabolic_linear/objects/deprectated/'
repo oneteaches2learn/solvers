@@ -380,13 +380,7 @@ classdef Domain2d
 			% convert symfun to function_handle
 			for i = 1:length(temp)
 				if isa(temp{i},'symfun') || isa(temp{i},'sym')
-					x = sym('x',[1 2]);
-					if ~isempty(self.time)
-						syms t;
-						temp{i} = matlabFunction(symfun(temp{i},[x t]));
-					else
-						temp{i} = matlabFunction(symfun(temp{i},x));
-					end
+					temp{i} = matlabFunction(temp{i});
 				end
 			end
 
@@ -396,19 +390,9 @@ classdef Domain2d
 				% if function_handle, compute values directly
 				if isa(temp{i},'function_handle')
 					func = temp{i};
-
-					% for time-varying problems
 					if nargin(temp{i}) == 3
-
 						tGrid = self.time.tGrid;
 						temp{i} = func(self.mesh.midpoints(:,1),self.mesh.midpoints(:,2),tGrid);
-
-						% if uTrue is cosntant in time, then N_t-many copies must be manually made
-						if size(temp{i},2) == 1
-							temp{i} = repmat(temp{i},1,self.time.N_t);
-						end
-
-					% for stationary problems
 					elseif nargin(temp{i}) == 2
 						temp{i} = func(self.mesh.midpoints(:,1),self.mesh.midpoints(:,2));
 					end

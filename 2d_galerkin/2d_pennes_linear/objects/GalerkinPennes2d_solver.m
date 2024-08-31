@@ -10,10 +10,10 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 	end
 
 	methods
-		function self = GalerkinPennes2d_solver(dom,time,cofs,uInit,f)
+		function self = GalerkinPennes2d_solver(dom,cofs)
 			
 			% call superclass constructor
-			self@GalerkinParabolic2d_solver(dom,time,cofs,uInit,f);
+			self@GalerkinParabolic2d_solver(dom,cofs);
 
 		end
 
@@ -86,10 +86,10 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 		function b = compute_r_times_uStar(self)
 
 			% store variables
-			nNodes    = size(self.domain.Mesh.Nodes,2);
-			nElem3    = size(self.domain.Mesh.Elements,2);
-			coords    = self.domain.Mesh.Nodes';
-			elements3 = self.domain.Mesh.Elements';
+			nNodes    = self.domain.mesh.nNodes;
+			nElem3    = self.domain.mesh.nElems;
+			coords    = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements;
 			uStar     = self.coefficients.uStar;
 			r         = self.coefficients.r;
 
@@ -124,10 +124,10 @@ classdef GalerkinPennes2d_solver < GalerkinParabolic2d_solver
 			vectors = self.vectors;
 
 			% assemble LHS
-			S = self.time.dt * (tensors.A + tensors.M_r + tensors.E) + tensors.M_p;
+			S = self.domain.time.dt * (tensors.A + tensors.M_r + tensors.E) + tensors.M_p;
 
 			% assemble RHS
-			b = self.time.dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob + ...
+			b = self.domain.time.dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob + ...
 			 		 vectors.r_times_uStar) - S * vectors.U_D + tensors.M_p_prevTime * vectors.U_prevTime;
 
 		end

@@ -1,5 +1,5 @@
-classdef GalerkinParabolic2d_mms < Galerkin2d_mms
-% GALERKINPARABOLIC2D_MMS(DOM,TIME,AUXFUN,MMSPARAMS,NAMEVALUEARGS) runs an MMS
+classdef GalerkinElliptic2d_mms < Galerkin2d_mms
+% GALERKINELLIPTIC2D_MMS(DOM,TIME,AUXFUN,MMSPARAMS,NAMEVALUEARGS) runs an MMS
 % test on a parabolic PDE
 %
 % author: Tyler Fara				Date: July 11, 2024
@@ -19,11 +19,8 @@ classdef GalerkinParabolic2d_mms < Galerkin2d_mms
 %
 %-----------------------------------------------------------------------------%
 
-	properties
-	end
-
 	methods
-		function self = GalerkinParabolic2d_mms(dom,auxfun,mmsparams,NameValueArgs)
+		function self = GalerkinElliptic2d_mms(dom,auxfun,mmsparams,NameValueArgs)
 
 			% call superclass constructor
 			self@Galerkin2d_mms(dom,auxfun,mmsparams,NameValueArgs);

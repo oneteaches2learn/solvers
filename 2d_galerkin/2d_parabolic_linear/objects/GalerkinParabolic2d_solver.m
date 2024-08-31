@@ -2,7 +2,6 @@ classdef GalerkinParabolic2d_solver
 
 	properties
 		domain
-		time
 		coefficients
 		uInit
 		f
@@ -21,14 +20,13 @@ classdef GalerkinParabolic2d_solver
 	end
 
 	methods
-		function self = GalerkinParabolic2d_solver(dom,time,cofs,uInit,f)
+		function self = GalerkinParabolic2d_solver(dom,cofs,uInit)
 			
 			% store inputs
 			self.domain = dom;
-			self.time = time;
-			self.coefficients = cofs;
-			self.uInit = uInit;
-			self.f = f;
+			self.coefficients = cofs.cofs;
+			self.uInit = cofs.uInit;
+			self.f = cofs.f;
 			
 			% calculate solution
 			self = self.solve;
@@ -41,7 +39,7 @@ classdef GalerkinParabolic2d_solver
 			FreeNodes = self.domain.freeNodes;
 			self = self.initializeProblem;
 
-			for timestep = 1:self.time.M_t
+			for timestep = 1:self.domain.time.M_t
 
 				% initialize timestep
 				self.timestep = timestep;
@@ -54,12 +52,12 @@ classdef GalerkinParabolic2d_solver
 				[S,b] = self.finalAssembly;
 
 				% solve and store solution
-				v = sparse(self.domain.nNodes,1);
+				v = sparse(self.domain.mesh.nNodes,1);
 				v(FreeNodes) = S(FreeNodes,FreeNodes) \ b(FreeNodes);
 				self.solution(:,self.timestep) = v + self.vectors.U_D;
 
 				% break at equilibrium
-				if self.time.equilibrium == 1, break; end
+				if self.domain.time.equilibrium == 1, break; end
 
 			end
 
@@ -72,8 +70,8 @@ classdef GalerkinParabolic2d_solver
 		function self = initializeProblem(self)
 
 			% Record first timestep
-			coords = self.domain.Mesh.Nodes';
-			self.solution = zeros(self.domain.nNodes,self.time.N_t);
+			coords = self.domain.mesh.nodes;
+			self.solution = zeros(self.domain.mesh.nNodes,self.domain.time.N_t);
 			self.solution(:,1) = self.uInit(coords(:,1),coords(:,2));
 
 			% Initialize tensors
@@ -119,7 +117,7 @@ classdef GalerkinParabolic2d_solver
 			self.vectors.U_prevTime = self.solution(:,self.timestep);
 
 			% update time stepping
-			self.t = self.timestep * self.time.dt;
+			self.t = self.timestep * self.domain.time.dt;
 			self.timestep = self.timestep + 1;
 
 		end
@@ -186,7 +184,7 @@ classdef GalerkinParabolic2d_solver
 
 		function val = get.isFirstTimeStep(self)
 
-			val = (self.t == self.time.dt);
+			val = (self.t == self.domain.time.dt);
 
 		end
 
@@ -201,10 +199,10 @@ classdef GalerkinParabolic2d_solver
 			end
 
 			% unpack variables
-			nNodes    = self.domain.nNodes;
-			nElem3    = self.domain.nElems;
-			coords    = self.domain.Mesh.Nodes';
-			elements3 = self.domain.Mesh.Elements';
+			nNodes    = self.domain.mesh.nNodes;
+			nElem3    = self.domain.mesh.nElems;
+			coords    = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements;
 
 			% initialize storage
 			A = sparse(nNodes,nNodes);
@@ -233,10 +231,10 @@ classdef GalerkinParabolic2d_solver
 			end
 				
 			% unpack variables
-			nNodes    = self.domain.nNodes;
-			nElem3    = self.domain.nElems;
-			coords 	  = self.domain.Mesh.Nodes';
-			elements3 = self.domain.Mesh.Elements';
+			nNodes    = self.domain.mesh.nNodes;
+			nElem3    = self.domain.mesh.nElems;
+			coords 	  = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements;
 
 			% initialize storage
 			B = sparse(nNodes,nNodes);
@@ -246,7 +244,7 @@ classdef GalerkinParabolic2d_solver
 				elementInd = elements3(j,:);
 				elementCoord = coords(elementInd,:);
 				B(elementInd,elementInd) = B(elementInd,elementInd) + ...
-					self.domain.elemAreas(j) * [2,1,1;1,2,1;1,1,2] / 12;
+					self.domain.mesh.areas(j) * [2,1,1;1,2,1;1,1,2] / 12;
 			end
 
 			% compute r on nodes
@@ -278,10 +276,10 @@ classdef GalerkinParabolic2d_solver
 			end
 
 			% unpack variables
-			nNodes    = self.domain.nNodes;
-			nElem3    = self.domain.nElems;
-			coords    = self.domain.Mesh.Nodes';
-			elements3 = self.domain.Mesh.Elements';
+			nNodes    = self.domain.mesh.nNodes;
+			nElem3    = self.domain.mesh.nElems;
+			coords    = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements;
 
 			% initialize storage
 			b = sparse(nNodes,1);
@@ -291,7 +289,7 @@ classdef GalerkinParabolic2d_solver
 				elementInd    = elements3(j,:);
 				elementCoord  = coords(elementInd,:);
 				b(elementInd) = b(elementInd) + ...
-					self.domain.elemAreas(j) * ...
+					self.domain.mesh.areas(j) * ...
 					f(sum(elementCoord(:,1))/3,sum(elementCoord(:,2))/3,self.t) / 3;
 			end
 
@@ -301,8 +299,8 @@ classdef GalerkinParabolic2d_solver
 
 			% unpack variables
 			dom    = self.domain;
-			nNodes = self.domain.nNodes;
-			coords = self.domain.Mesh.Nodes';
+			nNodes = self.domain.mesh.nNodes;
+			coords = self.domain.mesh.nodes;
 
 			% initialize storage
 			U_D = sparse(nNodes,1);
@@ -328,8 +326,8 @@ classdef GalerkinParabolic2d_solver
 
 			% unpack variables
 			dom    = self.domain;
-			nNodes = self.domain.nNodes;
-			coords = self.domain.Mesh.Nodes';
+			nNodes = self.domain.mesh.nNodes;
+			coords = self.domain.mesh.nodes;
 
 			% initialize storage
 			b_neu = sparse(nNodes,1);
@@ -361,8 +359,8 @@ classdef GalerkinParabolic2d_solver
 
 			% unpack variables
 			dom    = self.domain;
-			nNodes = self.domain.nNodes;
-			coords = self.domain.Mesh.Nodes';
+			nNodes = self.domain.mesh.nNodes;
+			coords = self.domain.mesh.nodes;
 
 			% initialize storage
 			b_rob = sparse(nNodes,1);
@@ -432,7 +430,7 @@ classdef GalerkinParabolic2d_solver
 			bcNodes = [];
 			for i = 1:length(midPts)
 				edgeID = fegm.nearestEdge(midPts(i,:));
-				nodes = fegm.Mesh.findNodes('region','Edge',edgeID);
+				nodes = fegm.mesh.Mesh.findNodes('region','Edge',edgeID);
 				for j = 1:length(nodes)-1
 					bcNodes = [bcNodes; nodes(j) nodes(j+1)];
 				end
@@ -449,7 +447,7 @@ classdef GalerkinParabolic2d_solver
 				%	   skip the following block of code in this case. 
 
 				% check if solver should break
-				if strcmp(self.time.equilibrium.atEq,"break") == 1
+				if strcmp(self.domain.time.equilibrium.atEq,"break") == 1
 					
 					% get error between subsequent timesteps
 					arg1 = self.solution(:,self.timestep);
@@ -460,12 +458,12 @@ classdef GalerkinParabolic2d_solver
 					err = self.domain.L2norm_threePointQuadrature_nodal(errVec);
 
 					% if error < tolerance, break
-					if err < self.time.equilibrium.tolerance
+					if err < self.domain.time.equilibrium.tolerance
 						result = 1;
 					end
 
 					% issue `no equilibrium' warning
-					if self.timestep == self.time.N_t
+					if self.timestep == self.domain.time.N_t
 						warn = " \n\tWARNING, Trial terminated without reaching equilibrium.\n ";
 						fprintf(warn);
 					end
@@ -481,11 +479,11 @@ classdef GalerkinParabolic2d_solver
 			self.vectors = [];
 
 			% update stored parameters
-			self.time.N_t = self.timestep;
-			self.time.M_t = self.time.N_t - 1;
-			self.time.T   = self.time.M_t * self.time.dt;
-			self.solution = self.solution(:,1:self.time.N_t);
-			self.time.equilibrium.t_eq = self.time.M_t * self.time.dt;
+			self.domain.time.N_t = self.timestep;
+			self.domain.time.M_t = self.domain.time.N_t - 1;
+			self.domain.time.T   = self.domain.time.M_t * self.domain.time.dt;
+			self.solution = self.solution(:,1:self.domain.time.N_t);
+			self.domain.time.equilibrium.t_eq = self.domain.time.M_t * self.domain.time.dt;
 
 			% add NaN for unused nodes
 			self.solution(self.domain.effectiveNodes,:) = self.solution;
@@ -498,11 +496,11 @@ classdef GalerkinParabolic2d_solver
 		function h = plot(self,timestep)
 
 			% plot final time point unless otherwise specified
-			if nargin < 2, timestep = self.time.N_t; end
+			if nargin < 2, timestep = self.domain.time.N_t; end
 
 			% store domain information
-			coordinates = self.domain.Mesh.Nodes';
-			elements3 = self.domain.Mesh.Elements';
+			coordinates = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements;
 			elements4 = [];
 
 			% get solution at desired time step
@@ -526,11 +524,11 @@ classdef GalerkinParabolic2d_solver
 		function h = plotPatch(self,timestep)
 
 			% plot final time point unless otherwise specified
-			if nargin < 2, timestep = self.time.N_t; end
+			if nargin < 2, timestep = self.domain.time.N_t; end
 
 			% store domain information
-			coordinates = self.domain.Mesh.Nodes';
-			elements3 = self.domain.Mesh.Elements';
+			coordinates = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements;
 
 			% get solution at desired time step
 			u_min = min(min(self.solution));
@@ -553,7 +551,7 @@ classdef GalerkinParabolic2d_solver
 
 			% store variables
 			maxVal = self.getMaxSolutionValue;
-			timeGrid = self.time.getTimeGrid;
+			timeGrid = self.domain.time.getTimeGrid;
 
 			% plot result
 			p = plot(timeGrid,maxVal);
@@ -564,7 +562,7 @@ classdef GalerkinParabolic2d_solver
 
 			% store variables
 			avgVal = self.getAverageSolutionValue;
-			timeGrid = self.time.getTimeGrid;
+			timeGrid = self.domain.time.getTimeGrid;
 
 			% plot result
 			p = plot(timeGrid,avgVal);
@@ -574,7 +572,7 @@ classdef GalerkinParabolic2d_solver
 		function animate(self)
 
 			% store variables
-			N_t = self.time.N_t;
+			N_t = self.domain.time.N_t;
 
 			% capture zLim bounds
 			u_min = min(min(self.solution));
@@ -597,7 +595,7 @@ classdef GalerkinParabolic2d_solver
 
 		function animatePatch(self)
 
-			N_t = self.time.N_t;
+			N_t = self.domain.time.N_t;
 
 			% plot first time step
 			self.plotPatch(1);
@@ -691,7 +689,7 @@ classdef GalerkinParabolic2d_solver
 			% if no timestep passed, loop over all time steps
 			if NameValueArgs.timestep == 0
 				time_start = 1;
-				time_stop = self.time.N_t;
+				time_stop = self.domain.time.N_t;
 
 			% else compute at a specific timestep
 			else
@@ -746,7 +744,7 @@ classdef GalerkinParabolic2d_solver
 					for j = 1:self.domain.nElem
 						elemInd = self.domain.Mesh.Elements(:,j);
 						int(n) = int(n) + (sum(U_n(elemInd)) / 3) * ...
-							self.domain.elemAreas(j);
+							self.domain.mesh.areas(j);
 					end
 					%temp(ind) = tot;
 
@@ -808,7 +806,7 @@ classdef GalerkinParabolic2d_solver
 				for j = 1:self.domain.nElem
 					elemInd = self.domain.Mesh.Elements(:,j);
 					IP = IP + (sum(arg(elemInd)) / 3) * ...
-						self.domain.elemAreas(j);
+						self.domain.areas(j);
 				end
 
 			% else run slower algorithm for higher order quadrature
@@ -844,7 +842,7 @@ classdef GalerkinParabolic2d_solver
 			% default tolerance = 10^-6
 			if nargin == 1, tol = 10^-6; end
 
-			for n = 1:self.time.M_t
+			for n = 1:self.domain.time.M_t
 
 				% store current and next timestep
 				arg1 = self.solution(:,n);		
@@ -859,7 +857,7 @@ classdef GalerkinParabolic2d_solver
 				% check against tolerance
 				if int < tol
 					timestep = n-1;
-					t = self.time.dt * timestep;
+					t = self.domain.time.dt * timestep;
 					return	
 				end
 

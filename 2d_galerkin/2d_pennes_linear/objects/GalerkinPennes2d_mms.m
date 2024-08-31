@@ -12,24 +12,23 @@ classdef GalerkinPennes2d_mms < GalerkinParabolic2d_mms
 	end
 
 	methods
-		function self = GalerkinPennes2d_mms(dom,time,auxfun,mmsparams,NameValueArgs)
+		function self = GalerkinPennes2d_mms(dom,auxfun,mmsparams,NameValueArgs)
 
 			arguments
 				dom 		Domain2d
-				time		TimeStepping
 				auxfun  	ManufacturedFunctions2d_pennes
 				mmsparams 	MMSParams
 				NameValueArgs.errType = "Linfty(L2)"
 			end
 
 			% call superclass constructor
-			self@GalerkinParabolic2d_mms(dom,time,auxfun,mmsparams,NameValueArgs)
+			self@GalerkinParabolic2d_mms(dom,auxfun,mmsparams,NameValueArgs)
 
 		end
 
-		function prob = solve(self,dom,time,cofs,uInit,f)
+		function prob = solve(self,dom,cofs)
 
-			prob = GalerkinPennes2d_solver(dom,time,cofs,uInit,f);
+			prob = GalerkinPennes2d_solver(dom,cofs);
 
 		end
 

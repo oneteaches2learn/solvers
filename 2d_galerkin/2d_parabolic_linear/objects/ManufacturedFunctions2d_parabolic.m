@@ -1,4 +1,4 @@
-classdef ManufacturedFunctions2d
+classdef ManufacturedFunctions2d_parabolic < ManufacturedFunctions2d
 % ManufacturedFunctions2d(p,k,utrue) manufactures the source for a parabolic MMS test.
 %
 % The simplest parabolic problem is of the form
@@ -51,45 +51,37 @@ classdef ManufacturedFunctions2d
 
 
 	properties
-		k		% double or symfun, coefficient in (pu)_t - div (k grad u) = f
-		q		% symfun, q = -k grad uTrue
-		divq	% symfun, divq = div q = - div (k grad uTrue)
-		f		% symfun, manufactured source function
-		uTrue	% symfun, represents desired true solution
+		p		% double or symfun, coefficient in (pu)_t - div (k grad u) = f
+		uInit	% symfun, uInit(x) = uTrue(x,0)
+		pu_t	% symfun, pu_t = (p * uTrue)_t, i.e. is the time derivative of p * uTrue
 	end
 
 	methods
-		% CONSTRUCTOR
-		function self = ManufacturedFunctions2d(k,uTrue)
+		function self = ManufacturedFunctions2d_parabolic(p,k,uTrue)
+		% ManufacturedFunctions2d(p,k,uTrue) inputs are symfun objects
+			
+			% prepare uTrue
+			x = sym('x',[1 2]); syms t;
+			uTrue = symfun(uTrue,[x t]);
+
+			% call superclass constructor
+			self@ManufacturedFunctions2d(k,uTrue);
 
 			% store inputs
-			self.uTrue = uTrue;
-			self.k = k;
+			self.p = p;
+			self.uInit = symfun(self.uTrue(x(1),x(2),0),x);
 
 			% manufacture data
-			self.q = self.manufactureFlux;
-			self.divq = self.manufactureFluxDivergence;
+			self.pu_t = self.manufactureTimeDerivative;
 
 		end
 
-		function q = manufactureFlux(self)
-		% Manufactures symfun flux q = -k grad u
+		function pu_t = manufactureTimeDerivative(self)
+		% Manufactures symfun u_t, the time derivative of u
 
-			% manufacture flux
-			q = -self.k * gradient(self.uTrue);
-			q = formula(q);
-			q = q(1:2);
-
-		end
-
-		function divq = manufactureFluxDivergence(self)
-		% Manufactures symfun div q = - div (k grad u)
-
-			% manufacture divergence of flux
-			x = sym('x',[1 2]);
-			q_x1 = diff(self.q(1),x(1));
-			q_x2 = diff(self.q(2),x(2));
-			divq = q_x1 + q_x2;
+			% manufacture time derivative
+			x = sym('x',[1 2]); syms t;
+			pu_t = diff(self.p * self.uTrue,t);
 
 		end
 
@@ -103,10 +95,13 @@ classdef ManufacturedFunctions2d
 
 		function funcs = functionHandles(self)
 
-			% add outputs
+			% call superclass method
+			funcs = functionHandles@ManufacturedFunctions2d(self);
+
+			% add additional outputs
 			x = sym('x',[1 2]);
-			funcs.cofs.k = matlabFunction(symfun(self.k,x));
-			funcs.f = matlabFunction(symfun(self.f,x));
+			funcs.cofs.p = matlabFunction(symfun(self.p,x));
+			funcs.uInit = matlabFunction(symfun(self.uInit,x));
 
 		end
 	end

@@ -1,4 +1,4 @@
-classdef GalerkinPoisson2d_mms < GalerkinParabolic2d_mms
+classdef GalerkinPoisson2d_mms < GalerkinElliptic2d_mms
 % DOCUMENTATION NEEDED! In the meantime, see the documentation for
 % poissonFD1d_finegrid, which is a very similar object. 
 %
@@ -21,21 +21,16 @@ classdef GalerkinPoisson2d_mms < GalerkinParabolic2d_mms
 				NameValueArgs.errType = "L2"
 			end
 
-			% create dummy TimeStepping object
-			time = TimeStepping(0,0,0)
-
-
 			% call superclass constructor
-			self@GalerkinParabolic2d_mms(dom,time,auxfun,mmsparams,NameValueArgs)
+			self@GalerkinElliptic2d_mms(dom,auxfun,mmsparams,NameValueArgs)
 
 		end
 
-		function prob = solve(self,dom,time,cofs,uInit,f)
+		function prob = solve(self,dom,cofs,f)
 
-			prob = GalerkinPoisson2d_solver(dom,cofs,uInit,f);
+			prob = GalerkinPoisson2d_solver(dom,cofs,f);
 
 		end
 
 	end
 end
-

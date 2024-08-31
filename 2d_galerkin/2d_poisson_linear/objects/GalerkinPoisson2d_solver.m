@@ -23,7 +23,7 @@ classdef GalerkinPoisson2d_solver
 		function self = solve(self)
 
 			% load variables
-			coords = self.domain.Mesh.Nodes';
+			coords = self.domain.mesh.nodes;
 			FreeNodes = self.domain.freeNodes;
 			r = self.coefficients.r;
 			k = self.coefficients.k;
@@ -39,7 +39,7 @@ classdef GalerkinPoisson2d_solver
 			[E,b_rob] = self.computeRobinBCs;
 
 			% final assembly
-			v = sparse(self.domain.nNodes,1);
+			v = sparse(self.domain.mesh.nNodes,1);
 			S = A + B + E;
 			b = b_vol - b_neu + b_rob - S * U_D;
 
@@ -52,10 +52,10 @@ classdef GalerkinPoisson2d_solver
 		function A = assembleStiffnessMatrix(self)
 
 			% unpack variables
-			nNodes    = size(self.domain.Mesh.Nodes,2);
-			nElem3    = size(self.domain.Mesh.Elements,2);
-			coords    = self.domain.Mesh.Nodes';
-			elements3 = self.domain.Mesh.Elements';
+			nNodes    = self.domain.mesh.nNodes;
+			nElem3    = self.domain.mesh.nElems;
+			coords    = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements;
 			k = self.coefficients.k;
 
 			% initialize storage
@@ -80,10 +80,10 @@ classdef GalerkinPoisson2d_solver
 		function B = assembleMassMatrix(self)
 
 			% unpack variables
-			nNodes    = size(self.domain.Mesh.Nodes,2);
-			nElem3    = size(self.domain.Mesh.Elements,2);
-			coords 	  = self.domain.Mesh.Nodes';
-			elements3 = self.domain.Mesh.Elements';
+			nNodes    = self.domain.mesh.nNodes;
+			nElem3    = self.domain.mesh.nElems;
+			coords 	  = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements;
 			r = self.coefficients.r;
 
 			% initialize storage
@@ -118,10 +118,10 @@ classdef GalerkinPoisson2d_solver
 		function b = computeVolumeForces(self)
 
 			% unpack variables
-			nNodes    = size(self.domain.Mesh.Nodes,2);
-			nElem3    = size(self.domain.Mesh.Elements,2);
-			coords    = self.domain.Mesh.Nodes';
-			elements3 = self.domain.Mesh.Elements';
+			nNodes    = self.domain.mesh.nNodes;
+			nElem3    = self.domain.mesh.nElems;
+			coords    = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements;
 
 			% initialize storage
 			b = sparse(nNodes,1);
@@ -140,14 +140,14 @@ classdef GalerkinPoisson2d_solver
 
 			% unpack variables
 			dom    = self.domain;
-			nNodes = self.domain.nNodes;
-			coords = self.domain.Mesh.Nodes';
+			nNodes = self.domain.mesh.nNodes;
+			coords = self.domain.mesh.nodes;
 
 			% initialize storage
 			U_D = sparse(nNodes,1);
 
 			% compute Dirichlet boundary conditions
-			for i = 1:dom.NumEdges
+			for i = 1:dom.nEdges
 				
 				if dom.edges(i).boundaryType == 'D'
 
@@ -167,14 +167,14 @@ classdef GalerkinPoisson2d_solver
 
 			% unpack variables
 			dom    = self.domain;
-			nNodes = self.domain.nNodes;
-			coords = self.domain.Mesh.Nodes';
+			nNodes = self.domain.mesh.nNodes;
+			coords = self.domain.mesh.nodes;
 
 			% initialize storage
 			b_neu = sparse(nNodes,1);
 
 			% compute boundary conditions
-			for i = 1:self.domain.NumEdges
+			for i = 1:self.domain.nEdges
 				
 				% compute Neumann condition
 				if dom.edges(i).boundaryType == 'N'
@@ -201,15 +201,15 @@ classdef GalerkinPoisson2d_solver
 
 			% unpack variables
 			dom    = self.domain;
-			nNodes = self.domain.nNodes;
-			coords = self.domain.Mesh.Nodes';
+			nNodes = self.domain.mesh.nNodes;
+			coords = self.domain.mesh.nodes;
 
 			% initialize storage
 			b_rob = sparse(nNodes,1);
 			E = sparse(nNodes,nNodes);
 
 			% compute boundary conditions
-			for i = 1:self.domain.NumEdges
+			for i = 1:self.domain.nEdges
 				
 				% compute Dirichlet condition
 				if dom.edges(i).boundaryType == 'R'
@@ -272,7 +272,7 @@ classdef GalerkinPoisson2d_solver
 			bcNodes = [];
 			for i = 1:length(midPts)
 				edgeID = fegm.nearestEdge(midPts(i,:));
-				nodes = fegm.Mesh.findNodes('region','Edge',edgeID);
+				nodes = fegm.mesh.Mesh.findNodes('region','Edge',edgeID);
 				for j = 1:length(nodes)-1
 					bcNodes = [bcNodes; nodes(j) nodes(j+1)];
 				end
@@ -282,8 +282,8 @@ classdef GalerkinPoisson2d_solver
 		function plot(self)
 
 			% store domain information
-			coordinates = self.domain.Mesh.Nodes';
-			elements3 = self.domain.Mesh.Elements';
+			coordinates = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements;
 			elements4 = [];
 
 			% get solution at final time step

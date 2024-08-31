@@ -8,6 +8,10 @@ classdef TimeStepping
 		equilibrium
 	end
 
+	properties (Dependent)
+		tGrid
+	end
+
 	methods
 		function self = TimeStepping(T,dt,eq)
 			%{
@@ -20,7 +24,7 @@ classdef TimeStepping
 
 			self.T = T;
 
-			self.dt    = dt;
+			self.dt  = dt;
 			self.M_t = int32(T / dt);
 			self.N_t = self.M_t + 1;
 
@@ -56,9 +60,11 @@ classdef TimeStepping
 
 		end
 
-		function output = getTimeGrid(self)
 
-			output = linspace(0,self.T,self.N_t);
+		% GETTERS
+		function val = get.tGrid(self)
+
+			val = linspace(0,self.T,self.N_t);
 			
 		end
 

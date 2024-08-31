@@ -86,89 +86,77 @@ classdef Galerkin2d_mms
 	end
 
 	methods
-		% CONSTRUCTOR 
 		function self = Galerkin2d_mms(dom,auxfun,mmsparams,NameValueArgs)
 
 			% store inputs
 			self.auxFunctions = auxfun;
 			self.errType = NameValueArgs.errType;
 			self.mmsParams = mmsparams;
-			try, time = NameValueArgs.time; end
 
 			% manufacture boundary conditions
 			fprintf(' Setting BCs:'), tic
-			if exist('time')
-				self.domain = self.manufactureBoundaryConditions(dom,auxfun,time);
-			else
-				self.domain = self.manufactureBoundaryConditions(dom,auxfun);
-			end
+			self.domain = self.manufactureBoundaryConditions(dom,auxfun);
 			executionTime = toc;
 			fprintf(' %f s\n',executionTime)
 
 			% if not in demo-mode, run MMS test
 			if self.mmsParams.demo == 0
-
-				% solve problems
-				if exist('time')
-					self.problems = self.solveManufacturedProblems(time);
-				else
-					self.problems = self.solveManufacturedProblems;
-				end
-
-				% compute errors
+				self.problems = self.solveManufacturedProblems(NameValueArgs.time);
 				[self.errors,self.ratios,self.orders] = self.computeErrors;
 
 			% else, if in demo-mode, only run one trial
 			else
-				self.problems = self.solveManufacturedProblems(time);
+				self.problems = self.solveManufacturedProblems(NameValueArgs.time);
 			end
 
 		end
 
-
-		% UTILITY FUNCTIONS
 		function problems = solveManufacturedProblems(self,varargin)
 
 			% unpack variables
-			cofs = self.auxFunctions.functionHandles;
-			base = self.mmsParams.base;
-			pmin = self.mmsParams.pmin;
-			pmax = self.mmsParams.pmax;
-			tOff = self.mmsParams.timeOffset;
-			tFac = self.mmsParams.timeFactor;
+			f     = self.auxFunctions.source2FunctionHandle;
+			cofs  = self.auxFunctions.coefficients2FunctionHandles;
+			uInit = self.auxFunctions.uInit2FunctionHandle;
+			base  = self.mmsParams.base;
+			pmin  = self.mmsParams.pmin;
+			pmax  = self.mmsParams.pmax;
+			tOff  = self.mmsParams.timeOffset;
+			tFac  = self.mmsParams.timeFactor;
 
-			% run mms test
+			% Solve problems for successive base^-p
 			fprintf('MMS Test Begun\n')
 			fprintf('Solving Problems\n')
+
+			% run mms test
 			ind = 1;
 			for p = pmin:pmax
 				
-				% successively refine mesh
-				fprintf(' p = %i solved:',p); tic;
+				tic 
+				fprintf(' p = %i solved:',p)
+				% successively refine mesh and time-stepping 
 				dom_p  = self.domain.setMesh(p,base);
 
 				% if time-varying
-				if ~isempty(self.domain.time)
+				if nargin == 2
 
-					% successively refine time grid
-					dom_p.time = dom_p.time.setMesh(tFac*(p-tOff),base);
+					time = varargin{1};
+					time_p = time.setMesh(tFac*(p-tOff),base);
+					prob_p = self.solve(dom_p,time_p,cofs,uInit,f);
 
 				end
-
-				prob_p = self.solve(dom_p,cofs);
 
 				% store results
 				if self.mmsParams.demo == 0, problems{ind} = prob_p;
 				else problems{1} = prob_p;
 				end
 
-				% prepare next trial
 				ind = ind + 1;
 				executionTime = toc;
 				fprintf(' %f s\n',executionTime)
-
 			end
+
 		end
+
 
 		function dom = manufactureBoundaryConditions(self,dom,auxfun,varargin);
 
@@ -178,7 +166,7 @@ classdef Galerkin2d_mms
 			nEdges = dom.nEdges;
 
 			% set symbolic variables
-			if ~isempty(dom.time)
+			if nargin == 4
 				x = sym('x',[1 2]); syms t;
 				vars = [x t];
 			end
@@ -217,6 +205,7 @@ classdef Galerkin2d_mms
 			end
 
 		end
+
 
 		function dom = setEdgeNormalVectors_outerBoundary(self,dom)
 
@@ -310,21 +299,8 @@ classdef Galerkin2d_mms
 			orders = zeros(1,trials-1);
 
 			% Compute error
-			%errorObj = mmsErrorComputer(self);
-			%errors = errorObj.errors;
-
-			% TEMPORARY! DELETE! -------------%
-			fprintf('Computing Errors:\n')
-			uTrue = self.auxFunctions.uTrue;
-			for i = 1:3
-				fprintf(' Trial: '); tic;
-				sol = self.problems{i}.solution;
-				err = self.problems{i}.domain.L2err_threePointQuadrature_nodal(sol,uTrue);
-				errors(i) = max(err);
-				executionTime = toc;
-				fprintf('%f s\n',executionTime) 
-			end
-			%---------------------------------%
+			errorObj = mmsErrorComputer(self);
+			errors = errorObj.errors;
 
 			% Compute ratios and orders
 			for i = 2:trials
@@ -334,8 +310,14 @@ classdef Galerkin2d_mms
 
 		end
 
+		function v = computeOutwardNormal(self,nod1,nod2)
 
-		% PLOTTERS
+			x = nod2(1) - nod1(1);
+			y = nod2(2) - nod1(2);
+			v = [y,-x];
+
+		end
+
 		function ax = plot(self)
 
 			h = zeros(1,4);
@@ -355,8 +337,6 @@ classdef Galerkin2d_mms
 
 		end
 
-
-		% ANCILLARY FUNCTIONS
 		function fineGrid = instantiateFineGridObject(self)
 	
 			dom = self.problems{1}.domain;
@@ -366,38 +346,6 @@ classdef Galerkin2d_mms
 
 			fineGrid = poissonFD1d_finegrid(dom,bc,k,f);
 
-		end
-
-		function plotTrueSolution(self)
-
-			nProb = length(self.problems);
-			prob = self.problems{nProb};
-			uTrue = self.uTrue;
-			uTrue = matlabFunction(uTrue);
-
-			% plot final timestep unless otherwise specified
-			if nargin < 2, timestep = prob.time.N_t; end
-			t = timestep * prob.time.dt;
-
-			% store domain information
-			coordinates = prob.domain.Mesh.Nodes';
-			elements3 = prob.domain.Mesh.Elements';
-			elements4 = [];
-
-			% get solution at final time step
-			U = uTrue(coordinates(:,1),coordinates(:,2),t * ones(size(coordinates,1),1))
-
-			% plot data
-			trisurf(elements3,coordinates(:,1),coordinates(:,2),U', ...
-				'facecolor','interp')
-			hold on
-			trisurf(elements4,coordinates(:,1),coordinates(:,2),U', ...
-				'facecolor','interp')
-			hold off
-
-			% format plot
-			view(10,40);
-			title('Solution of the Problem')
 		end
 
 		function latexTable(self,fid)
@@ -431,6 +379,39 @@ classdef Galerkin2d_mms
 			fprintf(fid,'\t\\label{tab:1-}\n')
 			fprintf(fid,'\\end{table}\n')
 			fprintf(fid,'%%\n')
+		end
+
+		
+		function plotTrueSolution(self)
+
+			nProb = length(self.problems);
+			prob = self.problems{nProb};
+			uTrue = self.uTrue;
+			uTrue = matlabFunction(uTrue);
+
+			% plot final timestep unless otherwise specified
+			if nargin < 2, timestep = prob.time.N_t; end
+			t = timestep * prob.time.dt;
+
+			% store domain information
+			coordinates = prob.domain.Mesh.Nodes';
+			elements3 = prob.domain.Mesh.Elements';
+			elements4 = [];
+
+			% get solution at final time step
+			U = uTrue(coordinates(:,1),coordinates(:,2),t * ones(size(coordinates,1),1))
+
+			% plot data
+			trisurf(elements3,coordinates(:,1),coordinates(:,2),U', ...
+				'facecolor','interp')
+			hold on
+			trisurf(elements4,coordinates(:,1),coordinates(:,2),U', ...
+				'facecolor','interp')
+			hold off
+
+			% format plot
+			view(10,40);
+			title('Solution of the Problem')
 		end
 
 	end

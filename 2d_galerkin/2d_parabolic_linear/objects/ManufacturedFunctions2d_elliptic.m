@@ -1,4 +1,4 @@
-classdef ManufacturedFunctions2d
+classdef ManufacturedFunctions2d_elliptic
 % ManufacturedFunctions2d(p,k,utrue) manufactures the source for a parabolic MMS test.
 %
 % The simplest parabolic problem is of the form
@@ -59,18 +59,24 @@ classdef ManufacturedFunctions2d
 	end
 
 	methods
-		% CONSTRUCTOR
-		function self = ManufacturedFunctions2d(k,uTrue)
-
+		function self = ManufacturedFunctions2d_elliptic(k,uTrue)
+		% ManufacturedFunctions2d(p,k,uTrue) inputs are symfun objects
+			
 			% store inputs
-			self.uTrue = uTrue;
-			self.k = k;
+			x = sym('x',[1 2]); 
+			self.k = symfun(k,x);
+			self.uTrue = symfun(uTrue,x);
 
 			% manufacture data
-			self.q = self.manufactureFlux;
+			self.q    = self.manufactureFlux;
 			self.divq = self.manufactureFluxDivergence;
+			self.pu_t = self.manufactureTimeDerivative;
+
+			% manufacture RHS: handled by subclasses
+				... 
 
 		end
+
 
 		function q = manufactureFlux(self)
 		% Manufactures symfun flux q = -k grad u
@@ -101,14 +107,37 @@ classdef ManufacturedFunctions2d
 
 		end
 
-		function funcs = functionHandles(self)
+		function cofs = coefficients2FunctionHandles(self)
+		% Converts symfun coefficients p and k to structure containing function_handles
 
-			% add outputs
-			x = sym('x',[1 2]);
-			funcs.cofs.k = matlabFunction(symfun(self.k,x));
-			funcs.f = matlabFunction(symfun(self.f,x));
+			cofs.f = self.source2FunctionHandle;
 
 		end
+
+		function f = source2FunctionHandle(self)
+		% Converts symfun f to function_handle
+
+			% convert source to function handle
+			f = matlabFunction(self.f);
+
+		end
+
+		function uInit = uInit2FunctionHandle(self)
+		% Converts symfun uInit = u(x,0) to function_handle
+
+			% convert uInit to function handle
+			uInit = matlabFunction(self.uInit);
+
+		end
+
+		function uTrue = uTrue2FunctionHandle(self)
+		% Converts symfun uTrue to function_handle
+
+			% convert uTrue to function handle
+			uTrue = matlabFunction(self.uTrue);
+
+		end
+
 	end
 
 end

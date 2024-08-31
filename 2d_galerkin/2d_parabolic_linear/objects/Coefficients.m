@@ -1,12 +1,7 @@
 classdef Coefficients
 
-	properties
-		porosity
-	end
-
 	methods
-		function self = Coefficients(por)
-			self.porosity = por;
+		function self = Coefficients
 		end
 	end
 

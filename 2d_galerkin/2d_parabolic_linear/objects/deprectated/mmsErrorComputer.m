@@ -142,7 +142,7 @@ classdef mmsErrorComputer
 			% store uTrue at current time
 			uTrue = matlabFunction(self.mmsObj.auxFunctions.uTrue);
 			if timeVarying == 1, uTrue = @(x1,x2)(uTrue(x1,x2,t)); end
-			UTrue = uTrue(prob.domain.Mesh.Nodes(1,:)',prob.domain.Mesh.Nodes(2,:)');
+			UTrue = uTrue(prob.domain.mesh.nodes(:,1),prob.domain.mesh.nodes(:,2));
 
 			if sum(size(UTrue)) == 2
 				UTrue = UTrue * ones(size(prob.solution,1),1);
@@ -196,11 +196,11 @@ classdef mmsErrorComputer
 
 			% loop over elements
 			L2_IP = 0;
-			nElem = size(prob.domain.Mesh.Elements,2);
+			nElem = size(prob.domain.mesh.Mesh.Elements,2);
 			for i = 1:nElem
 				% interpolate u_h locally 
-				locNodes = prob.domain.Mesh.Elements(:,i); 
-				locCoord = prob.domain.Mesh.Nodes(:,locNodes)';
+				locNodes = prob.domain.mesh.Mesh.Elements(:,i); 
+				locCoord = prob.domain.mesh.Mesh.Nodes(:,locNodes)';
 				uLoc = scatteredInterpolant(locCoord,u_h(locNodes)); 
 
 				% compute local error function on quad points
