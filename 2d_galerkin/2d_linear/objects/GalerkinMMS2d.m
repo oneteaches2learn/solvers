@@ -143,7 +143,7 @@ classdef GalerkinMMS2d
 			ind = 1;
 			for p = pmin:pmax
 				
-				% successively refine mesh
+				% successively refine mese
 				fprintf(' p = %i solved:',p); tic;
 				dom_p  = self.domain.setMesh(p,base);
 
@@ -310,21 +310,18 @@ classdef GalerkinMMS2d
 			orders = zeros(1,trials-1);
 
 			% Compute error
-			%errorObj = mmsErrorComputer(self);
-			%errors = errorObj.errors;
-
-			% TEMPORARY! DELETE! -------------%
 			fprintf('Computing Errors:\n')
 			uTrue = self.auxFunctions.uTrue;
 			for i = 1:3
 				fprintf(' Trial: '); tic;
 				sol = self.problems{i}.solution;
 				err = self.problems{i}.domain.L2err_threePointQuadrature_nodal(sol,uTrue);
+				%err = self.problems{i}.domain.L2err_centroidQuadrature_nodal(sol,uTrue);
+				%err = self.problems{i}.domain.L2err_nodalQuadrature(sol,uTrue);
 				errors(i) = max(err);
 				executionTime = toc;
 				fprintf('%f s\n',executionTime) 
 			end
-			%---------------------------------%
 
 			% Compute ratios and orders
 			for i = 2:trials

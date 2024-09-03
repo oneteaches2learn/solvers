@@ -31,7 +31,7 @@ r = 1 + x(1) * x(2) + t;
 uStar = 1 + x(1) * x(2) + t;
 
 % specify desired result
-uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2));
+uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2)) * t;
 
 
 % MMS TEST %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
