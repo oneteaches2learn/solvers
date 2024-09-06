@@ -91,16 +91,9 @@ classdef GalerkinAssembler2d
 				bcConds = varargin{1};
 			end
 
-			% create Boundary2d object
-			bound = Boundary2d(bcTypes,bcConds);
-
-			% set boundary conditions on domain (old method)
-			dom = dom.setEdgeBCTypes(bound);
-			dom = dom.setEdgeBCConditions(bound);
-
-			% set boundary conditions (new method)
-			dom.boundary.boundaryTypes = bcTypes;
-			dom.boundary.boundaryConditions = bcConds;
+			% set boundary conditions on domain
+			dom = dom.setBCTypes(bcTypes);
+			dom = dom.setBCConditions(bcConds);
 
 		end
 
@@ -115,8 +108,8 @@ classdef GalerkinAssembler2d
 			end
 
 			% extend bcTypes if necessary
-			if length(bcTypes) ~= length(dom.edges)
-				temp = repmat(bcTypes(5),1,length(dom.edges)-5);
+			if length(bcTypes) ~= length(dom.boundary.edges)
+				temp = repmat(bcTypes(5),1,length(dom.boundary.edges)-5);
 				bcTypes = [bcTypes temp];
 			end
 

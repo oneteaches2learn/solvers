@@ -11,6 +11,10 @@ classdef Mesh2d
 		nodes
 		elements
 		edges
+		effectiveNodes
+		effectiveElems
+		unusedNodes
+		unusedElems
 		elementEdges
 		midpoints
 		centroids
@@ -23,23 +27,55 @@ classdef Mesh2d
 
 	methods
 		% CONSTRUCTOR
-		function self = Mesh2d(mesh)
+		function self = Mesh2d(dl,p,base)
 
-			self.Mesh = mesh;
-			%{
-			self.nNodes = self.nNodes;
-			self.nElems = self.nElems;
+			% store inputs
+			self.p = p;
+			self.base = base;
+			self.h = base^-p;
 
-			self.nEdges = self.nEdges;
-			self.nodes = self.nodes;
-			self.elements = self.elements;
-			self.edges = self.edges;
-			self.elementEdges = self.elementEdges;
-			self.midpoints = self.midpoints;
-			self.centroids = self.centroids;
-			%}
+			% generate the mesh
+			self.Mesh = self.setMesh(dl,p,base);
+
+			% precompute areas to save computation time later
 			self.areas = self.get_areas;
+
 		end
+
+
+		% SETTERS
+		function mesh = setMesh(self,dl,p,base)
+
+			% create mesh
+			geo = fegeometry(dl);
+			geo = geo.generateMesh(Hmax=base^-p,GeometricOrder='linear');
+			mesh = geo.Mesh;
+
+		end
+
+		function self = setEffectiveNodes(self)
+			
+			% store node data
+			self.effectiveNodes = [1:1:self.nNodes];
+			self.unusedNodes = [];
+
+		end
+
+		function self = setEffectiveElements(self)
+
+			% store element data
+			self.effectiveElems = [1:1:self.nElems];
+			self.unusedElems = [];
+
+		end
+
+		function self = setFreeNodes(self)
+
+			% store free nodes
+			self.freeNodes = setdiff(1:self.mesh.nNodes,self.boundaryNodes.D);
+
+		end
+
 
 		% GETTERS
 		function nodes = get.nodes(self)

@@ -173,21 +173,21 @@ classdef (Abstract) GalerkinSolver2d
 			% compute Dirichlet boundary conditions
 			for i = 1:dom.boundary.nEdges
 				
-				if dom.edges(i).boundaryType == 'D'
+				if dom.boundary.edges(i).boundaryType == 'D'
 
 					% store nodes on i-th edge of domain
-					bNodes_i = dom.edges(i).nodes;
+					bNodes_i = dom.boundary.edges(i).nodes;
 
                     % check if boundary condition is time-varying
-                    if Coefficients.isTimeVarying(dom.edges(i).boundaryCondition) == 0
-                        dom.edges(i).boundaryCondition = @(x1,x2,t)(dom.edges(i).boundaryCondition(x1,x2));
+                    if Coefficients.isTimeVarying(dom.boundary.edges(i).boundaryCondition) == 0
+                        dom.boundary.edges(i).boundaryCondition = @(x1,x2,t)(dom.boundary.edges(i).boundaryCondition(x1,x2));
                         t = 0;
                     else
                         t = self.t;
                     end
 
 					% compute value of U on nodes of i-th edge
-					U_D(bNodes_i) = dom.edges(i).boundaryCondition(...
+					U_D(bNodes_i) = dom.boundary.edges(i).boundaryCondition(...
 										coords(bNodes_i,1),coords(bNodes_i,2),t);
 
 				end
@@ -208,11 +208,11 @@ classdef (Abstract) GalerkinSolver2d
 			for i = 1:self.domain.boundary.nEdges
 				
 				% compute Neumann condition
-				if dom.edges(i).boundaryType == 'N'
+				if dom.boundary.edges(i).boundaryType == 'N'
 
 					% store nodes on i-th edge of domain
-					bNodes_i = dom.edges(i).nodes;
-					bCond = dom.edges(i).boundaryCondition;
+					bNodes_i = dom.boundary.edges(i).nodes;
+					bCond = dom.boundary.edges(i).boundaryCondition;
 
                     % check if boundary condition is time-varying
                     if Coefficients.isTimeVarying(bCond) == 0
@@ -249,9 +249,9 @@ classdef (Abstract) GalerkinSolver2d
 			for i = 1:self.domain.boundary.nEdges
 				
 				% compute Dirichlet condition
-				if dom.edges(i).boundaryType == 'R'
+				if dom.boundary.edges(i).boundaryType == 'R'
 					
-					bCond = dom.edges(i).boundaryCondition;
+					bCond = dom.boundary.edges(i).boundaryCondition;
 
 					% unpack functions
 					alpha = bCond{1};
@@ -274,7 +274,7 @@ classdef (Abstract) GalerkinSolver2d
                     end
                     
 					% store nodes on i-th edge of domain
-					bNodes_i = dom.edges(i).nodes;
+					bNodes_i = dom.boundary.edges(i).nodes;
 
 					% loop over segments of i-th edge
 					for j = 1:length(bNodes_i)-1
@@ -306,69 +306,7 @@ classdef (Abstract) GalerkinSolver2d
 			dom    = self.domain;
 			nNodes = self.domain.mesh.nNodes;
 			coords = self.domain.mesh.nodes;
-
-			% build periodic node dictionary
-			P.free.edge = [];
-			P.free.corner = [];
-			P.replica.edge = [];
-			P.replica.corner = [];
-			
-			% if North-South periodicity
-			if (dom.edges(1).boundaryType == 'P') && ...
-					~(dom.edges(2).boundaryType == 'P')
-				
-				% store free nodes
-				P.free.edge = dom.edges(1).nodes(2:end-1);
-
-				% store corresponding replica nodes
-				P.replica.edge = flip(dom.edges(3).nodes(2:end-1));
-
-			end
-
-			% if East-West periodicity
-			if ~(dom.edges(1).boundaryType == 'P') && ...
-					(dom.edges(2).boundaryType == 'P')
-				
-				% store free nodes
-				P.free.edge = dom.edges(2).nodes(2:end-1);
-
-				% store corresponding replica nodes
-				P.replica.edge = flip(dom.edges(4).nodes(2:end-1));
-
-			end
-
-			% if both periodicities
-			if (dom.edges(1).boundaryType == 'P') && ...
-					(dom.edges(2).boundaryType == 'P')
-				
-				% store free edge node
-				Pfree_S  = dom.edges(1).nodes(2:end-1);
-				Pfree_E  = dom.edges(2).nodes(2:end-1);
-				P.free.edge = [Pfree_S, Pfree_E];
-
-				% store free corner node
-				Pfree_SE = dom.edges(1).nodes(end);
-				P.free.corner = Pfree_SE;
-
-				% store corresponding replica edge nodes
-				Preplica_N = flip(dom.edges(3).nodes(2:end-1));
-				Preplica_W = flip(dom.edges(4).nodes(2:end-1));
-				P.replica.edge = [Preplica_N, Preplica_W];
-
-				% store corresponding replica corner nodes
-				Preplica_SW = dom.edges(2).nodes(end);
-				Preplica_NW = dom.edges(3).nodes(end);
-				Preplica_NE = dom.edges(4).nodes(end);
-				P.replica.corner = [Preplica_SW, Preplica_NW, Preplica_NE];	
-
-			end			
-
-			% store periodic node dictionary
-			self.domain.boundaryNodes.P = P;
-
-			% remove replica nodes from freeNodes
-			self.domain.freeNodes = setdiff(self.domain.freeNodes, ...
-										[P.replica.edge, P.replica.corner]);
+			P = self.domain.boundary.P_nodes;
 
 			% get periodic source term
 			b_per = sparse(nNodes,1);
@@ -452,12 +390,11 @@ classdef (Abstract) GalerkinSolver2d
 			self.solution(self.domain.unusedNodes,:) = NaN;
 
 			% copy solution to periodic replica nodes
-			self.solution(self.domain.boundaryNodes.P.replica.edge,:) = ...
-					self.solution(self.domain.boundaryNodes.P.free.edge,:);
-			%self.solution(self.domain.boundaryNodes.P.replica.corner,:) = ...
-			%		repmat(self.solution(self.domain.boundaryNodes.P.free.corner,:),3,1);					
-			self.solution(self.domain.boundaryNodes.P.replica.corner,:) = ...
-					self.solution(self.domain.boundaryNodes.P.free.corner,:);
+			P = self.domain.boundary.P_nodes;
+			self.solution(P.replica.edge,:) = self.solution(P.free.edge,:);
+			%self.solution(P.replica.corner,:) = ...
+			%		repmat(P.free.corner,:),3,1);					
+			self.solution(P.replica.corner,:) = self.solution(P.free.corner,:);
 
             % ensure solution is full
             self.solution = full(self.solution);

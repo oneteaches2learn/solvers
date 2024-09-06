@@ -205,24 +205,24 @@ classdef GalerkinMMS2d
 			for i = 1:nEdges
 
 				% assign Dirichlet BC
-				if dom.edges(i).boundaryType == 'D'
-					dom.edges(i).boundaryCondition = u_d;
+				if dom.boundary.edges(i).boundaryType == 'D'
+					dom.boundary.edges(i).boundaryCondition = u_d;
 
 				% assign Neumann BC
-				elseif dom.edges(i).boundaryType == 'N'
-					n_i = symfun(dom.edges(i).outwardNormal,vars);
+				elseif dom.boundary.edges(i).boundaryType == 'N'
+					n_i = symfun(dom.boundary.edges(i).outwardNormal,vars);
 					g_i = symfun(sum(q.*n_i),vars);
 					g_i = matlabFunction(g_i);
-					dom.edges(i).boundaryCondition = g_i;
+					dom.boundary.edges(i).boundaryCondition = g_i;
 
 				% assign Robin BC
-				elseif dom.edges(i).boundaryType == 'R'
+				elseif dom.boundary.edges(i).boundaryType == 'R'
 					alpha_i = symfun(1.0,vars);
-					n_i = symfun(dom.edges(i).outwardNormal,vars);
+					n_i = symfun(dom.boundary.edges(i).outwardNormal,vars);
 					g_i = symfun(uTrue - sum(q .* n_i) / alpha_i,vars);
 					alpha_i = matlabFunction(alpha_i);
 					g_i = matlabFunction(g_i);
-					dom.edges(i).boundaryCondition = {alpha_i,g_i};
+					dom.boundary.edges(i).boundaryCondition = {alpha_i,g_i};
 				end
 			end
 
@@ -252,7 +252,7 @@ classdef GalerkinMMS2d
 				end
 				
 				% store normal vector
-				dom.edges(j).outwardNormal = n;
+				dom.boundary.edges(j).outwardNormal = n;
 
 			end
 
@@ -303,7 +303,7 @@ classdef GalerkinMMS2d
 				end
 				
 				% store normal vector
-				dom.edges(j).outwardNormal = n;
+				dom.boundary.edges(j).outwardNormal = n;
 
 			end
 		end

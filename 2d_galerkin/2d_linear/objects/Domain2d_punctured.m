@@ -176,30 +176,10 @@ classdef Domain2d_punctured < Domain2d
 			self.dl = dl;
 
 			% generate and store edges
-			self.edges = self.setEdgeGeometry_inclusions;
-			%self.nEdges = self.get_nEdges;
-			self.boundary.nEdges = self.get_nEdges;
+			self.boundary = Boundary2d(self.dl);
 
 			% set inclusion number
 			self.nInclusions = size(self.dl,2) / 4 - 1;
-
-		end
-
-		function edges = setEdgeGeometry_inclusions(self)
-
-			% store variables
-			dl = self.dl;
-
-			edges(size(dl,2)) = BoundaryEdge2d_test;
-			for j = 1:size(dl,2);
-
-				% create new edge
-				vert = reshape(dl(2:5,j),2,2);
-				edges(j).vertex1 = vert(1,:);
-				edges(j).vertex2 = vert(2,:);
-				edges(j).ID = j;
-
-			end
 
 		end
 

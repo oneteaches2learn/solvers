@@ -30,7 +30,7 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 		function self = solve(self)
 
 			% initialize problem
-			FreeNodes = self.domain.freeNodes;
+			FreeNodes = self.domain.boundary.freeNodes;
 			self = self.initializeProblem;
 
 			for timestep = 1:self.domain.time.M_t

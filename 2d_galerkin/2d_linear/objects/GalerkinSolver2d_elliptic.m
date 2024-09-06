@@ -23,7 +23,7 @@ classdef (Abstract) GalerkinSolver2d_elliptic < GalerkinSolver2d
 			[S,b] = self.finalAssembly;
 
 			% load variables
-			FreeNodes = self.domain.freeNodes;
+			FreeNodes = self.domain.boundary.freeNodes;
 
 			% solve and store solution
 			v = sparse(self.domain.mesh.nNodes,1);

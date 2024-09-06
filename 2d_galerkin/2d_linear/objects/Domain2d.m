@@ -3,17 +3,11 @@ classdef Domain2d
 	properties
 		geometryMatrix
 		dl
-		base
-		p
-		h
-		edges
 		effectiveNodes
 		effectiveElems
 		unusedNodes
 		unusedElems
 		domainArea
-		boundaryNodes
-		freeNodes
 		xLim
 		yLim
 		mesh
@@ -38,13 +32,8 @@ classdef Domain2d
 			self.xLim = x;
 			self.yLim = y;
 
-			% set and store edges
-			self.edges = self.setEdgeGeometry;
-
-			% TEMPORARY: set boundary stuff
-			self.boundary = Boundary2d;
-			self.boundary.edges = self.setEdgeGeometry;
-			self.boundary.nEdges = self.get_nEdges;
+			% create boundary object
+			self.boundary = Boundary2d(self.dl);
 
 		end
 
@@ -55,105 +44,30 @@ classdef Domain2d
 
 		end
 
-		function edges = setEdgeGeometry(self)
-
-			% store variables
-			dl = self.dl;
-
-			% detect columns of dl where x-coordinate is constant
-			xConst = ((dl(2,:) - dl(3,:)) == 0);
-
-			% mark which columns of dl designated the start of a new edge
-			newEdge = [1, (xConst(1:end-1) - xConst(2:end)) ~= 0];
-
-			% indicate which dl cols correspond to each edge 
-			edgeNums(1) = 1;
-			for i = 2:length(newEdge)
-				edgeNums(i) = edgeNums(i-1) + newEdge(i);
-			end
-
-			% create edges
-			edges = [];
-			for i = 1:4
-
-				% make map between geometry edges and dl columns
-				IDs = find(edgeNums - i == 0);
-
-				% get start and stop coordinates
-				startCoord = [dl(2,IDs(1)),dl(4,IDs(1))];
-				stopCoord = [dl(3,IDs(end)),dl(5,IDs(end))];
-
-				% generate edges
-				edge_i = BoundaryEdge2d(startCoord,stopCoord);
-				edge_i.ID = IDs;
-				edges = [edges edge_i];
-			end
-		end
-
-		function edges = setEdgeGeometry_old(self)
-
-			% store variables
-			gd = self.geometryMatrix;
-
-			% get vertices
-			vert = zeros(4,2);
-			for i = 1:4
-				vert(i,1) = gd(i+2,1);
-				vert(i,2) = gd(i+6,1);
-			end
-			vert(5,:) = vert(1,:);
-
-			% get midpoints
-			for i = 1:4
-				mdpt(i,:) = [(vert(i,1) + vert(i+1,1))/2, (vert(i,2) + vert(i+1,2))/2];
-			end
-
-			% set edges
-			edges = [];
-			for i = 1:4
-				edge_i = BoundaryEdge2d(vert(i,:),vert(i+1,:));
-				edge_i.ID = i;
-				edges = [edges edge_i];
-			end
-
-		end
-
-		function self = setEdgeBCTypes(self,boundary)
+		function self = setBCTypes(self,bcTypes)
 			
-			% old method, will phase out
-			edges = self.edges;
-
-			for i = 1:self.boundary.nEdges
-				edges(i).boundaryType = boundary.boundaryTypes(i);
-			end
-
-			self.edges = edges;
+			self.boundary = self.boundary.setBCTypes(bcTypes);
 
 		end
 
-		function self = setEdgeBCConditions(self,boundary)
+		function self = setBCConditions(self,bcConds)
 
-			edges = self.edges;
+			self.boundary = self.boundary.setBCConditions(bcConds);
 
-			for i = 1:self.boundary.nEdges
-				edges(i).boundaryCondition = boundary.boundaryConditions{i};
-			end
+		end
 
-			self.edges = edges;
+		function self = setBoundaryNodes(self,mesh)
+
+			self.boundary = self.boundary.setEdgeNodes(mesh);
+			self.boundary = self.boundary.setBoundaryNodeLists(mesh);
+			self.boundary = self.boundary.setFreeNodes(mesh);
 
 		end
 
 		function self = setMesh(self,p,base)
 
-			% store inputs
-			self.p = p;
-			self.base = base;
-
-			% compute h
-			self.h = base^-p;
-			
 			% generate the mesh
-			self.mesh = self.generateMesh(p,base);
+			self.mesh = Mesh2d(self.dl,p,base);
 
 			% store node data
 			self.effectiveNodes = [1:1:self.mesh.nNodes];
@@ -164,57 +78,12 @@ classdef Domain2d
 			self.unusedElems = [];
 
 			% distribute boundary nodes to edges
-			self.edges = self.distributeBoundaryNodes;
-
-			% compile boundary node lists
-			self.boundaryNodes.D = [];
-			self.boundaryNodes.N = [];
-			self.boundaryNodes.R = [];
-			for i = 1:length(self.edges)
-				if strcmp(self.edges(i).boundaryType,'D')
-					self.boundaryNodes.D = [self.boundaryNodes.D self.edges(i).nodes];
-				elseif strcmp(self.edges(i).boundaryType,'N')
-					self.boundaryNodes.N = [self.boundaryNodes.N self.edges(i).nodes];
-				elseif strcmp(self.edges(i).boundaryType,'R')
-					self.boundaryNodes.R = [self.boundaryNodes.R self.edges(i).nodes];
-				end
-			end
-
-			% sort D nodes and remove duplicates
-			self.boundaryNodes.D = unique(self.boundaryNodes.D);
-
-			% remove D nodes from R and N node lists, sort and remove duplicates
-			self.boundaryNodes.N = setdiff(self.boundaryNodes.N,self.boundaryNodes.D);
-			self.boundaryNodes.R = setdiff(self.boundaryNodes.R,self.boundaryNodes.D);
-
-			% store free nodes
-			self.freeNodes = setdiff(1:self.mesh.nNodes,self.boundaryNodes.D);
+			self = self.setBoundaryNodes(self.mesh);
 
 		end
+
 
 		% GETTERS
-		function [bNodes, nearestEdge] = getBoundaryNodes(self)
-
-			% instantiate storage
-			bNodes = [];
-			nearestEdge = [];
-
-			% collect node pairs for each edge
-			for edgeID = 1:self.boundary.nEdges
-				edgeNodes = self.mesh.Mesh.findNodes('region','Edge',edgeID);
-				for j = 1:length(edgeNodes)-1
-					bNodes = [bNodes; edgeNodes(j) edgeNodes(j+1)];
-					nearestEdge = [nearestEdge; edgeID];
-				end
-			end
-		end
-
-		function nEdges = get_nEdges(self)
-
-			nEdges = length(self.edges);
-
-		end
-
 		function output = getElementCoordinates(self,nElem,requestedCoord)
 
 			% store domain information
@@ -259,32 +128,8 @@ classdef Domain2d
 
 		end
 
+
 		% UTILITY FUNCTIONS
-		function edges = distributeBoundaryNodes(self)
-
-			edges = self.edges;
-			for i = 1:length(self.edges)
-				edgeID = edges(i).ID;
-				edges(i).nodes = self.mesh.Mesh.findNodes('region','Edge',edgeID);
-				edges(i).nNodes = length(edges(i).nodes);
-			end
-
-		end
-
-		function mesh = generateMesh(self,p,base)
-
-			% create mesh
-			geo = fegeometry(self.dl);
-			geo = geo.generateMesh(Hmax=base^-p,GeometricOrder='linear');
-			mesh = Mesh2d(geo.Mesh);
-
-			% store mesh data
-			mesh.base = base;
-			mesh.p = p;
-			mesh.h = base^-p;
-
-		end
-
 		function vals = function2midpoints(self,varargin)
 		% function2midpoints evaluates arguments on element midpoints
 		% Inputs may be symfun, sym, function_handle, or vector. If sym, symfun,
@@ -608,7 +453,7 @@ classdef Domain2d
 			% store result
 			self.dl = dl;
 
-			self.edges = self.setEdgeGeometry;
+			self.boundary.edges = self.setEdgeGeometry;
 
 		end
 
