@@ -23,8 +23,12 @@ base = 2;
 f = 0;
 
 % specify BCs
-bTypes = {'P' 'P' 'P' 'P'};
-bTypes2 = 'N';
+bTypes_outer = 'PPPP';
+bTypes_inc = 'N';
+
+% check function variables
+x = sym('x',[1 2],'real'); syms t;
+vars = [x t];
 
 % specify coefficients
 k = 1;
@@ -34,23 +38,38 @@ r = 0;
 dy1_dn = {0,1,0,-1};
 dy2_dn = {-1,0,1,0};
 
+u_N = [{0,0,0,0},dy1_dn];
 
 % MMS TEST %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fprintf('Test Begun\n')
 
-% assemble inputs
-bound     = Boundary2d_punctured(bTypes,{@()(0.0),@()(0.0),@()(0.0),@()(0.0)},bTypes2,dy1_dn);
+%a = GalerkinAssembler2d_heat;
+a = GalerkinAssembler2d_poisson;
+%a = GalerkinAssembler2d;
 
+% build domain
+fprintf(' Contructing Domain:'), tic
+	dom = a.assembleDomainGeometry(xLim_dom,yLim_dom,{xLim_Y,yLim_Y,incRatio,'square'},eps);
+	dom = a.assembleBoundary(dom,[bTypes_outer bTypes_inc],[{0,0,0,0},dy1_dn]); 
+	dom = a.assembleMesh(dom,p,base); 
+executionTime = toc; 
+fprintf(' %f s\n',executionTime)
+
+
+
+%{
 % build domain
 fprintf(' Contructing Domain:'), tic
 	%inc = Inclusion2d_circle(xLim_Y,yLim_Y,incRatio);
 	inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
-	dom = GalerkinPoisson2d_assembler.assembleDomainGeometry(xLim_dom,yLim_dom,inc,eps);
-	dom = GalerkinPoisson2d_assembler.assembleBoundary(dom,bTypes,0,u_N,0,0,bTypes2); 
-	dom = GalerkinPoisson2d_assembler.assembleMesh(dom,p,base); 
+	dom = a.assembleDomainGeometry(xLim_dom,yLim_dom,inc,eps);
+	dom = a.assembleBoundary(dom,bTypes,0,u_N,0,0,bTypes2); 
+	dom = a.assembleMesh(dom,p,base); 
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
+%}
 
+%{
 % assemble other parameters
 fprintf(' Assembling Parameters:'), tic
 	cofs   = GalerkinPoisson2d_assembler.assembleCoefficients(c,k);
@@ -65,3 +84,4 @@ fprintf(' Generating Solution:'), tic
 	prob = GalerkinPoisosn2d_solver(dom,time,cofs,uInit,source);
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
+%}

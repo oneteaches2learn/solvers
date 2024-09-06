@@ -2,6 +2,9 @@ classdef Mesh2d
 % Mesh2d is an interface with MATLAB's FEMesh object
 
 	properties
+		base
+		p
+		h
 		nNodes
 		nElems
 		nEdges

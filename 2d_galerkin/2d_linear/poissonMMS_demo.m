@@ -21,8 +21,8 @@ base = 2;
 demo = 0;
 
 % specify BCs
-bTypes = {'P' 'P' 'P' 'P'};
-bTypes2 = 'R';
+bTypes_outer = 'PPPP';
+bTypes_inner = 'RRRR';
 
 % specify coefficients
 %k = 1 + x(1) * x(2);
@@ -40,9 +40,10 @@ uTrue = cos(2 * pi * x(1)) * cos(2 * pi * x(2));
 fprintf('MMS Test Begun\n')
 
 % assemble inputs
-bound     = Boundary2d_punctured(bTypes,{@()(0.0),@()(0.0),@()(0.0),@()(0.0)},bTypes2,{@()(0.0)});
+%bound     = Boundary2d_punctured(bTypes,{@()(0.0),@()(0.0),@()(0.0),@()(0.0)},bTypes2,{@()(0.0)});
+bound     = Boundary2d([bTypes_outer,bTypes_inner],{@()(0.0),@()(0.0),@()(0.0),@()(0.0)});
 auxfun    = ManufacturedFunctions2d_poisson(k,r,uTrue);
-mmsparams = MMSParams(base,demo=demo,timeOffset=4,timeFactor=2,pmin=5,pmax=7);
+mmsparams = MMSParams(base,demo=demo,timeOffset=4,timeFactor=2,pmin=4,pmax=6);
 
 % build domain
 fprintf('Initialization\n')
@@ -50,7 +51,9 @@ fprintf(' Contructing Domain:'), tic
 	inc = Inclusion2d_circle(xLim_Y,yLim_Y,incRatio);
 	%inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
 	dom = Domain2d_punctured(xLim_dom,yLim_dom,inc,eps);
+	%dom = Domain2d(xLim_dom,yLim_dom);
 	dom = dom.setEdgeBCTypes(bound);
+	dom.edges(5)
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
 

@@ -168,7 +168,7 @@ classdef Domain2d_punctured < Domain2d
 			else
 				dl_Qeps = Domain2d_punctured.dl_Qeps(x,y,inc,eps);
 			end
-			dl = [dl_domain dl_Qeps]
+			dl = [dl_domain dl_Qeps];
 
 			% set properties related to domain and inclusions
 			self.epsilon = eps;
@@ -177,7 +177,8 @@ classdef Domain2d_punctured < Domain2d
 
 			% generate and store edges
 			self.edges = self.setEdgeGeometry_inclusions;
-			self.nEdges = self.get_nEdges;
+			%self.nEdges = self.get_nEdges;
+			self.boundary.nEdges = self.get_nEdges;
 
 			% set inclusion number
 			self.nInclusions = size(self.dl,2) / 4 - 1;
@@ -202,55 +203,6 @@ classdef Domain2d_punctured < Domain2d
 
 		end
 
-		function self = setEdgeBCTypes(self,boundary)
-
-			edges = self.edges;
-
-			% set outer boundary types
-			for i = 1:4
-				edges(i).boundaryType = boundary.boundaryTypes{i};
-			end
-
-			% set boundary types on inclusions
-			incBCTypes = boundary.boundaryTypesInclusions;
-			if sum(size(incBCTypes)) == 2
-				for i = 5:self.nEdges
-					edges(i).boundaryType = incBCTypes;
-				end
-			else
-				for i = 1:self.nInclusions, for j = 1:4
-					edges(4*i + j).boundaryType = incBCTypes(i,j);
-				end, end
-			end
-
-			self.edges = edges;
-
-		end
-
-		function self = setEdgeBCConditions(self,boundary)
-
-			edges = self.edges;
-
-			% set outer boundary types
-			for i = 1:4
-				edges(i).boundaryCondition = boundary.boundaryConditions{i};
-			end
-
-			% set boundary types on inclusions
-			incBCCond = boundary.boundaryConditionsInclusions;
-			if sum(size(incBCCond)) == 2 || sum(size(incBCCond)) == 3 
-				for i = 5:self.nEdges
-					edges(i).boundaryCondition = incBCCond;
-				end
-			else
-				for i = 1:self.nInclusions, for j = 1:4
-					edges(4*i + j).boundaryCondition = incBCCond(i,j);
-				end, end
-			end
-
-			self.edges = edges;
-
-		end
 	end
 
 	methods (Static)

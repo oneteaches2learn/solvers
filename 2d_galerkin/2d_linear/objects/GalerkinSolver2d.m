@@ -171,7 +171,7 @@ classdef (Abstract) GalerkinSolver2d
 			U_D = sparse(nNodes,1);
 
 			% compute Dirichlet boundary conditions
-			for i = 1:dom.nEdges
+			for i = 1:dom.boundary.nEdges
 				
 				if dom.edges(i).boundaryType == 'D'
 
@@ -205,7 +205,7 @@ classdef (Abstract) GalerkinSolver2d
 			b_neu = sparse(nNodes,1);
 
 			% compute boundary conditions
-			for i = 1:self.domain.nEdges
+			for i = 1:self.domain.boundary.nEdges
 				
 				% compute Neumann condition
 				if dom.edges(i).boundaryType == 'N'
@@ -246,7 +246,7 @@ classdef (Abstract) GalerkinSolver2d
 			E = sparse(nNodes,nNodes);
 
 			% compute boundary conditions
-			for i = 1:self.domain.nEdges
+			for i = 1:self.domain.boundary.nEdges
 				
 				% compute Dirichlet condition
 				if dom.edges(i).boundaryType == 'R'

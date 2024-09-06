@@ -1,6 +1,8 @@
 classdef Boundary2d
 
 	properties
+		edges
+		nEdges
 		boundaryTypes
 		boundaryConditions
 	end
@@ -8,8 +10,10 @@ classdef Boundary2d
 	methods
 		function self = Boundary2d(boundaryTypes,boundaryConditions)
 
-			self.boundaryTypes = boundaryTypes;
-			self.boundaryConditions = boundaryConditions;
+			if nargin == 2
+				self.boundaryTypes = boundaryTypes;
+				self.boundaryConditions = boundaryConditions;
+			end
 
 		end
 

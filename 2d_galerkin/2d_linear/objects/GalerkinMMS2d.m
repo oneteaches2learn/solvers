@@ -180,7 +180,7 @@ classdef GalerkinMMS2d
 			% unpack coefficients
 			uTrue = self.auxFunctions.uTrue;
 			q = self.auxFunctions.q;
-			nEdges = dom.nEdges;
+			nEdges = dom.boundary.nEdges;
 
 			% set symbolic variables
 			if ~isempty(dom.time)
@@ -312,7 +312,7 @@ classdef GalerkinMMS2d
 
 			% store variables
 			trials = length(self.problems);
-			base = self.problems{1}.domain.base;
+			base = self.problems{1}.domain.mesh.base;
 
 			% Store errors
 			errors = zeros(1,trials);
@@ -347,8 +347,8 @@ classdef GalerkinMMS2d
 
 			h = zeros(1,4);
 			for i = 1:4
-				base = self.problems{i}.domain.base;
-				p = self.problems{i}.domain.p;
+				base = self.problems{i}.domain.mesh.base;
+				p = self.problems{i}.domain.mesh.p;
 				h(i) = base^-p;
 			end
 

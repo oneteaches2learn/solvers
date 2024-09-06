@@ -11,13 +11,13 @@ classdef Domain2d
 		effectiveElems
 		unusedNodes
 		unusedElems
-		nEdges
 		domainArea
 		boundaryNodes
 		freeNodes
 		xLim
 		yLim
 		mesh
+		boundary
 		time
 	end
 
@@ -40,7 +40,11 @@ classdef Domain2d
 
 			% set and store edges
 			self.edges = self.setEdgeGeometry;
-			self.nEdges = self.get_nEdges;
+
+			% TEMPORARY: set boundary stuff
+			self.boundary = Boundary2d;
+			self.boundary.edges = self.setEdgeGeometry;
+			self.boundary.nEdges = self.get_nEdges;
 
 		end
 
@@ -54,7 +58,7 @@ classdef Domain2d
 		function edges = setEdgeGeometry(self)
 
 			% store variables
-			dl = self.dl
+			dl = self.dl;
 
 			% detect columns of dl where x-coordinate is constant
 			xConst = ((dl(2,:) - dl(3,:)) == 0);
@@ -115,11 +119,12 @@ classdef Domain2d
 		end
 
 		function self = setEdgeBCTypes(self,boundary)
-
+			
+			% old method, will phase out
 			edges = self.edges;
 
-			for i = 1:self.nEdges
-				edges(i).boundaryType = boundary.boundaryTypes{i};
+			for i = 1:self.boundary.nEdges
+				edges(i).boundaryType = boundary.boundaryTypes(i);
 			end
 
 			self.edges = edges;
@@ -130,7 +135,7 @@ classdef Domain2d
 
 			edges = self.edges;
 
-			for i = 1:self.nEdges
+			for i = 1:self.boundary.nEdges
 				edges(i).boundaryCondition = boundary.boundaryConditions{i};
 			end
 
@@ -148,7 +153,7 @@ classdef Domain2d
 			self.h = base^-p;
 			
 			% generate the mesh
-			self.mesh = self.generateMesh;
+			self.mesh = self.generateMesh(p,base);
 
 			% store node data
 			self.effectiveNodes = [1:1:self.mesh.nNodes];
@@ -195,7 +200,7 @@ classdef Domain2d
 			nearestEdge = [];
 
 			% collect node pairs for each edge
-			for edgeID = 1:self.nEdges
+			for edgeID = 1:self.boundary.nEdges
 				edgeNodes = self.mesh.Mesh.findNodes('region','Edge',edgeID);
 				for j = 1:length(edgeNodes)-1
 					bNodes = [bNodes; edgeNodes(j) edgeNodes(j+1)];
@@ -266,11 +271,17 @@ classdef Domain2d
 
 		end
 
-		function mesh = generateMesh(self)
+		function mesh = generateMesh(self,p,base)
 
+			% create mesh
 			geo = fegeometry(self.dl);
-			geo = geo.generateMesh(Hmax=self.h,GeometricOrder='linear');
+			geo = geo.generateMesh(Hmax=base^-p,GeometricOrder='linear');
 			mesh = Mesh2d(geo.Mesh);
+
+			% store mesh data
+			mesh.base = base;
+			mesh.p = p;
+			mesh.h = base^-p;
 
 		end
 

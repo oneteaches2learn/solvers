@@ -1,10 +1,10 @@
-classdef GalerkinRxndiff2d_assembler < GalerkinParabolic2d_assembler
+classdef GalerkinAssembler2d_rxndiff < GalerkinAssembler2d_parabolic
 
 	properties
 	end
 
 	methods
-		function self = GalerkinRxndiff2d_assembler
+		function self = GalerkinAssembler2d_rxndiff
 		end
 	end
 
@@ -12,7 +12,7 @@ classdef GalerkinRxndiff2d_assembler < GalerkinParabolic2d_assembler
 		function cofs = assembleCoefficients(p,k,r)
 
 			% call superclass method
-			cofs = assembleCoefficients@GalerkinParabolic2d_assembler(p,k);
+			cofs = assembleCoefficients@GalerkinAssembler2d_parabolic(p,k);
 
 			% check function variables
 			x = sym('x',[1 2],'real'); syms t;
