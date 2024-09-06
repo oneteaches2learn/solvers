@@ -63,8 +63,9 @@ classdef ManufacturedFunctions2d
 		function self = ManufacturedFunctions2d(k,uTrue)
 
 			% store inputs
-			self.uTrue = uTrue;
-			self.k = k;
+			x = sym('x',[1 2]);
+			self.uTrue = symfun(uTrue,x);
+			self.k = symfun(k,x);
 
 			% manufacture data
 			self.q = self.manufactureFlux;
@@ -76,7 +77,9 @@ classdef ManufacturedFunctions2d
 		% Manufactures symfun flux q = -k grad u
 
 			% manufacture flux
-			q = -self.k * gradient(self.uTrue);
+			x = sym('x',[1 2]);
+			uTrue = symfun(self.uTrue,x);
+			q = -self.k * gradient(uTrue);
 			q = formula(q);
 			q = q(1:2);
 

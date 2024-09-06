@@ -21,8 +21,12 @@ classdef GalerkinSolver2d_poisson < GalerkinSolver2d_elliptic
 			S = tensors.A + tensors.M_r + tensors.E;
 
             % assemble RHS
-			b = vectors.b_vol - vectors.b_neu + vectors.b_rob - S * vectors.U_D;
+			b = vectors.b_vol - vectors.b_neu + vectors.b_rob + vectors.b_per - S * vectors.U_D;
+
+            % correct tensor for periodic BCs
+            S = S + tensors.P;
 
 		end
     end
+
 end

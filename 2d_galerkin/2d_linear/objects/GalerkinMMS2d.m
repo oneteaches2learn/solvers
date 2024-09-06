@@ -120,7 +120,11 @@ classdef GalerkinMMS2d
 
 			% else, if in demo-mode, only run one trial
 			else
-				self.problems = self.solveManufacturedProblems(time);
+				if exist('time')
+					self.problems = self.solveManufacturedProblems(time);
+				else
+					self.problems = self.solveManufacturedProblems;
+				end
 			end
 
 		end
@@ -132,8 +136,8 @@ classdef GalerkinMMS2d
 			% unpack variables
 			cofs = self.auxFunctions.functionHandles;
 			base = self.mmsParams.base;
-			pmin = self.mmsParams.pmin;
-			pmax = self.mmsParams.pmax;
+			pmin = self.mmsParams.pmin
+			pmax = self.mmsParams.pmax
 			tOff = self.mmsParams.timeOffset;
 			tFac = self.mmsParams.timeFactor;
 
@@ -145,6 +149,7 @@ classdef GalerkinMMS2d
 				
 				% successively refine mese
 				fprintf(' p = %i solved:',p); tic;
+
 				dom_p  = self.domain.setMesh(p,base);
 
 				% if time-varying
@@ -181,11 +186,16 @@ classdef GalerkinMMS2d
 			if ~isempty(dom.time)
 				x = sym('x',[1 2]); syms t;
 				vars = [x t];
+			else
+				x = sym('x',[1 2]);
+				vars = x;
 			end
 
 			% set edge normal vectors
 			dom = self.setEdgeNormalVectors_outerBoundary(dom);
-			dom = self.setEdgeNormalVectors_inclusions(dom);
+			if isa(dom,'Domain2d_punctured')
+				dom = self.setEdgeNormalVectors_inclusions(dom);
+			end
 
 			% Manufacture Dirichlet BC
 			u_d = uTrue;

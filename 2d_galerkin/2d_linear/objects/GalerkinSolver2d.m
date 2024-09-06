@@ -51,17 +51,24 @@ classdef (Abstract) GalerkinSolver2d
 			A = sparse(nNodes,nNodes);
 
 			% compute k on nodes
-			for j = self.domain.effectiveNodes
-				K(j) = k(coords(j,1),coords(j,2),t);
+			K = k(coords(:,1),coords(:,2),t);
+			if size(K,1) > 1
+				K_avg = sum(K(elements3),2) / 3;
+			else
+				K_avg = K * ones(self.domain.mesh.nElems,1);
 			end
 
 			% assemble stiffness matrix
 			for j = self.domain.effectiveElems;
 				elementInd   = elements3(j,:);
 				elementCoord = coords(elementInd,:);
-				K_j = (1/3) * sum(K(elementInd));
 				A(elementInd,elementInd) = A(elementInd,elementInd) + ...
-					K_j * self.stima3(elementCoord);
+					K_avg(j) * self.stima3(elementCoord);
+
+				%j
+				%elementInd
+				%self.stima3(elementCoord)
+
 			end
 		end
 
@@ -144,6 +151,7 @@ classdef (Abstract) GalerkinSolver2d
 
 		function self = assembleBCs(self)
 
+			self = self.computePeriodicBCs;
 			self.vectors.U_D   = self.computeDirichletBCs;
 			self.vectors.b_neu = self.computeNeumannBCs;
 			[self.tensors.E,self.vectors.b_rob] = self.computeRobinBCs;
@@ -278,18 +286,125 @@ classdef (Abstract) GalerkinSolver2d
 
 						% compute RHS vector
 						b_rob(edge) = b_rob(edge) + ...
-							edgeLength * alpha(edgeMidPt(1),edgeMidPt(2),self.t) * ...
-							u_R(edgeMidPt(1),edgeMidPt(2),self.t) / 2;
+							edgeLength * alpha(edgeMidPt(1),edgeMidPt(2),t) * ...
+							u_R(edgeMidPt(1),edgeMidPt(2),t) / 2;
 
 						% compute E matrix
 						E(edge(1),edge(1)) = E(edge(1),edge(1)) + ...
-							1/2 * edgeLength * alpha(coords(edge(1),:),self.t);
+							1/2 * edgeLength * alpha(coords(edge(1),:),t);
 						E(edge(2),edge(2)) = E(edge(2),edge(2)) + ...
-							1/2 * edgeLength * alpha(coords(edge(2),:),self.t);
+							1/2 * edgeLength * alpha(coords(edge(2),:),t);
 
 					end
 				end
 			end
+		end
+
+		function self = computePeriodicBCs(self)
+
+			% unpack variables
+			dom    = self.domain;
+			nNodes = self.domain.mesh.nNodes;
+			coords = self.domain.mesh.nodes;
+
+			% build periodic node dictionary
+			P.free.edge = [];
+			P.free.corner = [];
+			P.replica.edge = [];
+			P.replica.corner = [];
+			
+			% if North-South periodicity
+			if (dom.edges(1).boundaryType == 'P') && ...
+					~(dom.edges(2).boundaryType == 'P')
+				
+				% store free nodes
+				P.free.edge = dom.edges(1).nodes(2:end-1);
+
+				% store corresponding replica nodes
+				P.replica.edge = flip(dom.edges(3).nodes(2:end-1));
+
+			end
+
+			% if East-West periodicity
+			if ~(dom.edges(1).boundaryType == 'P') && ...
+					(dom.edges(2).boundaryType == 'P')
+				
+				% store free nodes
+				P.free.edge = dom.edges(2).nodes(2:end-1);
+
+				% store corresponding replica nodes
+				P.replica.edge = flip(dom.edges(4).nodes(2:end-1));
+
+			end
+
+			% if both periodicities
+			if (dom.edges(1).boundaryType == 'P') && ...
+					(dom.edges(2).boundaryType == 'P')
+				
+				% store free edge node
+				Pfree_S  = dom.edges(1).nodes(2:end-1);
+				Pfree_E  = dom.edges(2).nodes(2:end-1);
+				P.free.edge = [Pfree_S, Pfree_E];
+
+				% store free corner node
+				Pfree_SE = dom.edges(1).nodes(end);
+				P.free.corner = Pfree_SE;
+
+				% store corresponding replica edge nodes
+				Preplica_N = flip(dom.edges(3).nodes(2:end-1));
+				Preplica_W = flip(dom.edges(4).nodes(2:end-1));
+				P.replica.edge = [Preplica_N, Preplica_W];
+
+				% store corresponding replica corner nodes
+				Preplica_SW = dom.edges(2).nodes(end);
+				Preplica_NW = dom.edges(3).nodes(end);
+				Preplica_NE = dom.edges(4).nodes(end);
+				P.replica.corner = [Preplica_SW, Preplica_NW, Preplica_NE];	
+
+			end			
+
+			% store periodic node dictionary
+			self.domain.boundaryNodes.P = P;
+
+			% remove replica nodes from freeNodes
+			self.domain.freeNodes = setdiff(self.domain.freeNodes, ...
+										[P.replica.edge, P.replica.corner]);
+
+			% get periodic source term
+			b_per = sparse(nNodes,1);
+			b_vol = self.vectors.b_vol;
+			b_per(P.free.edge) = b_vol(P.replica.edge);
+			b_per(P.free.corner) = sum(b_vol(P.replica.corner));
+			self.vectors.b_per = b_per;
+
+			% get periodic matrix
+			F = sparse(nNodes,nNodes);
+			F_rows = sparse(nNodes,nNodes);
+			F_cols = sparse(nNodes,nNodes);
+			F_diag = sparse(nNodes,nNodes);
+
+			% copy replica rows of tensor to corresponding free rows
+			F_rows(P.free.edge,:) = self.tensors.A(P.replica.edge,:);
+			if length(P.free.corner) > 0
+				F_rows(P.free.corner,:) = sum(self.tensors.A(P.replica.corner,:),1);
+			end
+			
+			% copy replica cols of tensor to corresponding free cols
+			F_cols(:,P.free.edge) = self.tensors.A(:,P.replica.edge);
+			if length(P.free.corner) > 0
+				F_cols(:,P.free.corner) = sum(self.tensors.A(:,P.replica.corner),2);
+			end
+			
+			% copy replica diag entries of tensor to corresponding free diag entries
+			F_diag(P.free.edge,:) = F_cols(P.replica.edge,:);
+			if length(P.free.corner) > 0
+				F_diag(P.free.corner,:) = sum(F_cols(P.replica.corner,:),1);
+			end
+
+			% assemble final result
+			F = F_rows + F_cols + F_diag;
+			self.tensors.P = F;
+
 		end
 
 		function bcNodes = getBCnodes(self)
@@ -302,7 +417,7 @@ classdef (Abstract) GalerkinSolver2d
 			for i = 1:size(gd,2) 
 
 				% get object nodes
-				nodes = [];
+				nodes = []
 				for j = 1:4
 					nodes = [nodes; gd(j+2,i) gd((j+4)+2,i)];
 				end
@@ -335,6 +450,14 @@ classdef (Abstract) GalerkinSolver2d
 			% add NaN for unused nodes
 			self.solution(self.domain.effectiveNodes,:) = self.solution;
 			self.solution(self.domain.unusedNodes,:) = NaN;
+
+			% copy solution to periodic replica nodes
+			self.solution(self.domain.boundaryNodes.P.replica.edge,:) = ...
+					self.solution(self.domain.boundaryNodes.P.free.edge,:);
+			%self.solution(self.domain.boundaryNodes.P.replica.corner,:) = ...
+			%		repmat(self.solution(self.domain.boundaryNodes.P.free.corner,:),3,1);					
+			self.solution(self.domain.boundaryNodes.P.replica.corner,:) = ...
+					self.solution(self.domain.boundaryNodes.P.free.corner,:);
 
             % ensure solution is full
             self.solution = full(self.solution);

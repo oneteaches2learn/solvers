@@ -54,6 +54,41 @@ classdef Domain2d
 		function edges = setEdgeGeometry(self)
 
 			% store variables
+			dl = self.dl
+
+			% detect columns of dl where x-coordinate is constant
+			xConst = ((dl(2,:) - dl(3,:)) == 0);
+
+			% mark which columns of dl designated the start of a new edge
+			newEdge = [1, (xConst(1:end-1) - xConst(2:end)) ~= 0];
+
+			% indicate which dl cols correspond to each edge 
+			edgeNums(1) = 1;
+			for i = 2:length(newEdge)
+				edgeNums(i) = edgeNums(i-1) + newEdge(i);
+			end
+
+			% create edges
+			edges = [];
+			for i = 1:4
+
+				% make map between geometry edges and dl columns
+				IDs = find(edgeNums - i == 0);
+
+				% get start and stop coordinates
+				startCoord = [dl(2,IDs(1)),dl(4,IDs(1))];
+				stopCoord = [dl(3,IDs(end)),dl(5,IDs(end))];
+
+				% generate edges
+				edge_i = BoundaryEdge2d(startCoord,stopCoord);
+				edge_i.ID = IDs;
+				edges = [edges edge_i];
+			end
+		end
+
+		function edges = setEdgeGeometry_old(self)
+
+			% store variables
 			gd = self.geometryMatrix;
 
 			% get vertices
@@ -460,7 +495,6 @@ classdef Domain2d
 
 		end
 
-
 		function vals = nodes2midpoints(self,varargin)
 		% nodes2midpoints converts nodal values to values on mesh midpoints
 		% Inputs may be symfun, sym, function_handle, or vector. If sym, symfun,
@@ -494,7 +528,6 @@ classdef Domain2d
 			vals = full(self.function2midpoints(temp{:}));
 
 		end
-
 
 		function vals = nodes2centroids(self,varargin)
 		% nodes2centroids converts nodal values to values on element centroids
@@ -532,6 +565,41 @@ classdef Domain2d
 
 		end
 
+		function self = add_domain_y_line(self,varargin)
+
+			% store variables
+			dl = self.dl;
+			yBar = varargin{1};
+			
+			% split region
+			for i = [size(dl,2):-1:1]
+
+				% if y_bar is between y_start and y_stop, then split the region
+				if (yBar > dl(4,i) && yBar < dl(5,i)) || ...
+				   (yBar > dl(5,i) && yBar < dl(4,i))
+
+					% duplicate the i-th column
+					dl = [dl(:,1:i), dl(:,i:end)];
+					
+					% adjust y_start and y_stop
+					dl(5,i) = yBar;
+					dl(4,i+1) = yBar;
+				end
+			end
+
+			% increment region ids for those regions above yBar
+			increment_cols = find(sum(dl(4:5,:) > yBar,1) > 0);
+			dl(6,increment_cols) = dl(6,increment_cols) + 1;
+			
+			% add dividing line
+			dl = [dl,[2,self.xLim(1),self.xLim(2),yBar,yBar,2,1]'];
+
+			% store result
+			self.dl = dl;
+
+			self.edges = self.setEdgeGeometry;
+
+		end
 
 		% PLOTTING FUNCTIONS
 		function h = plot(self,NameValueArgs)
