@@ -6,11 +6,13 @@ classdef (Abstract) GalerkinSolver2d_elliptic < GalerkinSolver2d
 	methods
 		function self = GalerkinSolver2d_elliptic(dom,auxfun)
 			
-			% call superclass constructor
-			self@GalerkinSolver2d(dom,auxfun);
+			%if nargin == 2
+				% call superclass constructor
+				self@GalerkinSolver2d(dom,auxfun);
 
-			% calculate solution
-			% ...
+				% calculate solution
+				% ...
+			%end
 
 		end
 

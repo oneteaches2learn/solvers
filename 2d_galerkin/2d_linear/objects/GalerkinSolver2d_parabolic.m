@@ -16,7 +16,7 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 	methods
 		function self = GalerkinSolver2d_parabolic(dom,auxfun,uInit)
 			
-			if nargin == 2
+			%if nargin == 2
 				% call superclass constructor
 				self@GalerkinSolver2d(dom,auxfun);
 
@@ -25,7 +25,7 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 				
 				% calculate solution
 				self = self.solve;
-			end
+			%end
 
 		end
 

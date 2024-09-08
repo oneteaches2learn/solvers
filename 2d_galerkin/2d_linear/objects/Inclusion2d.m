@@ -93,8 +93,6 @@ classdef (Abstract) Inclusion2d
 
 			% specify neumann BC
 			bcTypes = 'PPPPN';
-			dy1_dn = {0,1,0,-1};
-			dy2_dn = {-1,0,1,0};
 			bcConds_y1 = [{0,0,0,0},self.dy1_dn];
 			bcConds_y2 = [{0,0,0,0},self.dy2_dn];
 			bcConds = [bcConds_y1;bcConds_y2];

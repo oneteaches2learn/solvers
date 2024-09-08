@@ -60,12 +60,12 @@ classdef ManufacturedFunctions2d_parabolic < ManufacturedFunctions2d
 		function self = ManufacturedFunctions2d_parabolic(p,k,uTrue)
 		% ManufacturedFunctions2d(p,k,uTrue) inputs are symfun objects
 			
-			% prepare uTrue
-			x = sym('x',[1 2]); syms t;
-			uTrue = symfun(uTrue,[x t]);
-
 			% call superclass constructor
 			self@ManufacturedFunctions2d(k,uTrue);
+
+			% make uTrue a function of space and time
+			x = sym('x',[1 2]); syms t;
+			self.uTrue = symfun(uTrue,[x t]);
 
 			% store inputs
 			self.p = p;

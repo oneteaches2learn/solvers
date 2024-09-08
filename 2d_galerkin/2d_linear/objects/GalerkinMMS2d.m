@@ -150,7 +150,8 @@ classdef GalerkinMMS2d
 				% successively refine mese
 				fprintf(' p = %i solved:',p); tic;
 
-				dom_p  = self.domain.setMesh(p,base);
+				dom_p = self.domain.setMesh(p,base);
+				dom_p = dom_p.setBoundaryNodes;
 
 				% if time-varying
 				if ~isempty(self.domain.time)

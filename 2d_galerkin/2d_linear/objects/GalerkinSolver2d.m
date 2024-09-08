@@ -16,14 +16,14 @@ classdef (Abstract) GalerkinSolver2d
         % CONSTRUCTOR
 		function self = GalerkinSolver2d(dom,auxfun)
 
-			if nargin == 2
+			%if nargin == 2
 				
 				% store inputs
 				self.domain = dom;
 				self.coefficients = auxfun.cofs;
 				self.f = auxfun.f;
 
-			end
+			%end
 			
 			% calculate solution
 			% ... 
@@ -396,9 +396,9 @@ classdef (Abstract) GalerkinSolver2d
 			% copy solution to periodic replica nodes
 			P = self.domain.boundary.P_nodes;
 			self.solution(P.replica.edge,:) = self.solution(P.free.edge,:);
-			%self.solution(P.replica.corner,:) = ...
-			%		repmat(P.free.corner,:),3,1);					
-			self.solution(P.replica.corner,:) = self.solution(P.free.corner,:);
+			self.solution(P.replica.corner,:) = ...
+							repmat(self.solution(P.free.corner,:),3,1);					
+			%self.solution(P.replica.corner,:) = self.solution(P.free.corner,:);
 
             % ensure solution is full
             self.solution = full(self.solution);
