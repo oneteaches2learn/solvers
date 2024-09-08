@@ -4,10 +4,10 @@ classdef GalerkinSolver2d_rxndiff < GalerkinSolver2d_parabolic
 	end
 
 	methods
-		function self = GalerkinSolver2d_rxndiff(dom,cofs)
+		function self = GalerkinSolver2d_rxndiff(dom,auxfun)
 			
 			% call superclass constructor
-			self@GalerkinSolver2d_parabolic(dom,cofs);
+			self@GalerkinSolver2d_parabolic(dom,auxfun);
 
 		end
 

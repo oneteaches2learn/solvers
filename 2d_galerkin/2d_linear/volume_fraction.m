@@ -16,7 +16,7 @@ eps = 1;
 incRatio = pi/2; % <~~~ incRatio = |delta Q| / |Y|
 
 % mesh parameters
-p = 5;
+p = 4;
 base = 2;
 
 % specify source
@@ -55,33 +55,15 @@ fprintf(' Contructing Domain:'), tic
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
 
-
-
-%{
-% build domain
-fprintf(' Contructing Domain:'), tic
-	%inc = Inclusion2d_circle(xLim_Y,yLim_Y,incRatio);
-	inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
-	dom = a.assembleDomainGeometry(xLim_dom,yLim_dom,inc,eps);
-	dom = a.assembleBoundary(dom,bTypes,0,u_N,0,0,bTypes2); 
-	dom = a.assembleMesh(dom,p,base); 
-executionTime = toc; 
-fprintf(' %f s\n',executionTime)
-%}
-
-%{
 % assemble other parameters
 fprintf(' Assembling Parameters:'), tic
-	cofs   = GalerkinPoisson2d_assembler.assembleCoefficients(c,k);
-	uInit  = GalerkinPoisson2d_assembler.assembleInitialCondition(u_o);
-	time   = GalerkinPoisson2d_assembler.assembleTimeStepping(T,dt);
-	source = GalerkinPoisson2d_assembler.assembleSource(f);
+	auxfun = a.assembleCoefficients(k,r,f);
+	%time   = a.assembleTimeStepping(T,dt);
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
 
 % RUN TRIAL
 fprintf(' Generating Solution:'), tic
-	prob = GalerkinPoisosn2d_solver(dom,time,cofs,uInit,source);
+	prob = GalerkinSolver2d_poisson(dom,auxfun);
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
-%}

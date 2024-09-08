@@ -1,10 +1,10 @@
 classdef GalerkinSolver2d_heat < GalerkinSolver2d_parabolic
 
 	methods
-		function self = GalerkinSolver2d_heat(dom,cofs)
+		function self = GalerkinSolver2d_heat(dom,auxfun)
 			
 			% call superclass constructor
-			self@GalerkinSolver2d_parabolic(dom,cofs);
+			self@GalerkinSolver2d_parabolic(dom,auxfun);
 
 		end
 

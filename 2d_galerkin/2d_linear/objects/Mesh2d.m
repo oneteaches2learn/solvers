@@ -15,6 +15,7 @@ classdef Mesh2d
 		effectiveElems
 		unusedNodes
 		unusedElems
+		elementCoords
 		elementEdges
 		midpoints
 		centroids
@@ -134,6 +135,27 @@ classdef Mesh2d
 
 			num = size(self.edges,1);
 			
+		end
+
+		function vals = get.elementCoords(self)
+		% returns an nElem x 3 x 2 array of element coordinates
+		%    the first index is the element number, the second index is the node
+		%    number, the third index is the x or y coordinate.
+		
+
+			% get node data
+			elemNodes = self.elements;
+			elemCoord = self.nodes;
+
+			% isolate coordanates of each node for each element
+			nodes1 = elemCoord(elemNodes(:,1),:);
+			nodes2 = elemCoord(elemNodes(:,2),:);
+			nodes3 = elemCoord(elemNodes(:,3),:);
+
+			% concatenate node coordinates for each element
+			vals = cat(1,nodes1,nodes2,nodes3);
+			vals = reshape(vals,[],3,2);
+
 		end
 
 		function vals = get.elementEdges(self)

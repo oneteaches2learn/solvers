@@ -87,7 +87,7 @@ classdef Pore2d_square < Pore2d
 		% GETTERS
 		function area = get.area(self)
 
-			self.area = self.sideLength * self.sideLength;
+			area = self.sideLength * self.sideLength;
 
 		end
 

@@ -9,19 +9,14 @@ classdef GalerkinAssembler2d_pennes < GalerkinAssembler2d_parabolic
 	end
 
 	methods (Static)
-		function cofs = assembleCoefficients(p,k,r,uStar)
+		function auxfun = assembleCoefficients(c,k,r,uStar,f,uInit)
 
 			% call superclass method
-			cofs = assembleCoefficients@GalerkinAssembler2d_parabolic(p,k);
+			auxfun = assembleCoefficients@GalerkinAssembler2d_parabolic(c,k,r,f,uInit);
 
-			% check function variables
-			x = sym('x',[1 2],'real'); syms t;
-			r = symfun(r,x);
-			uStar = symfun(uStar,x);
-
-			% convert to function_handles
-			cofs.r = matlabFunction(r);
-			cofs.uStar = matlabFunction(uStar);
+			% store blood temperature
+			x = sym('x',[1 2],'real');
+			auxfun.cofs.uStar = matlabFunction(symfun(uStar,x));
 
 		end
 	end

@@ -77,6 +77,58 @@ classdef (Abstract) Inclusion2d
 
 		end
 
+		function K = K(self)
+
+			% number of inclusions
+			eps = 1;
+
+			% mesh parameters
+			p = 7;
+			base = 2;
+
+			% specify coefficients
+			k = 1;
+			r = 0;
+			f = 0;
+
+			% specify neumann BC
+			bcTypes = 'PPPPN';
+			dy1_dn = {0,1,0,-1};
+			dy2_dn = {-1,0,1,0};
+			bcConds_y1 = [{0,0,0,0},self.dy1_dn];
+			bcConds_y2 = [{0,0,0,0},self.dy2_dn];
+			bcConds = [bcConds_y1;bcConds_y2];
+
+			% build domains
+			a = GalerkinAssembler2d_poisson;
+			auxfun = a.assembleCoefficients(k,r,f);
+			dom(1) = Domain2d_punctured(self.Y.xLim,self.Y.yLim,self,eps);
+			dom(2) = Domain2d_punctured(self.Y.xLim,self.Y.yLim,self,eps);
+			for i = 1:2
+				dom(i) = a.assembleBoundary(dom(i),bcTypes,bcConds(i,:)); 
+				dom(i) = a.assembleMesh(dom(i),p,base);
+			end
+
+			% solve
+			chi(1) = GalerkinSolver2d_poisson(dom(1),auxfun);
+			chi(2) = GalerkinSolver2d_poisson(dom(2),auxfun);
+
+			% compute partial derivatives
+			grad = [dom(1).gradient_nodal(chi(1).solution), ...
+								dom(2).gradient_nodal(chi(2).solution)];
+			
+			% compute integrals
+			ints = [dom(1).centroidQuadrature(grad(:,1)), ...
+						dom(1).centroidQuadrature(grad(:,2));
+						dom(2).centroidQuadrature(grad(:,3)), ...
+						dom(2).centroidQuadrature(grad(:,4))];
+			ints = ints / self.Y.area;
+
+			% compute correction tensor
+			K = self.volumeFraction * eye(2) - ints;
+
+		end
+
 	end
 
 end

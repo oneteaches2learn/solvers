@@ -14,12 +14,16 @@ classdef (Abstract) GalerkinSolver2d
 
 	methods
         % CONSTRUCTOR
-		function self = GalerkinSolver2d(dom,cofs)
-			
-			% store inputs
-			self.domain = dom;
-			self.coefficients = cofs.cofs;
-			self.f = cofs.f;
+		function self = GalerkinSolver2d(dom,auxfun)
+
+			if nargin == 2
+				
+				% store inputs
+				self.domain = dom;
+				self.coefficients = auxfun.cofs;
+				self.f = auxfun.f;
+
+			end
 			
 			% calculate solution
 			% ... 
@@ -228,7 +232,7 @@ classdef (Abstract) GalerkinSolver2d
 						edgeMidPt = sum(coords(edge,:)/2);
 						edgeLength = norm(coords(edge(1),:) - coords(edge(2),:));
 						b_neu(edge) = b_neu(edge) + ...
-							edgeLength * bCond(edgeMidPt(1),edgeMidPt(2),self.t) / 2;
+							edgeLength * bCond(edgeMidPt(1),edgeMidPt(2),t) / 2;
 					end
 				end
 			end

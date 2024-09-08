@@ -3,6 +3,8 @@ classdef Inclusion2d_square < Inclusion2d
 
 	properties (Dependent)
 		center
+		dy1_dn
+		dy2_dn
 	end
 
 	properties (Hidden)
@@ -32,5 +34,16 @@ classdef Inclusion2d_square < Inclusion2d
 
 		end
 
+		function dy1_dn = get.dy1_dn(self)
+
+			dy1_dn = {0,1,0,-1};
+
+		end
+
+		function dy2_dn = get.dy2_dn(self)
+
+			dy2_dn = {-1,0,1,0};
+
+		end
 	end
 end

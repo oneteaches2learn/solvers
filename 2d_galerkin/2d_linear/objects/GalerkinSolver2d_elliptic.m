@@ -4,10 +4,10 @@ classdef (Abstract) GalerkinSolver2d_elliptic < GalerkinSolver2d
 	end
 
 	methods
-		function self = GalerkinSolver2d_elliptic(dom,cofs)
+		function self = GalerkinSolver2d_elliptic(dom,auxfun)
 			
 			% call superclass constructor
-			self@GalerkinSolver2d(dom,cofs);
+			self@GalerkinSolver2d(dom,auxfun);
 
 			% calculate solution
 			% ...

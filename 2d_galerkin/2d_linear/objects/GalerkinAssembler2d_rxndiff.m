@@ -9,17 +9,10 @@ classdef GalerkinAssembler2d_rxndiff < GalerkinAssembler2d_parabolic
 	end
 
 	methods (Static)
-		function cofs = assembleCoefficients(p,k,r)
+		function auxfun = assembleCoefficients(c,k,r,f,uInit)
 
 			% call superclass method
-			cofs = assembleCoefficients@GalerkinAssembler2d_parabolic(p,k);
-
-			% check function variables
-			x = sym('x',[1 2],'real'); syms t;
-			r = symfun(r,x);
-
-			% convert to function_handles
-			cofs.r = matlabFunction(r);
+			auxfun = assembleCoefficients@GalerkinAssembler2d_parabolic(c,k,r,f,uInit);
 
 		end
 	end

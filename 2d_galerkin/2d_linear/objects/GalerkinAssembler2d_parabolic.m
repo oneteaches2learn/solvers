@@ -46,19 +46,21 @@ classdef GalerkinAssembler2d_parabolic < GalerkinAssembler2d
 			end
 		end
 
-		function cofs = assembleCoefficients(p,k)
+		function auxfun = assembleCoefficients(c,k,r,f,uInit)
 
-			% check function variables
+			% call parent method
+			cofs = GalerkinAssembler2d.assembleCoefficients(k,r,f);
+
+			% store time-varying coefficient
 			x = sym('x',[1 2],'real'); syms t;
-			p = symfun(p,x);
-			k = symfun(k,x);
+			auxfun.cofs.c = matlabFunction(symfun(c,x));
 
-			% convert to function_handles
-			cofs.p = matlabFunction(p);
-			cofs.k = matlabFunction(k);
+			% store initial condition
+			auxfun.uInit = matlabFunction(symfun(uInit,x));
 
 		end
 
+		%{
 		function uInit = assembleInitialCondition(uInit)
 
 			% check function variables
@@ -69,6 +71,7 @@ classdef GalerkinAssembler2d_parabolic < GalerkinAssembler2d
 			uInit = matlabFunction(uInit);
 
 		end
+		%}
 
 		function time = assembleTimeStepping(T,dt,eq)
 
@@ -84,6 +87,7 @@ classdef GalerkinAssembler2d_parabolic < GalerkinAssembler2d
 
 		end
 
+		%{
 		function f = assembleSource(f)
 
 			% check function variables
@@ -94,5 +98,7 @@ classdef GalerkinAssembler2d_parabolic < GalerkinAssembler2d
 			f = matlabFunction(f);
 
 		end
+		%}
+		
 	end
 end

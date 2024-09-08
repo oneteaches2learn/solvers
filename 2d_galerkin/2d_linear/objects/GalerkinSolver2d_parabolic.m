@@ -14,16 +14,18 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 	end
 
 	methods
-		function self = GalerkinSolver2d_parabolic(dom,cofs,uInit)
+		function self = GalerkinSolver2d_parabolic(dom,auxfun,uInit)
 			
-			% call superclass constructor
-			self@GalerkinSolver2d(dom,cofs);
+			if nargin == 2
+				% call superclass constructor
+				self@GalerkinSolver2d(dom,auxfun);
 
-			% store additional inputs
-			self.uInit = cofs.uInit;
-			
-			% calculate solution
-			self = self.solve;
+				% store additional inputs
+				self.uInit = auxfun.uInit;
+				
+				% calculate solution
+				self = self.solve;
+			end
 
 		end
 

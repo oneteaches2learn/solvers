@@ -1,10 +1,10 @@
 classdef GalerkinSolver2d_poisson < GalerkinSolver2d_elliptic
 
     methods
-        function self = GalerkinSolver2d_poisson(dom,cofs)
+        function self = GalerkinSolver2d_poisson(dom,auxfun)
 
             % call superclass constructor
-            self@GalerkinSolver2d_elliptic(dom,cofs);
+            self@GalerkinSolver2d_elliptic(dom,auxfun);
 
             % solve
             self = self.solve;

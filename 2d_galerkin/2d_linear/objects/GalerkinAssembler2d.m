@@ -166,56 +166,53 @@ classdef GalerkinAssembler2d
 
 			% set mesh on domain
 			dom = dom.setMesh(p,base);
+			dom = dom.setBoundaryNodes;
 
 		end
 
-		function cofs = assembleCoefficients(p,k)
-
+		function auxfun = assembleCoefficients(k,r,f)
+		% NOTE: you actually *want* to pass the coefficients as symfun functions
+		% of x. Both elliptic and parabolic solvers are expecting
+		% function_handles; constant coefficients will not work. Therefore,
+		% constant coefficients must be converted to functions of space at
+		% least. For parabolic problems in particular, the solver will check
+		% which tensors need to be recomputed at each timestep, and this is done
+		% by checking whether or not the coefficients used to construct the
+		% tensor are / aren't time varying. If the coefficients are time varying
+		% already, then they will remain time varying even after passing through
+		% the code symfun(f,x). On the other hand, if the coefficient is
+		% spatially varying only (or constant), then you do not want to impose
+		% that it by time-varying, since the solver will then unnecessarily
+		% recompute the corresponding tensor at each time step. Finally, if the
+		% problem is elliptic, then there is no need for the coefficients to be
+		% time varying. 
+		
 			% check function variables
-			x = sym('x',[1 2],'real'); syms t;
-			p = symfun(p,x);
+			x = sym('x',[1 2],'real');
 			k = symfun(k,x);
+			r = symfun(r,x);
+			f = symfun(f,x);
 
-			% convert to function_handles
-			cofs.p = matlabFunction(p);
-			cofs.k = matlabFunction(k);
+			% store diffusivity and reaction coefficients	
+			auxfun.cofs.k = matlabFunction(k);
+			auxfun.cofs.r = matlabFunction(r);
 
-		end
-
-		function uInit = assembleInitialCondition(uInit)
-
-			% check function variables
-			x = sym('x',[1 2],'real'); syms t;
-			uInit = symfun(uInit,[x t]);
-
-			% convert to function_handles
-			uInit = matlabFunction(uInit);
+			% store source term
+			auxfun.f = matlabFunction(f);
 
 		end
 
-		function time = assembleTimeStepping(T,dt,eq)
-
-			% create time-stepping object
-			if nargin == 2
-				time = TimeStepping(T,dt);
-			elseif nargin == 3
-				time = TimeStepping(T,dt,eq);
-			end
-
-			% set time-stepping mesh
-			time = time.setMesh;
-
-		end
-
+		%{
 		function f = assembleSource(f)
 
 			% check function variables
-			x = sym('x',[1 2],'real'); syms t;
+			x = sym('x',[1 2],'real');
 			f = symfun(f,x);
 
 			% convert to function_handle
 			f = matlabFunction(f);
 
 		end
+		%}
 	end
 end

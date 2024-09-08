@@ -58,6 +58,10 @@ classdef Domain2d
 
 		function self = setBoundaryNodes(self,mesh)
 
+			if nargin == 1
+				mesh = self.mesh;
+			end
+
 			self.boundary = self.boundary.setEdgeNodes(mesh);
 			self.boundary = self.boundary.setBoundaryNodeLists(mesh);
 			self.boundary = self.boundary.setFreeNodes(mesh);
@@ -77,8 +81,11 @@ classdef Domain2d
 			self.effectiveElems = [1:1:self.mesh.nElems];
 			self.unusedElems = [];
 
-			% distribute boundary nodes to edges
-			self = self.setBoundaryNodes(self.mesh);
+			%{ NOTE: call this function separately. This way, you can create a
+			%mesh without needing to have boundary conditions on the geometry. 
+			%distribute boundary nodes to edges
+			%self = self.setBoundaryNodes(self.mesh);
+			%}
 
 		end
 
@@ -418,6 +425,71 @@ classdef Domain2d
 
 			% compute symfun or function_handle values on midpoints
 			vals = full(self.function2centroids(temp{:}));
+
+		end
+
+
+		function df = gradient_nodal(self,f)
+
+			% the i-th page gives the coordinates of the i-th element
+			X = self.mesh.elementCoords;
+			X = rot90(X);
+			X = permute(X,[1,3,2]);
+
+			% take the difference of the coordinates
+			A1 = X(2,:,:) - X(1,:,:);
+			A2 = X(3,:,:) - X(1,:,:);
+			A =  [A1; A2];
+
+			% the i-th page gives the values of f on the i-th element
+			Z = f(self.mesh.elements);
+			Z = rot90(Z);
+			Z = permute(Z,[1,3,2]);
+
+			% take the difference of the values
+			B1 = Z(2,:,:) - Z(1,:,:);
+			B2 = Z(3,:,:) - Z(1,:,:);
+			B = [B1; B2];
+
+			% the i-th page gives the i-th gradient vector
+			df = pagemldivide(A,B);
+
+			% reshape, the i-th row gives the gradient of f on the i-th element
+			df = permute(df,[3, 1, 2]);
+
+			%{
+			% below is a loop-based version of the code to illustrate how the
+			% above vectorized code works, and to demonstrate that the
+			% vectorized code gives the same results as the simlper loop-based
+			% code
+			for i = 1:self.mesh.nElems
+
+				% get coordinates of element nodes
+				Xbar(3,:) = self.mesh.nodes(self.mesh.elements(i,1),:);
+				Xbar(2,:) = self.mesh.nodes(self.mesh.elements(i,2),:);
+				Xbar(1,:) = self.mesh.nodes(self.mesh.elements(i,3),:);
+				%Xbar - X(:,:,i)
+
+				% get corresponding solution values
+				zbar = f(self.mesh.elements(i,:));
+				%zbar = flipud(zbar)
+
+				% take difference of coordinates
+				Abar = [Xbar(2,:) - Xbar(1,:); Xbar(3,:) - Xbar(1,:)];
+				%A(:,:,i) - Abar
+
+				% take difference of values
+				Bbar = [zbar(2) - zbar(1); zbar(3) - zbar(1)];
+				%B(:,:,i) - Bbar
+
+				% compute gradient
+				dfBar = Abar\Bbar;
+				dfBar = dfBar';
+				df = dfBar;
+				%dfBar - df(i,:)
+
+			end
+			%}
 
 		end
 
