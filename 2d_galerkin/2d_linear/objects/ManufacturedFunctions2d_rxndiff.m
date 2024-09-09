@@ -35,7 +35,7 @@ classdef ManufacturedFunctions2d_rxndiff < ManufacturedFunctions2d_parabolic
 
 			% manufacture RHS
 			x = sym('x',[1 2]); syms t;
-			f = self.pu_t + self.divq + self.r * self.uTrue;
+			f = self.cu_t + self.divq + self.r * self.uTrue;
 
 		end
 

@@ -136,8 +136,8 @@ classdef GalerkinMMS2d
 			% unpack variables
 			cofs = self.auxFunctions.functionHandles;
 			base = self.mmsParams.base;
-			pmin = self.mmsParams.pmin
-			pmax = self.mmsParams.pmax
+			pmin = self.mmsParams.pmin;
+			pmax = self.mmsParams.pmax;
 			tOff = self.mmsParams.timeOffset;
 			tFac = self.mmsParams.timeFactor;
 
@@ -232,7 +232,7 @@ classdef GalerkinMMS2d
 		function dom = setEdgeNormalVectors_outerBoundary(self,dom)
 
 			% store variables
-			dl = dom.dl;
+			dl = dom.boundary.dl;
 
 			% get normal vectors
 			n_lower = [0; -1];
@@ -262,7 +262,7 @@ classdef GalerkinMMS2d
 		function dom = setEdgeNormalVectors_inclusions(self,dom)
 
 			% store variables
-			dl = dom.dl;
+			dl = dom.boundary.dl;
 			scale_eps = 1 / dom.epsilon;
 
 			% setup symbolic functions for circle edges

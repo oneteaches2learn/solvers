@@ -25,7 +25,7 @@ bTypes_outer = 'RRRR';
 bTypes_inner = 'R';
 
 % specify coefficients
-p = 1 + x(1) * x(2) * t;
+c = 1 + x(1) * x(2) * t;
 k = 1 + x(1) * x(2) + t;
 
 % specify desired result
@@ -37,7 +37,7 @@ uTrue = sin(2 * pi * x(1)) * sin(2 * pi * x(2));
 fprintf('MMS Test Begun\n')
 
 % assemble inputs
-auxfun    = ManufacturedFunctions2d_heat(p,k,uTrue);
+auxfun    = ManufacturedFunctions2d_heat(c,k,uTrue);
 mmsparams = MMSParams(base,demo=demo,timeOffset=3,timeFactor=2,pmin=3,pmax=5);
 
 % build domain

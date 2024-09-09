@@ -1,8 +1,6 @@
 classdef Domain2d
 
 	properties
-		geometryMatrix
-		dl
 		effectiveNodes
 		effectiveElems
 		unusedNodes
@@ -24,17 +22,14 @@ classdef Domain2d
 				gd = Domain2d.getGeometryDescriptionMatrix(x,y);
 				ns = Domain2d.getNameSpace;
 				sf = Domain2d.getSetFunction;
-				self.dl = decsg(gd,sf,ns);
-
-				% store geometry matrix
-				self.geometryMatrix = gd;
+				dl = decsg(gd,sf,ns);
 
 				% store xLim and yLim
 				self.xLim = x;
 				self.yLim = y;
 
 				% create boundary object
-				self.boundary = Boundary2d(self.dl);
+				self.boundary = Boundary2d(dl);
 			end
 
 		end
@@ -73,7 +68,7 @@ classdef Domain2d
 		function self = setMesh(self,p,base)
 
 			% generate the mesh
-			self.mesh = Mesh2d(self.dl,p,base);
+			self.mesh = Mesh2d(self.boundary.dl,p,base);
 
 			% store node data
 			self.effectiveNodes = [1:1:self.mesh.nNodes];
@@ -498,7 +493,6 @@ classdef Domain2d
 		function self = add_y_line(self,varargin)
 
 			self.boundary = self.boundary.add_y_line(varargin{:});
-			self.dl = self.boundary.dl;
 
 		end
 
@@ -541,7 +535,7 @@ classdef Domain2d
 			end
 			x = NameValueArgs;
 
-			h = pdegplot(self.dl,FaceLabels=x.FaceLabels,EdgeLabels=x.EdgeLabels)
+			h = pdegplot(self.boundary.dl,FaceLabels=x.FaceLabels,EdgeLabels=x.EdgeLabels)
 
 		end
 

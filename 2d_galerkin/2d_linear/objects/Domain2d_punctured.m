@@ -173,13 +173,12 @@ classdef Domain2d_punctured < Domain2d
 			% set properties related to domain and inclusions
 			self.epsilon = eps;
 			self.inclusion = inc;
-			self.dl = dl;
 
 			% generate and store edges
-			self.boundary = Boundary2d(self.dl);
+			self.boundary = Boundary2d(dl);
 
 			% set inclusion number
-			self.nInclusions = size(self.dl,2) / 4 - 1;
+			self.nInclusions = size(dl,2) / 4 - 1;
 
 		end
 

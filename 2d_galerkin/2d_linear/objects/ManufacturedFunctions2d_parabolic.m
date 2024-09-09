@@ -51,13 +51,13 @@ classdef ManufacturedFunctions2d_parabolic < ManufacturedFunctions2d
 
 
 	properties
-		p		% double or symfun, coefficient in (pu)_t - div (k grad u) = f
+		c		% double or symfun, coefficient in (cu)_t - div (k grad u) = f
 		uInit	% symfun, uInit(x) = uTrue(x,0)
-		pu_t	% symfun, pu_t = (p * uTrue)_t, i.e. is the time derivative of p * uTrue
+		cu_t	% symfun, cu_t = (c * uTrue)_t, i.e. is the time derivative of c * uTrue
 	end
 
 	methods
-		function self = ManufacturedFunctions2d_parabolic(p,k,uTrue)
+		function self = ManufacturedFunctions2d_parabolic(c,k,uTrue)
 		% ManufacturedFunctions2d(p,k,uTrue) inputs are symfun objects
 			
 			% call superclass constructor
@@ -68,20 +68,20 @@ classdef ManufacturedFunctions2d_parabolic < ManufacturedFunctions2d
 			self.uTrue = symfun(uTrue,[x t]);
 
 			% store inputs
-			self.p = p;
+			self.c = c;
 			self.uInit = symfun(self.uTrue(x(1),x(2),0),x);
 
 			% manufacture data
-			self.pu_t = self.manufactureTimeDerivative;
+			self.cu_t = self.manufactureTimeDerivative;
 
 		end
 
-		function pu_t = manufactureTimeDerivative(self)
+		function cu_t = manufactureTimeDerivative(self)
 		% Manufactures symfun u_t, the time derivative of u
 
 			% manufacture time derivative
 			x = sym('x',[1 2]); syms t;
-			pu_t = diff(self.p * self.uTrue,t);
+			cu_t = diff(self.c * self.uTrue,t);
 
 		end
 
@@ -100,7 +100,7 @@ classdef ManufacturedFunctions2d_parabolic < ManufacturedFunctions2d
 
 			% add additional outputs
 			x = sym('x',[1 2]);
-			funcs.cofs.p = matlabFunction(symfun(self.p,x));
+			funcs.cofs.c = matlabFunction(symfun(self.c,x));
 			funcs.uInit = matlabFunction(symfun(self.uInit,x));
 
 		end
