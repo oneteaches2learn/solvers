@@ -181,7 +181,7 @@ classdef GalerkinMMS2d
 			% unpack coefficients
 			uTrue = self.auxFunctions.uTrue;
 			q = self.auxFunctions.q;
-			nEdges = dom.boundary.nEdges;
+			nEdges = dom.boundary.nEdges.total;
 
 			% set symbolic variables
 			if ~isempty(dom.time)

@@ -21,7 +21,7 @@ base = 2;
 demo = 0;
 
 % specify BCs
-bTypes_outer = 'PPPP';
+bTypes_outer = 'RRRR';
 bTypes_inner = 'R';
 
 % specify coefficients

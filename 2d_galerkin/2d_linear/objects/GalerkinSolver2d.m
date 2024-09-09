@@ -1,4 +1,4 @@
-classdef (Abstract) GalerkinSolver2d
+classdef GalerkinSolver2d
 
 	properties
 		domain
@@ -16,14 +16,14 @@ classdef (Abstract) GalerkinSolver2d
         % CONSTRUCTOR
 		function self = GalerkinSolver2d(dom,auxfun)
 
-			%if nargin == 2
+			if nargin == 2
 				
 				% store inputs
 				self.domain = dom;
 				self.coefficients = auxfun.cofs;
 				self.f = auxfun.f;
 
-			%end
+			end
 			
 			% calculate solution
 			% ... 
@@ -175,7 +175,7 @@ classdef (Abstract) GalerkinSolver2d
 			U_D = sparse(nNodes,1);
 
 			% compute Dirichlet boundary conditions
-			for i = 1:dom.boundary.nEdges
+			for i = 1:dom.boundary.nEdges.total
 				
 				if dom.boundary.edges(i).boundaryType == 'D'
 
@@ -209,7 +209,7 @@ classdef (Abstract) GalerkinSolver2d
 			b_neu = sparse(nNodes,1);
 
 			% compute boundary conditions
-			for i = 1:self.domain.boundary.nEdges
+			for i = 1:self.domain.boundary.nEdges.total
 				
 				% compute Neumann condition
 				if dom.boundary.edges(i).boundaryType == 'N'
@@ -250,7 +250,7 @@ classdef (Abstract) GalerkinSolver2d
 			E = sparse(nNodes,nNodes);
 
 			% compute boundary conditions
-			for i = 1:self.domain.boundary.nEdges
+			for i = 1:self.domain.boundary.nEdges.total
 				
 				% compute Dirichlet condition
 				if dom.boundary.edges(i).boundaryType == 'R'

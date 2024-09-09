@@ -6,9 +6,6 @@ classdef GalerkinSolver2d_poisson < GalerkinSolver2d_elliptic
             % call superclass constructor
             self@GalerkinSolver2d_elliptic(dom,auxfun);
 
-            % solve
-            self = self.solve;
-
         end
         
 		function [S,b] = finalAssembly(self)

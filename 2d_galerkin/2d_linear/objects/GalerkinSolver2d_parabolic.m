@@ -14,18 +14,18 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 	end
 
 	methods
-		function self = GalerkinSolver2d_parabolic(dom,auxfun,uInit)
+		function self = GalerkinSolver2d_parabolic(dom,auxfun)
 			
-			%if nargin == 2
-				% call superclass constructor
-				self@GalerkinSolver2d(dom,auxfun);
+			% call superclass constructor
+			self@GalerkinSolver2d(dom,auxfun);
 
+			if nargin == 2
 				% store additional inputs
 				self.uInit = auxfun.uInit;
 				
 				% calculate solution
 				self = self.solve;
-			%end
+			end
 
 		end
 
@@ -53,7 +53,7 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 				self.solution(:,self.timestep) = v + self.vectors.U_D;
 
 				% break at equilibrium
-				if self.domain.time.equilibrium == 1, break; end
+				if self.equilibrium == 1, break; end
 
 			end
 
@@ -82,11 +82,11 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 			tensors.A   = [];
 			tensors.M_p = [];
 			tensors.E   = [];
-			tensors.M_p_prevTime = self.assembleMassMatrix(self.coefficients.p);
+			tensors.M_p_prevTime = self.assembleMassMatrix(self.coefficients.c);
 
 			% check which tensors are time-varying
 			tensors.timeVarying.A   = Coefficients.isTimeVarying(self.coefficients.k);
-			tensors.timeVarying.M_p = Coefficients.isTimeVarying(self.coefficients.p);
+			tensors.timeVarying.M_p = Coefficients.isTimeVarying(self.coefficients.c);
 
 			% update tensors property
 			self.tensors = tensors;
@@ -125,7 +125,7 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 			% if first timestep, create tensors
 			if self.isFirstTimeStep == 1
 				self.tensors.A   = self.assembleStiffnessMatrix;
-				self.tensors.M_p = self.assembleMassMatrix(self.coefficients.p);
+				self.tensors.M_p = self.assembleMassMatrix(self.coefficients.c);
 
 			% else, update tensors as needed
 			else
@@ -138,7 +138,7 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 				% update M_p
 				if self.tensors.timeVarying.M_p == 1
 					self.tensors.M_p_prevTime = self.tensors.M_p;
-					cof = self.coefficients.p;
+					cof = self.coefficients.c;
 					self.tensors.M_p = self.assembleMassMatrix(cof);
 				end
 			end
@@ -184,10 +184,7 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 					% get error between subsequent timesteps
 					arg1 = self.solution(:,self.timestep);
 					arg2 = self.solution(:,self.timestep-1);
-					errVec = arg1 - arg2;
-					errVec(self.domain.effectiveNodes) = errVec;
-					errVec(self.domain.unusedNodes) = NaN;
-					err = self.domain.L2norm_threePointQuadrature_nodal(errVec);
+					err = self.domain.L2err_threePointQuadrature_nodal(arg1,arg2);
 
 					% if error < tolerance, break
 					if err < self.domain.time.equilibrium.tolerance

@@ -78,6 +78,7 @@ classdef (Abstract) Inclusion2d
 		end
 
 		function K = K(self)
+		% computes stiffness tensor K, scaled by volume fraction
 
 			% number of inclusions
 			eps = 1;
@@ -124,6 +125,49 @@ classdef (Abstract) Inclusion2d
 
 			% compute correction tensor
 			K = self.volumeFraction * eye(2) - ints;
+
+		end
+
+		function k = k(self)
+		% computes stiffness coefficient k, scaled by volume fraction
+		%   for inclusions with symmetric Q, the stiffness tensor becomes a
+		%   single coefficient k, which this function computes.
+		
+			% number of inclusions
+			eps = 1;
+
+			% mesh parameters
+			p = 7;
+			base = 2;
+
+			% specify coefficients
+			k = 1;
+			r = 0;
+			f = 0;
+
+			% specify neumann BC
+			bcTypes = 'PPPPN';
+			bcConds = [{0,0,0,0},self.dy1_dn];
+
+			% build domains
+			a = GalerkinAssembler2d_poisson;
+			auxfun = a.assembleCoefficients(k,r,f);
+			dom = Domain2d_punctured(self.Y.xLim,self.Y.yLim,self,eps);
+			dom = a.assembleBoundary(dom,bcTypes,bcConds); 
+			dom = a.assembleMesh(dom,p,base);
+
+			% solve
+			chi = GalerkinSolver2d_poisson(dom,auxfun);
+
+			% compute partial derivatives
+			grad = dom.gradient_nodal(chi.solution);
+			
+			% compute integrals
+			ints = dom.centroidQuadrature(grad(:,1));
+			ints = ints / self.Y.area;
+
+			% compute correction tensor
+			k = self.volumeFraction - ints;
 
 		end
 

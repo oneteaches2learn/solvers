@@ -127,6 +127,7 @@ classdef GalerkinAssembler2d
 					if iscell(u_N), bcConds{i} = u_N{i};
 					else, bcConds{i} = u_N; end
 				elseif bcTypes(i) == 'R'
+
 					if iscell(alpha) && ~iscell(u_R)
 						bcConds{i} = {alpha{i},u_R};
 					elseif ~iscell(alpha) && iscell(u_R)

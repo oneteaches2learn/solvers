@@ -19,21 +19,23 @@ classdef Domain2d
 		% CONSTRUCTOR
 		function self = Domain2d(x,y)
 
-			% set deconstructed geometry description matrix
-			gd = Domain2d.getGeometryDescriptionMatrix(x,y);
-			ns = Domain2d.getNameSpace;
-			sf = Domain2d.getSetFunction;
-			self.dl = decsg(gd,sf,ns);
+			if nargin == 2
+				% set deconstructed geometry description matrix
+				gd = Domain2d.getGeometryDescriptionMatrix(x,y);
+				ns = Domain2d.getNameSpace;
+				sf = Domain2d.getSetFunction;
+				self.dl = decsg(gd,sf,ns);
 
-			% store geometry matrix
-			self.geometryMatrix = gd;
+				% store geometry matrix
+				self.geometryMatrix = gd;
 
-			% store xLim and yLim
-			self.xLim = x;
-			self.yLim = y;
+				% store xLim and yLim
+				self.xLim = x;
+				self.yLim = y;
 
-			% create boundary object
-			self.boundary = Boundary2d(self.dl);
+				% create boundary object
+				self.boundary = Boundary2d(self.dl);
+			end
 
 		end
 
@@ -493,39 +495,10 @@ classdef Domain2d
 
 		end
 
-		function self = add_domain_y_line(self,varargin)
+		function self = add_y_line(self,varargin)
 
-			% store variables
-			dl = self.dl;
-			yBar = varargin{1};
-			
-			% split region
-			for i = [size(dl,2):-1:1]
-
-				% if y_bar is between y_start and y_stop, then split the region
-				if (yBar > dl(4,i) && yBar < dl(5,i)) || ...
-				   (yBar > dl(5,i) && yBar < dl(4,i))
-
-					% duplicate the i-th column
-					dl = [dl(:,1:i), dl(:,i:end)];
-					
-					% adjust y_start and y_stop
-					dl(5,i) = yBar;
-					dl(4,i+1) = yBar;
-				end
-			end
-
-			% increment region ids for those regions above yBar
-			increment_cols = find(sum(dl(4:5,:) > yBar,1) > 0);
-			dl(6,increment_cols) = dl(6,increment_cols) + 1;
-			
-			% add dividing line
-			dl = [dl,[2,self.xLim(1),self.xLim(2),yBar,yBar,2,1]'];
-
-			% store result
-			self.dl = dl;
-
-			self.boundary.edges = self.setEdgeGeometry;
+			self.boundary = self.boundary.add_y_line(varargin{:});
+			self.dl = self.boundary.dl;
 
 		end
 

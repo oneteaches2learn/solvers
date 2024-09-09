@@ -1,6 +1,9 @@
 classdef Boundary2d
 
 	properties
+		dl
+		yLim
+		xLim
 		nEdges
 		edges
 		D_nodes
@@ -16,8 +19,10 @@ classdef Boundary2d
 
 			% create edge geometry
 			if nargin > 0
-				self.nEdges = self.set_nEdges(dl);
-				self.edges = self.setEdgeGeometry(dl);
+				self.dl = dl;
+				[self.xLim,self.yLim] = self.set_limits;
+				self.nEdges = self.set_nEdges;
+				self.edges = self.setEdgeGeometry;
 			end
 
 			% set boundary condition types
@@ -34,19 +39,29 @@ classdef Boundary2d
 
 
 		% SETTERS
-		function nEdges = set_nEdges(self,dl)
+		function [xLim,yLim] = set_limits(self)
 
-			nEdges = size(dl,2);
+			xLim = [min(self.dl(2,:)), max(self.dl(3,:))];
+			yLim = [min(self.dl(4,:)), max(self.dl(5,:))];
 
 		end
 
-		function edges = setEdgeGeometry(self,dl)
+		function nEdges = set_nEdges(self)
 
-			edges(self.nEdges) = BoundaryEdge2d_test;
-			for j = 1:self.nEdges;
+			nEdges.total = size(self.dl,2);
+			nEdges.outer = sum(self.dl(7,:) == 0);
+			nEdges.yLines = 0;
+			nEdges.inclusions = size(self.dl,2) - nEdges.outer;
+
+		end
+
+		function edges = setEdgeGeometry(self)
+
+			edges(self.nEdges.total) = BoundaryEdge2d_test;
+			for j = 1:self.nEdges.total;
 
 				% create new edge
-				vert = reshape(dl(2:5,j),2,2);
+				vert = reshape(self.dl(2:5,j),2,2);
 				edges(j).vertex1 = vert(1,:);
 				edges(j).vertex2 = vert(2,:);
 				edges(j).ID = j;
@@ -66,8 +81,8 @@ classdef Boundary2d
 			end
 
 			% if a bcType is given for each edge
-			if length(bcTypes) == self.nEdges
-				for i = 1:self.nEdges
+			if length(bcTypes) == self.nEdges.total
+				for i = 1:self.nEdges.total
 					self.edges(i).boundaryType = bcTypes(i);
 				end
 
@@ -76,7 +91,7 @@ classdef Boundary2d
 				for i = 1:4
 					self.edges(i).boundaryType = bcTypes(i);
 				end
-				for i = 5:self.nEdges
+				for i = 5:self.nEdges.total
 					self.edges(i).boundaryType = bcTypes(5);
 					bcTypes(i) = bcTypes(5);
 				end
@@ -86,7 +101,7 @@ classdef Boundary2d
 
 		function self = setBCConditions(self,bcConds)
 
-			for i = 1:self.nEdges
+			for i = 1:self.nEdges.total
 				self.edges(i).boundaryCondition = bcConds{i};
 			end
 
@@ -94,7 +109,7 @@ classdef Boundary2d
 
 		function self = setEdgeNodes(self,mesh)
 
-			for i = 1:self.nEdges
+			for i = 1:self.nEdges.total
 				edgeID = self.edges(i).ID;
 				self.edges(i).nodes = mesh.Mesh.findNodes('region','Edge',edgeID);
 				self.edges(i).nNodes = length(self.edges(i).nodes);
@@ -119,7 +134,7 @@ classdef Boundary2d
 			P = [];
 
 			% compile boundary node lists
-			for i = 1:self.nEdges
+			for i = 1:self.nEdges.total
 				if strcmp(self.edges(i).boundaryType,'D')
 					D = [D self.edges(i).nodes];
 				elseif strcmp(self.edges(i).boundaryType,'N')
@@ -203,5 +218,99 @@ classdef Boundary2d
 
 			end			
 		end
+
+
+		% UTILITY FUNCTIONS
+		function self = add_y_line(self,varargin)
+
+			% store variables
+			dl = self.dl;
+			if nargin == 1
+				yBar = mean(self.yLim);
+			else
+				for i = 1:length(varargin)
+					yBar(i) = varargin{i};
+				end
+			end
+			
+			% split dl into outer edges, yLines, and inclusion edges
+			dl_outer = dl(:,1:self.nEdges.outer);
+			dl_yLines = dl(:,self.nEdges.outer+1:self.nEdges.outer+self.nEdges.yLines);
+			dl_inclusions = dl(:,self.nEdges.outer+self.nEdges.yLines+1:end);
+
+			% handle outer edges
+			for j = 1:length(yBar)
+
+				% split outer edges per yBar
+				for i = [size(dl_outer,2):-1:1]
+
+					% if y_bar is between y_start and y_stop, then split the region
+					if (yBar(j) > dl_outer(4,i) && yBar(j) < dl_outer(5,i)) || ...
+					(yBar(j) > dl_outer(5,i) && yBar(j) < dl_outer(4,i))
+						
+						% duplicate the i-th column
+						dl_outer = [dl_outer(:,1:i), dl_outer(:,i:end)];
+						
+						% adjust y_start and y_stop
+						dl_outer(5,i) = yBar(j);
+						dl_outer(4,i+1) = yBar(j);
+					end
+
+				end
+
+				% increment region ids for those outer edges above yBar
+				increment_cols = find(sum(dl_outer(4:5,:) > yBar(j),1) > 0);
+				dl_outer(6,increment_cols) = dl_outer(6,increment_cols) + 1;
+
+				% increment region ids for those inclusion edges above yBar
+				increment_cols = find(sum(dl_inclusions(4:5,:) > yBar(j),1) > 0);
+				dl_inclusions(7,increment_cols) = dl_inclusions(7,increment_cols) + 1;
+
+			end
+
+			% update number of outer edges
+			self.nEdges.outer = size(dl_outer,2);
+			
+			% build matrix for yLines
+			yChanges = find(dl_outer(4,1:self.nEdges.outer/2) ~= ...
+										dl_outer(5,1:self.nEdges.outer/2));
+			yChanges = yChanges(2:end);
+
+			dl_yLines =  ...
+				[2 * ones(1,length(yChanges));
+				self.xLim(1) * ones(1,length(yChanges));
+				self.xLim(2) * ones(1,length(yChanges));
+				dl_outer(4,yChanges);
+				dl_outer(4,yChanges);
+				dl_outer(6,yChanges-1);
+				dl_outer(6,yChanges);
+				zeros(3,length(yChanges))];
+			
+			% store result
+			self.nEdges.outer = size(dl_outer,2);
+			self.nEdges.yLines = size(dl_yLines,2);
+			self.nEdges.inclusions = size(dl_inclusions,2);
+			self.dl = [dl_outer, dl_yLines, dl_inclusions];
+
+			%self.boundary.edges = self.setEdgeGeometry;
+			%}
+
+		end
+
+
+		% PLOTTING FUNCTIONS
+		function h = plot(self,NameValueArgs)
+
+			arguments
+				self
+				NameValueArgs.EdgeLabels string = "off"
+				NameValueArgs.FaceLabels string = "off"
+			end
+			x = NameValueArgs;
+
+			h = pdegplot(self.dl,FaceLabels=x.FaceLabels,EdgeLabels=x.EdgeLabels)
+
+		end
+
 	end
 end

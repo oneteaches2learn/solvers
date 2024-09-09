@@ -27,8 +27,8 @@ classdef GalerkinAssembler2d_parabolic < GalerkinAssembler2d
 				% check function variables
 				u_D = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{1},vars);
 				u_N = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{2},vars);
-				u_R = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{3},vars);
-				alpha = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{4},vars);
+				alpha = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{3},vars);
+				u_R = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{4},vars);
 
 				% call parent method
 				dom = GalerkinAssembler2d.assembleBoundary(dom,bcTypes,u_D,u_N,alpha,u_R);
@@ -49,7 +49,7 @@ classdef GalerkinAssembler2d_parabolic < GalerkinAssembler2d
 		function auxfun = assembleCoefficients(c,k,r,f,uInit)
 
 			% call parent method
-			cofs = GalerkinAssembler2d.assembleCoefficients(k,r,f);
+			auxfun = GalerkinAssembler2d.assembleCoefficients(k,r,f);
 
 			% store time-varying coefficient
 			x = sym('x',[1 2],'real'); syms t;
