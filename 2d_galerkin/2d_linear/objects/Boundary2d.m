@@ -57,7 +57,7 @@ classdef Boundary2d
 
 		function edges = setEdgeGeometry(self)
 
-			edges(self.nEdges.total) = BoundaryEdge2d_test;
+			edges(self.nEdges.total) = BoundaryEdge2d;
 			for j = 1:self.nEdges.total;
 
 				% create new edge
