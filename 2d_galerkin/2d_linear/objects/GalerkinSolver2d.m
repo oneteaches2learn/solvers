@@ -63,15 +63,11 @@ classdef GalerkinSolver2d
 			end
 
 			% assemble stiffness matrix
-			for j = self.domain.effectiveElems;
+			for j = self.domain.mesh.effectiveElems;
 				elementInd   = elements3(j,:);
 				elementCoord = coords(elementInd,:);
 				A(elementInd,elementInd) = A(elementInd,elementInd) + ...
 					K_avg(j) * self.stima3(elementCoord);
-
-				%j
-				%elementInd
-				%self.stima3(elementCoord)
 
 			end
 		end
@@ -96,7 +92,7 @@ classdef GalerkinSolver2d
 			B = sparse(nNodes,nNodes);
 			
 			% assemble base mass matrix
-			for j = self.domain.effectiveElems
+			for j = self.domain.mesh.effectiveElems
 				elementInd = elements3(j,:);
 				elementCoord = coords(elementInd,:);
 				B(elementInd,elementInd) = B(elementInd,elementInd) + ...
@@ -104,9 +100,7 @@ classdef GalerkinSolver2d
 			end
 
 			% compute c on nodes
-			for j = self.domain.effectiveNodes
-				C(j) = c(coords(j,1),coords(j,2),t);
-			end
+			C(:) = c(coords(:,1),coords(:,2),t);
 
 			% scale mass matrix by c values
 			B = B.*C';
@@ -144,7 +138,7 @@ classdef GalerkinSolver2d
 			b = sparse(nNodes,1);
 
 			% compute volume forces
-			for j = self.domain.effectiveElems
+			for j = self.domain.mesh.effectiveElems
 				elementInd    = elements3(j,:);
 				elementCoord  = coords(elementInd,:);
 				b(elementInd) = b(elementInd) + ...
@@ -175,7 +169,7 @@ classdef GalerkinSolver2d
 			U_D = sparse(nNodes,1);
 
 			% compute Dirichlet boundary conditions
-			for i = 1:dom.boundary.nEdges.total
+			for i = 1:dom.boundary.nEdges
 				
 				if dom.boundary.edges(i).boundaryType == 'D'
 
@@ -209,7 +203,7 @@ classdef GalerkinSolver2d
 			b_neu = sparse(nNodes,1);
 
 			% compute boundary conditions
-			for i = 1:self.domain.boundary.nEdges.total
+			for i = 1:self.domain.boundary.nEdges
 				
 				% compute Neumann condition
 				if dom.boundary.edges(i).boundaryType == 'N'
@@ -250,7 +244,7 @@ classdef GalerkinSolver2d
 			E = sparse(nNodes,nNodes);
 
 			% compute boundary conditions
-			for i = 1:self.domain.boundary.nEdges.total
+			for i = 1:self.domain.boundary.nEdges
 				
 				% compute Dirichlet condition
 				if dom.boundary.edges(i).boundaryType == 'R'
@@ -390,8 +384,7 @@ classdef GalerkinSolver2d
 			self.vectors = [];
 
 			% add NaN for unused nodes
-			self.solution(self.domain.effectiveNodes,:) = self.solution;
-			self.solution(self.domain.unusedNodes,:) = NaN;
+			self.solution(self.domain.mesh.unusedNodes,:) = NaN;
 
 			% copy solution to periodic replica nodes
 			P = self.domain.boundary.P_nodes;

@@ -153,11 +153,22 @@ classdef Domain2d_punctured < Domain2d
 		epsilon
 		inclusion
 		nInclusions
+		effectiveRegion
+		meshInclusions
 	end
 
 	methods
-		function self = Domain2d_punctured(x,y,inc,eps)
+		function self = Domain2d_punctured(x,y,inc,eps,NameValueArgs)
 		
+			arguments
+				x
+				y
+				inc
+				eps
+				NameValueArgs.meshInclusions string = "off"
+				NameValueArgs.effectiveRegion string = "Omega_eps"
+			end
+
 			% call Domain2d superclass constructor
 			self@Domain2d(x,y);
 
@@ -173,6 +184,8 @@ classdef Domain2d_punctured < Domain2d
 			% set properties related to domain and inclusions
 			self.epsilon = eps;
 			self.inclusion = inc;
+			self.meshInclusions = NameValueArgs.meshInclusions;
+			self.effectiveRegion = NameValueArgs.effectiveRegion;
 
 			% generate and store edges
 			self.boundary = Boundary2d(dl);
@@ -182,6 +195,177 @@ classdef Domain2d_punctured < Domain2d
 
 		end
 
+		
+		% GETTERS
+		function elemIDs = elements_Omega_eps(self)
+			
+			mesh = self.mesh.Mesh;
+			faceIDs = self.boundary.faceIDs;
+			elemIDs = findElements(mesh,"region",Face=faceIDs.Omega_eps);
+
+		end
+
+		function elemIDs = elements_Q_eps(self)
+
+			mesh = self.mesh.Mesh;
+			faceIDs = self.boundary.faceIDs;
+			elemIDs = findElements(mesh,"region",Face=faceIDs.Q_eps);
+
+		end
+
+		function nodeIDs = nodes_Omega_eps(self)
+
+			mesh = self.mesh.Mesh;
+			faceIDs = self.boundary.faceIDs;
+			nodeIDs = findNodes(mesh,"region",Face=faceIDs.Omega_eps);
+
+		end
+
+		function nodeIDs = nodes_Q_eps(self)
+
+			mesh = self.mesh.Mesh;
+			faceIDs = self.boundary.faceIDs;
+			nodeIDs = findNodes(mesh,"region",Face=faceIDs.Q_eps);
+
+		end
+
+
+		% SETTERS
+		function self = setMesh(self,p,base,NameValueArgs)
+
+			arguments
+				self
+				p 
+				base 
+				NameValueArgs.meshInclusions = self.meshInclusions
+				NameValueArgs.effectiveRegion = self.effectiveRegion
+			end
+
+			% update meshInclusions and effectiveRegion properties
+			self.meshInclusions = NameValueArgs.meshInclusions;
+			self.effectiveRegion = NameValueArgs.effectiveRegion;
+
+			% update dl to reflect whether inclusions are meshed
+			self.boundary = self.boundary.meshInclusions(...
+							meshInclusions=self.meshInclusions);
+
+			% generate the mesh
+			self.mesh = Mesh2d(self.boundary.dl,p,base);
+
+			% set effective nodes and elements
+			self = self.setEffectiveNodes;
+			self = self.setEffectiveElements;
+
+			self.boundary.nEdges = self.boundary.set_nEdges( ...
+						self.meshInclusions,self.effectiveRegion);
+
+			%{ NOTE: call this function separately. This way, you can create a
+			%mesh without needing to have boundary conditions on the geometry. 
+			%distribute boundary nodes to edges
+			%self = self.setBoundaryNodes(self.mesh);
+			%}
+
+		end
+
+		function self = setEffectiveNodes(self)
+
+			input = self.effectiveRegion;
+
+			% set effective nodes/elements
+			if strcmp(input,"Omega_eps") || strcmp(input,'off')
+				self.mesh.effectiveNodes = self.nodes_Omega_eps;
+
+			elseif strcmp(input,'Omega') || ...
+					strcmp(input,'all') || strcmp(input,'on')
+				self.mesh.effectiveNodes = [1:self.mesh.nNodes];
+
+			else
+				self.mesh.effectiveNodes = self.nodes_Omega_eps;
+
+			end
+
+			% set unused nodes/elements
+			self.mesh.unusedNodes = setdiff(1:self.mesh.nNodes, ...
+											self.mesh.effectiveNodes);
+
+		end
+
+		function self = setEffectiveElements(self)
+			
+		
+			input = self.effectiveRegion;
+
+			% set effective nodes/elements
+			if strcmp(input,"Omega_eps") || strcmp(input,'off')
+				self.mesh.effectiveElems = self.elements_Omega_eps;
+
+			elseif strcmp(input,'Omega') || ...
+					strcmp(input,'all') || strcmp(input,'on')
+				self.mesh.effectiveElems = [1:self.mesh.nElems];
+
+			else
+				self.mesh.effectiveElems = self.elements_Omega_eps;
+
+			end
+
+			% set unused nodes/elements
+			self.mesh.unusedElems = setdiff(1:self.mesh.nElems, ...
+											self.mesh.effectiveElems);
+
+		end
+
+
+		% PLOTTERS
+		function h = plot(self,NameValueArgs)
+
+			arguments
+				self
+				NameValueArgs.NodeLabels string = "off"
+				NameValueArgs.NodeFontSize double = 18
+				NameValueArgs.ElementLabels string = "off"
+			end
+			x = NameValueArgs;
+
+			% Plot mesh
+			mesh = self.mesh.Mesh;
+
+			% plot all nodes
+			h = pdemesh(mesh);
+
+			% capture boundary data to redraw boundaries later
+			boundaries = h(2);
+			xBdry = boundaries.XData;
+			yBdry = boundaries.YData;
+			
+			% having captured data, clear plot
+			clf;
+
+			% plot effective elements
+			hold on
+			h = pdemesh(mesh.Nodes,mesh.Elements(:,self.mesh.effectiveElems),...
+						ElementLabels=x.ElementLabels);
+
+			% Label nodes, optional
+			if x.NodeLabels == "on"
+				nNodes = size(self.Mesh.Nodes(self.mesh.effectiveNodes),2);	
+				xData = self.Mesh.Nodes(1,self.mesh.effectiveNodes);
+				yData = self.Mesh.Nodes(2,self.mesh.effectiveNodes);
+				for i = 1:nNodes
+					text(xData(i),yData(i),strcat('n',num2str(i)), ...
+						'FontSize',x.NodeFontSize,'FontWeight','bold');
+				end
+			end
+
+			% color inclusion elements
+			incElem = self.elements_Q_eps;
+			k = pdemesh(mesh.Nodes,mesh.Elements(:,incElem));
+			try, k.Color = [0.7 0.7 0.7]; end
+
+			% replot boundary lines
+			plot(xBdry,yBdry,"Color","red");
+			hold off
+
+		end
 	end
 
 	methods (Static)

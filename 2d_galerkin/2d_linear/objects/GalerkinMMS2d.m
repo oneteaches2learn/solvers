@@ -97,7 +97,7 @@ classdef GalerkinMMS2d
 
 			% manufacture boundary conditions
 			fprintf(' Setting BCs:'), tic
-			if exist('time')
+			if isa(self,'GalerkinMMS2d_parabolic')
 				self.domain = self.manufactureBoundaryConditions(dom,auxfun,time);
 			else
 				self.domain = self.manufactureBoundaryConditions(dom,auxfun);
@@ -109,7 +109,7 @@ classdef GalerkinMMS2d
 			if self.mmsParams.demo == 0
 
 				% solve problems
-				if exist('time')
+				if isa(self,'GalerkinMMS2d_parabolic')
 					self.problems = self.solveManufacturedProblems(time);
 				else
 					self.problems = self.solveManufacturedProblems;
@@ -120,7 +120,7 @@ classdef GalerkinMMS2d
 
 			% else, if in demo-mode, only run one trial
 			else
-				if exist('time')
+				if isa(self,'GalerkinMMS2d_parabolic')
 					self.problems = self.solveManufacturedProblems(time);
 				else
 					self.problems = self.solveManufacturedProblems;
@@ -140,6 +140,7 @@ classdef GalerkinMMS2d
 			pmax = self.mmsParams.pmax;
 			tOff = self.mmsParams.timeOffset;
 			tFac = self.mmsParams.timeFactor;
+			region = self.mmsParams.effectiveRegion;
 
 			% run mms test
 			fprintf('MMS Test Begun\n')
@@ -150,17 +151,7 @@ classdef GalerkinMMS2d
 				% successively refine mese
 				fprintf(' p = %i solved:',p); tic;
 
-				dom_p = self.domain.setMesh(p,base);
-				dom_p = dom_p.setBoundaryNodes;
-
-				% if time-varying
-				if ~isempty(self.domain.time)
-
-					% successively refine time grid
-					dom_p.time = dom_p.time.setMesh(tFac*(p-tOff),base);
-
-				end
-
+				dom_p = self.configureDomain(p); 
 				prob_p = self.solve(dom_p,cofs);
 
 				% store results
@@ -176,12 +167,51 @@ classdef GalerkinMMS2d
 			end
 		end
 
+		function dom_p = configureDomain(self,p)
+
+			% unpack variables
+			cofs = self.auxFunctions.functionHandles;
+			base = self.mmsParams.base;
+			pmin = self.mmsParams.pmin;
+			pmax = self.mmsParams.pmax;
+			tOff = self.mmsParams.timeOffset;
+			tFac = self.mmsParams.timeFactor;
+			region = self.mmsParams.effectiveRegion;
+
+
+			dom_p = self.domain;
+
+			%dom_p = dom_p.setMesh(p,base);
+			%dom_p = dom_p.setMesh(p,base,...
+			%		meshInclusions=self.mmsParams.meshInclusions,...
+			%		effectiveRegion=self.mmsParams.effectiveRegion);
+			dom_p = dom_p.setMesh(p,base);
+
+			% assign boundary nodes to edges
+			dom_p = dom_p.setBoundaryNodes;
+
+			% set time grid
+			if isa(self,'GalerkinMMS2d_parabolic')
+				dom_p.time = dom_p.time.setMesh(tFac*(p-tOff),base);
+			end
+			%{
+			if strcmp(region,'Omega')
+				dom_p = self.domain.setMesh(p,base,...
+						meshInclusions='on',effectiveRegion='all');
+			else
+				dom_p = self.domain.setMesh(p,base,meshInclusions='on');
+			end
+			dom_p = dom_p.setBoundaryNodes;
+			%}
+
+		end
+
 		function dom = manufactureBoundaryConditions(self,dom,auxfun,varargin);
 
 			% unpack coefficients
 			uTrue = self.auxFunctions.uTrue;
 			q = self.auxFunctions.q;
-			nEdges = dom.boundary.nEdges.total;
+			nEdges = dom.boundary.nEdges;
 
 			% set symbolic variables
 			if ~isempty(dom.time)
@@ -274,18 +304,30 @@ classdef GalerkinMMS2d
 				n_upper = dom.inclusion.Q.unitNormal_upper;
 			end
 
-			% loop over columns of decomposed geometry description matrix
-			for j = 5:size(dl,2);
+			% store numbers of geometry edges
+			nOuterEdges_dl = size(dom.boundary.dl_outer,2);
+			nOuterEdges_dom = 4;
+			nyLines = size(dom.boundary.dl_yLines,2);
+			nIncEdges = size(dom.boundary.dl_inclusions,2);
 
+			% store dl cols that correspond to inclusion edges
+			dl_cols = dom.boundary.dl_IDs.inclusions;
+
+			% loop over columns of decomposed geometry description matrix
+			for i = 1:nIncEdges
+
+				dl_col = nOuterEdges_dl + nyLines + i
+				incEdgeNum = nOuterEdges_dom + i;
+				
 				% if edge corresponds to circle
-				if dl(1,j) == 1 
+				if dl(1,dl_col) == 1 
 
 					% set x-translation
-					x_translate = dl(8,j);
+					x_translate = dl(8,dl_col);
 					x_transformed = scale_eps * (x(1) - x_translate);
 
 					% if lower edge of circle
-					if mod(j,4) == 1 || mod(j,4) == 2
+					if mod(i,4) == 1 || mod(i,4) == 2
 
 						n = symfun(n_lower(x_transformed,x(2)),x);
 
@@ -297,14 +339,14 @@ classdef GalerkinMMS2d
 					end
 
 				% if edge corresonds to a line segment	
-				elseif dl(1,j) == 2
+				elseif dl(1,dl_col) == 2
 
-					n = dom.inclusion.Q.unitNormal(:,mod(j-1,4)+1);
+					n = dom.inclusion.Q.unitNormal(:,mod(i-1,4)+1);
 					
 				end
 				
 				% store normal vector
-				dom.boundary.edges(j).outwardNormal = n;
+				dom.boundary.edges(incEdgeNum).outwardNormal = n;
 
 			end
 		end
@@ -323,12 +365,16 @@ classdef GalerkinMMS2d
 			% Compute error
 			fprintf('Computing Errors:\n')
 			uTrue = self.auxFunctions.uTrue;
-			for i = 1:3
+			for i = 1:self.mmsParams.nTrials
 				fprintf(' Trial: '); tic;
 				sol = self.problems{i}.solution;
-				err = self.problems{i}.domain.L2err_threePointQuadrature_nodal(sol,uTrue);
-				%err = self.problems{i}.domain.L2err_centroidQuadrature_nodal(sol,uTrue);
-				%err = self.problems{i}.domain.L2err_nodalQuadrature(sol,uTrue);
+				if strcmp(self.mmsParams.quadType,'threePoint')
+					err = self.problems{i}.domain.L2err_threePointQuadrature_nodal(sol,uTrue);
+				elseif strcmp(self.mmsParams.quadType,'centroid')
+					err = self.problems{i}.domain.L2err_centroidQuadrature_nodal(sol,uTrue);
+				elseif strcmp(self.mmsParams.quadType,'nodal')
+					err = self.problems{i}.domain.L2err_nodalQuadrature(sol,uTrue);
+				end
 				errors(i) = max(err);
 				executionTime = toc;
 				fprintf('%f s\n',executionTime) 

@@ -72,6 +72,13 @@ classdef MMSParams
 		pmax
 		timeOffset
 		timeFactor
+		effectiveRegion
+		meshInclusions
+		quadType
+	end
+
+	properties (Dependent)
+		nTrials
 	end
 
 	methods
@@ -84,6 +91,9 @@ classdef MMSParams
 				NameValueArgs.pmax = 4
 				NameValueArgs.timeOffset = 1
 				NameValueArgs.timeFactor = 2
+				NameValueArgs.effectiveRegion = 'Omega_eps'
+				NameValueArgs.meshInclusions = 'off'
+				NameValueArgs.quadType = 'threePoint'
 			end
 
 			% set properties
@@ -91,6 +101,9 @@ classdef MMSParams
 			self.demo = NameValueArgs.demo;
 			self.timeOffset = NameValueArgs.timeOffset;
 			self.timeFactor = NameValueArgs.timeFactor;
+			self.effectiveRegion = NameValueArgs.effectiveRegion;
+			self.meshInclusions = NameValueArgs.meshInclusions;
+			self.quadType = NameValueArgs.quadType;
 			[self.pmin,self.pmax] = self.setOrderBounds(NameValueArgs);
 			
 		end
@@ -108,6 +121,10 @@ classdef MMSParams
 				pmax = self.demo;
 			end
 
+		end
+
+		function nTrials = get.nTrials(self)
+			nTrials = self.pmax - self.pmin + 1;
 		end
 
 	end

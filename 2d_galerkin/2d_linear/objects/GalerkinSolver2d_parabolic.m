@@ -204,7 +204,7 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 		function self = cleanup(self)
 
 			% call superclass method
-			self.cleanup@GalerkinSolver2d;
+			self = self.cleanup@GalerkinSolver2d;
 
 			% update stored parameters
 			self.domain.time.N_t = self.timestep;

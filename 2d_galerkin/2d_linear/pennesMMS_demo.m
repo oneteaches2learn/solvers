@@ -39,7 +39,8 @@ fprintf('MMS Test Begun\n')
 
 % assemble inputs
 auxfun    = ManufacturedFunctions2d_pennes(p,k,r,uStar,uTrue);
-mmsparams = MMSParams(base,demo=demo,timeOffset=3,timeFactor=2,pmin=3,pmax=5);
+mmsparams = MMSParams(base,demo=demo,timeOffset=3,timeFactor=2,pmin=3,pmax=5,...
+				meshInclusions='off',effectiveRegion='Omega');
 
 % build domain
 fprintf('Initialization\n')

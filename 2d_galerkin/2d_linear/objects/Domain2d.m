@@ -1,13 +1,7 @@
 classdef Domain2d
 
 	properties
-		effectiveNodes
-		effectiveElems
-		unusedNodes
-		unusedElems
 		domainArea
-		xLim
-		yLim
 		mesh
 		boundary
 		time
@@ -23,10 +17,6 @@ classdef Domain2d
 				ns = Domain2d.getNameSpace;
 				sf = Domain2d.getSetFunction;
 				dl = decsg(gd,sf,ns);
-
-				% store xLim and yLim
-				self.xLim = x;
-				self.yLim = y;
 
 				% create boundary object
 				self.boundary = Boundary2d(dl);
@@ -65,24 +55,51 @@ classdef Domain2d
 
 		end
 
-		function self = setMesh(self,p,base)
+		function self = setMesh(self,p,base,NameValueArgs)
+
+			arguments
+				self
+				p 
+				base 
+				NameValueArgs.meshInclusions = 'skip'
+				NameValueArgs.effectiveRegion = 'skip'
+			end
+
+			% optionally, incorporate inclusions into meshed region
+			if strcmp(NameValueArgs.meshInclusions,'on') || ...
+							strcmp(NameValueArgs.meshInclusions,'off')
+				self.boundary = self.boundary.meshInclusions(...
+						meshInclusions=NameValueArgs.meshInclusions);
+			end
 
 			% generate the mesh
 			self.mesh = Mesh2d(self.boundary.dl,p,base);
 
-			% store node data
-			self.effectiveNodes = [1:1:self.mesh.nNodes];
-			self.unusedNodes = [];
-
-			% store element data
-			self.effectiveElems = [1:1:self.mesh.nElems];
-			self.unusedElems = [];
+			% set effective nodes and elements
+			self = self.setEffectiveNodes;
+			self = self.setEffectiveElements;
 
 			%{ NOTE: call this function separately. This way, you can create a
 			%mesh without needing to have boundary conditions on the geometry. 
 			%distribute boundary nodes to edges
 			%self = self.setBoundaryNodes(self.mesh);
 			%}
+
+		end
+
+		function self = setEffectiveNodes(self)
+
+			% store node data
+			self.mesh.effectiveNodes = [1:1:self.mesh.nNodes];
+			self.mesh.unusedNodes = [];
+
+		end
+
+		function self = setEffectiveElements(self)
+
+			% store element data
+			self.mesh.effectiveElems = [1:1:self.mesh.nElems];
+			self.mesh.unusedElems = [];
 
 		end
 
@@ -121,14 +138,14 @@ classdef Domain2d
 		function unusedNodes = get_unusedNodes(self)
 
 			nodeList = [1:1:self.mesh.nNodes];
-			unusedNodes = setdiff(nodeList,self.effectiveNodes);
+			unusedNodes = setdiff(nodeList,self.mesh.effectiveNodes);
 
 		end
 
 		function unusedElems = get_unusedElems(self)
 
 			elemList = [1:1:self.mesh.nElems];
-			unusedElems = setdiff(elemList,self.effectiveElems);
+			unusedElems = setdiff(elemList,self.mesh.effectiveElems);
 
 		end
 
@@ -496,7 +513,7 @@ classdef Domain2d
 
 		end
 
-		% PLOTTING FUNCTIONS
+		% PLOTTERS
 		function h = plot(self,NameValueArgs)
 
 			arguments
