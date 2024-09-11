@@ -97,11 +97,7 @@ classdef GalerkinMMS2d
 
 			% manufacture boundary conditions
 			fprintf(' Setting BCs:'), tic
-			if isa(self,'GalerkinMMS2d_parabolic')
-				self.domain = self.manufactureBoundaryConditions(dom,auxfun,time);
-			else
-				self.domain = self.manufactureBoundaryConditions(dom,auxfun);
-			end
+			self.domain = self.manufactureBoundaryConditions(dom,auxfun);
 			executionTime = toc;
 			fprintf(' %f s\n',executionTime)
 
@@ -109,22 +105,14 @@ classdef GalerkinMMS2d
 			if self.mmsParams.demo == 0
 
 				% solve problems
-				if isa(self,'GalerkinMMS2d_parabolic')
-					self.problems = self.solveManufacturedProblems(time);
-				else
-					self.problems = self.solveManufacturedProblems;
-				end
+				self.problems = self.solveManufacturedProblems;
 
 				% compute errors
 				[self.errors,self.ratios,self.orders] = self.computeErrors;
 
 			% else, if in demo-mode, only run one trial
 			else
-				if isa(self,'GalerkinMMS2d_parabolic')
-					self.problems = self.solveManufacturedProblems(time);
-				else
-					self.problems = self.solveManufacturedProblems;
-				end
+				self.problems = self.solveManufacturedProblems(time);
 			end
 
 		end
@@ -178,14 +166,8 @@ classdef GalerkinMMS2d
 			tFac = self.mmsParams.timeFactor;
 			region = self.mmsParams.effectiveRegion;
 
-
 			dom_p = self.domain;
-
-			%dom_p = dom_p.setMesh(p,base);
-			%dom_p = dom_p.setMesh(p,base,...
-			%		meshInclusions=self.mmsParams.meshInclusions,...
-			%		effectiveRegion=self.mmsParams.effectiveRegion);
-			dom_p = dom_p.setMesh(p,base);
+			dom_p = dom_p.setMesh(p,base,region);
 
 			% assign boundary nodes to edges
 			dom_p = dom_p.setBoundaryNodes;
@@ -194,15 +176,6 @@ classdef GalerkinMMS2d
 			if isa(self,'GalerkinMMS2d_parabolic')
 				dom_p.time = dom_p.time.setMesh(tFac*(p-tOff),base);
 			end
-			%{
-			if strcmp(region,'Omega')
-				dom_p = self.domain.setMesh(p,base,...
-						meshInclusions='on',effectiveRegion='all');
-			else
-				dom_p = self.domain.setMesh(p,base,meshInclusions='on');
-			end
-			dom_p = dom_p.setBoundaryNodes;
-			%}
 
 		end
 
@@ -214,7 +187,7 @@ classdef GalerkinMMS2d
 			nEdges = dom.boundary.nEdges;
 
 			% set symbolic variables
-			if ~isempty(dom.time)
+			if isa(self,'GalerkinMMS2d_parabolic')
 				x = sym('x',[1 2]); syms t;
 				vars = [x t];
 			else
@@ -262,7 +235,7 @@ classdef GalerkinMMS2d
 		function dom = setEdgeNormalVectors_outerBoundary(self,dom)
 
 			% store variables
-			dl = dom.boundary.dl;
+			dl = dom.boundary.dl.mat;
 
 			% get normal vectors
 			n_lower = [0; -1];
@@ -293,41 +266,33 @@ classdef GalerkinMMS2d
 
 			% store variables
 			dl = dom.boundary.dl;
+			edgeIDs = dl.segEdgeDict;
 			scale_eps = 1 / dom.epsilon;
 
 			% setup symbolic functions for circle edges
 			x = sym('x',[1 2],'real');
 
 			% if unit vectors to circle are needed, store in advance
-			if sum(find(dl(1,:) == 1)) > 0
+			if sum(find(dl.mat(1,:) == 1)) > 0
 				n_lower = dom.inclusion.Q.unitNormal_lower;
 				n_upper = dom.inclusion.Q.unitNormal_upper;
 			end
 
-			% store numbers of geometry edges
-			nOuterEdges_dl = size(dom.boundary.dl_outer,2);
-			nOuterEdges_dom = 4;
-			nyLines = size(dom.boundary.dl_yLines,2);
-			nIncEdges = size(dom.boundary.dl_inclusions,2);
+			for i = dl.edgeSegDict_inclusions
 
-			% store dl cols that correspond to inclusion edges
-			dl_cols = dom.boundary.dl_IDs.inclusions;
+				% dictionary entries are cells containing ints; convert to ints
+				i = i{1};
 
-			% loop over columns of decomposed geometry description matrix
-			for i = 1:nIncEdges
-
-				dl_col = nOuterEdges_dl + nyLines + i
-				incEdgeNum = nOuterEdges_dom + i;
-				
-				% if edge corresponds to circle
-				if dl(1,dl_col) == 1 
+				%if segment is of type: circle
+				if dl.segType(i) == 1
 
 					% set x-translation
-					x_translate = dl(8,dl_col);
+					temp = dl.circleCenter(i);
+					x_translate = temp(1);
 					x_transformed = scale_eps * (x(1) - x_translate);
 
 					% if lower edge of circle
-					if mod(i,4) == 1 || mod(i,4) == 2
+					if dl.isLowerCircle(i)
 
 						n = symfun(n_lower(x_transformed,x(2)),x);
 
@@ -338,17 +303,19 @@ classdef GalerkinMMS2d
 
 					end
 
-				% if edge corresonds to a line segment	
-				elseif dl(1,dl_col) == 2
+				% if segment is of type: line
+				elseif dl.segType(i) == 2
 
-					n = dom.inclusion.Q.unitNormal(:,mod(i-1,4)+1);
+					orientation = dl.squareEdgeOrientation(i);
+					n = dom.inclusion.Q.unitNormal(:,orientation);
 					
 				end
 				
 				% store normal vector
-				dom.boundary.edges(incEdgeNum).outwardNormal = n;
+				dom.boundary.edges(edgeIDs(i)).outwardNormal = n;
 
 			end
+
 		end
 
 		function [errors,ratios,orders] = computeErrors(self)

@@ -31,6 +31,18 @@ classdef Domain2d
 
 		end
 
+		function self = setBoundary(self,bcTypes,bcConds,mesh)
+
+			self = self.setBCTypes(bcTypes);
+			self = self.setBCConditions(bcConds);
+			
+			if nargin == 4
+				self = self.setBoundaryNodes(mesh);
+			elseif nargin == 3 && ~isempty(self.mesh)
+				self = self.setBoundaryNodes;
+			end
+		end
+
 		function self = setBCTypes(self,bcTypes)
 			
 			self.boundary = self.boundary.setBCTypes(bcTypes);
@@ -39,15 +51,13 @@ classdef Domain2d
 
 		function self = setBCConditions(self,bcConds)
 
-			self.boundary = self.boundary.setBCConditions(bcConds);
+			self.boundary = self.boundary.setBCConds(bcConds);
 
 		end
 
 		function self = setBoundaryNodes(self,mesh)
 
-			if nargin == 1
-				mesh = self.mesh;
-			end
+			if nargin == 1, mesh = self.mesh; end
 
 			self.boundary = self.boundary.setEdgeNodes(mesh);
 			self.boundary = self.boundary.setBoundaryNodeLists(mesh);
@@ -55,35 +65,17 @@ classdef Domain2d
 
 		end
 
-		function self = setMesh(self,p,base,NameValueArgs)
+		function self = setMesh(self,p,base,region)
 
-			arguments
-				self
-				p 
-				base 
-				NameValueArgs.meshInclusions = 'skip'
-				NameValueArgs.effectiveRegion = 'skip'
-			end
-
-			% optionally, incorporate inclusions into meshed region
-			if strcmp(NameValueArgs.meshInclusions,'on') || ...
-							strcmp(NameValueArgs.meshInclusions,'off')
-				self.boundary = self.boundary.meshInclusions(...
-						meshInclusions=NameValueArgs.meshInclusions);
-			end
+			% region is unused for unpunctured domains
+			if nargin == 2, region = 'skip'; end
 
 			% generate the mesh
-			self.mesh = Mesh2d(self.boundary.dl,p,base);
+			self.mesh = Mesh2d(self.boundary.dl.mat,p,base);
 
 			% set effective nodes and elements
 			self = self.setEffectiveNodes;
 			self = self.setEffectiveElements;
-
-			%{ NOTE: call this function separately. This way, you can create a
-			%mesh without needing to have boundary conditions on the geometry. 
-			%distribute boundary nodes to edges
-			%self = self.setBoundaryNodes(self.mesh);
-			%}
 
 		end
 
@@ -148,6 +140,38 @@ classdef Domain2d
 			unusedElems = setdiff(elemList,self.mesh.effectiveElems);
 
 		end
+
+
+		% Y-LINE
+		function self = add_yline(self,varargin)
+
+			self.boundary = self.boundary.add_yline(varargin{:});
+			if ~isempty(self.mesh)
+				self = self.setMesh(self.mesh.p,self.mesh.base);
+			end
+
+		end
+
+
+		% INCLUSIONS ON/OFF
+		function self = inclusionsON(self,varargin)
+
+			self.boundary = self.boundary.inclusionsON;
+			if ~isempty(self.mesh)
+				self = self.setMesh(self.mesh.p,self.mesh.base);
+			end
+
+		end
+
+		function self = inclusionsOFF(self,varargin)
+
+			self.boundary = self.boundary.inclusionsON;
+			if ~isempty(self.mesh)
+				self = self.setMesh(self.mesh.p,self.mesh.base);
+			end
+
+		end
+
 
 
 		% UTILITY FUNCTIONS
@@ -507,12 +531,6 @@ classdef Domain2d
 
 		end
 
-		function self = add_y_line(self,varargin)
-
-			self.boundary = self.boundary.add_y_line(varargin{:});
-
-		end
-
 		% PLOTTERS
 		function h = plot(self,NameValueArgs)
 
@@ -552,7 +570,7 @@ classdef Domain2d
 			end
 			x = NameValueArgs;
 
-			h = pdegplot(self.boundary.dl,FaceLabels=x.FaceLabels,EdgeLabels=x.EdgeLabels)
+			h = pdegplot(self.boundary.dl.mat,FaceLabels=x.FaceLabels,EdgeLabels=x.EdgeLabels)
 
 		end
 

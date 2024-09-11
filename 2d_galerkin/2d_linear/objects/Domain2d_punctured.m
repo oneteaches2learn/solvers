@@ -231,39 +231,52 @@ classdef Domain2d_punctured < Domain2d
 
 
 		% SETTERS
-		function self = setMesh(self,p,base,NameValueArgs)
+		function self = setMesh(self,p,base,effectiveRegion)
 
-			arguments
-				self
-				p 
-				base 
-				NameValueArgs.meshInclusions = self.meshInclusions
-				NameValueArgs.effectiveRegion = self.effectiveRegion
+			% if inclusions are to meshed, specify effective region
+			if nargin == 4
+				self = self.setEffectiveRegion(effectiveRegion);
 			end
 
-			% update meshInclusions and effectiveRegion properties
-			self.meshInclusions = NameValueArgs.meshInclusions;
-			self.effectiveRegion = NameValueArgs.effectiveRegion;
-
-			% update dl to reflect whether inclusions are meshed
-			self.boundary = self.boundary.meshInclusions(...
-							meshInclusions=self.meshInclusions);
-
 			% generate the mesh
-			self.mesh = Mesh2d(self.boundary.dl,p,base);
+			self.mesh = Mesh2d(self.boundary.dl.mat,p,base);
+
+			% if BCs already set, distribute BC nodes
+			if ~isempty(self.boundary.edges(end).boundaryType)
+				self = self.setBoundaryNodes;
+			end
 
 			% set effective nodes and elements
 			self = self.setEffectiveNodes;
 			self = self.setEffectiveElements;
 
-			self.boundary.nEdges = self.boundary.set_nEdges( ...
-						self.meshInclusions,self.effectiveRegion);
+		end
 
-			%{ NOTE: call this function separately. This way, you can create a
-			%mesh without needing to have boundary conditions on the geometry. 
-			%distribute boundary nodes to edges
-			%self = self.setBoundaryNodes(self.mesh);
-			%}
+		function self = setEffectiveRegion(self,input)
+
+			% set effective region
+			self.effectiveRegion = input;
+			if strcmp(input,'Omega')
+				self = self.inclusionsON;
+			elseif strcmp(input,'Omega_eps')
+				self = self.inclusionsOFF;
+			end
+
+		end
+
+		function self = inclusionsON(self)
+
+			self.effectiveRegion = 'Omega';
+			self.boundary = self.boundary.inclusionsON;
+			if ~isempty(self.mesh), self = self.setBoundaryNodes; end
+
+		end
+
+		function self = inclusionsOFF(self)
+
+			self.effectiveRegion = 'Omega_eps';
+			self.boundary = self.boundary.inclusionsOFF;
+			if ~isempty(self.mesh), self = self.setBoundaryNodes; end
 
 		end
 
@@ -272,11 +285,10 @@ classdef Domain2d_punctured < Domain2d
 			input = self.effectiveRegion;
 
 			% set effective nodes/elements
-			if strcmp(input,"Omega_eps") || strcmp(input,'off')
+			if strcmp(input,"Omega_eps")
 				self.mesh.effectiveNodes = self.nodes_Omega_eps;
 
-			elseif strcmp(input,'Omega') || ...
-					strcmp(input,'all') || strcmp(input,'on')
+			elseif strcmp(input,'Omega')
 				self.mesh.effectiveNodes = [1:self.mesh.nNodes];
 
 			else
@@ -296,21 +308,27 @@ classdef Domain2d_punctured < Domain2d
 			input = self.effectiveRegion;
 
 			% set effective nodes/elements
-			if strcmp(input,"Omega_eps") || strcmp(input,'off')
+			if strcmp(input,"Omega_eps")
 				self.mesh.effectiveElems = self.elements_Omega_eps;
 
-			elseif strcmp(input,'Omega') || ...
-					strcmp(input,'all') || strcmp(input,'on')
+			elseif strcmp(input,'Omega')
 				self.mesh.effectiveElems = [1:self.mesh.nElems];
 
 			else
 				self.mesh.effectiveElems = self.elements_Omega_eps;
-
 			end
 
 			% set unused nodes/elements
 			self.mesh.unusedElems = setdiff(1:self.mesh.nElems, ...
 											self.mesh.effectiveElems);
+
+		end
+
+
+		% Y-LINE
+		function self = add_yline(self,varargin)
+
+			self.boundary = self.boundary.add_yline(varargin{:});
 
 		end
 
@@ -359,7 +377,13 @@ classdef Domain2d_punctured < Domain2d
 			% color inclusion elements
 			incElem = self.elements_Q_eps;
 			k = pdemesh(mesh.Nodes,mesh.Elements(:,incElem));
-			try, k.Color = [0.7 0.7 0.7]; end
+			if ~isempty(k)
+				if strcmp(self.effectiveRegion,'Omega_eps')
+					k.Color = [0.7 0.7 0.7];
+				else 
+					k.Color = [0.3 0.3 1];
+				end
+			end
 
 			% replot boundary lines
 			plot(xBdry,yBdry,"Color","red");

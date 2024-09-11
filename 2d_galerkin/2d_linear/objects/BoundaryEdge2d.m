@@ -1,7 +1,7 @@
 classdef BoundaryEdge2d
 
 	properties
-		ID
+		segIDs
 		vertex1
 		vertex2
 		outwardNormal
