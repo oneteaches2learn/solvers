@@ -77,14 +77,14 @@ classdef (Abstract) Inclusion2d
 
 		end
 
-		function K = K(self)
+		function [K,chi] = K(self)
 		% computes stiffness tensor K, scaled by volume fraction
 
 			% number of inclusions
 			eps = 1;
 
 			% mesh parameters
-			p = 7;
+			p = 6;
 			base = 2;
 
 			% specify coefficients
@@ -96,6 +96,7 @@ classdef (Abstract) Inclusion2d
 			bcTypes = 'PPPPN';
 			bcConds_y1 = [{0,0,0,0},self.dy1_dn];
 			bcConds_y2 = [{0,0,0,0},self.dy2_dn];
+
 			bcConds = [bcConds_y1;bcConds_y2];
 
 			% build domains
