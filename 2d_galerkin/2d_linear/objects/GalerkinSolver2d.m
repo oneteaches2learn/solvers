@@ -462,6 +462,74 @@ classdef GalerkinSolver2d
 
 		end
 
+
+		% VTK EXPORT FUNCTIONS
+		function tria2vtk(self,filename,dir,timesteps)
+
+			% prepare directory
+			if isempty(dir), dir = cd; end
+			if ~strcmpi(dir(end),'/'); dir(end+1)='/'; end
+
+			% store data
+			nodes = self.domain.mesh.nodes;
+			elems = self.domain.mesh.elements;
+			data = self.solution;
+
+			if nargin == 3
+				vtk.tria2vtk(filename,nodes,elems,data(:,end),dir);
+			else
+				for i = 1:length(timesteps)
+					if timesteps(i) > self.domain.time.N_t
+						timesteps(i) = self.domain.time.N_t;
+					end
+					filename_i = sprintf('%s_%i',filename,i);
+					vtk.tria2vtk( ...
+						filename_i,nodes,elems,data(:,timesteps(i)),dir);
+				end
+			end
+
+		end
+
+		function tria2vtk_mesh(self,filename,dir)
+
+			% prepare directory
+			if isempty(dir), dir = cd; end
+			if ~strcmpi(dir(end),'/'); dir(end+1)='/'; end
+
+			% store data
+			nodes = self.domain.mesh.nodes;
+			elems = self.domain.mesh.elements;
+
+			filename = sprintf('%s_mesh',filename);
+			vtk.tria2vtk_mesh(filename,nodes,elems,dir);
+
+		end
+
+		function tria2vtk_surf(self,filename,dir,timesteps)
+
+			% prepare directory
+			if isempty(dir), dir = cd; end
+			if ~strcmpi(dir(end),'/'); dir(end+1)='/'; end
+
+			% store data
+			nodes = self.domain.mesh.nodes;
+			elems = self.domain.mesh.elements;
+			data = self.solution;
+
+			if nargin == 3
+				vtk.tria2vtk_surf(filename,nodes,elems,data(:,end),dir);
+			else
+				for i = 1:length(timesteps)
+					if timesteps(i) > self.domain.time.N_t
+						timesteps(i) = self.domain.time.N_t;
+					end
+					filename_i = sprintf('%s_surf_%i',filename,i);
+					vtk.tria2vtk_surf(...
+						filename_i,nodes,elems,data(:,timesteps(i)),dir);
+				end
+			end
+		end
+
 		% SOLUTION ANALYSIS
 		function result = getMaxSolutionValue(self,timestep)
 

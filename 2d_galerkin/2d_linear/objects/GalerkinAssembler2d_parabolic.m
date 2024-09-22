@@ -60,45 +60,22 @@ classdef GalerkinAssembler2d_parabolic < GalerkinAssembler2d
 
 		end
 
-		%{
-		function uInit = assembleInitialCondition(uInit)
-
-			% check function variables
-			x = sym('x',[1 2],'real'); syms t;
-			uInit = symfun(uInit,[x t]);
-
-			% convert to function_handles
-			uInit = matlabFunction(uInit);
-
-		end
-		%}
-
-		function time = assembleTimeStepping(T,dt,eq)
+		function dom = assembleTimeStepping(dom,T,dt,eq)
 
 			% create time-stepping object
-			if nargin == 2
+			if nargin == 3
 				time = TimeStepping(T,dt);
-			elseif nargin == 3
+			elseif nargin == 4
 				time = TimeStepping(T,dt,eq);
 			end
 
 			% set time-stepping mesh
 			time = time.setMesh;
 
-		end
-
-		%{
-		function f = assembleSource(f)
-
-			% check function variables
-			x = sym('x',[1 2],'real'); syms t;
-			f = symfun(f,x);
-
-			% convert to function_handle
-			f = matlabFunction(f);
+			% store result
+			dom.time = time;
 
 		end
-		%}
-		
+
 	end
 end

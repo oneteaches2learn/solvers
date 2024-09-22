@@ -1,17 +1,16 @@
 % HEATSOLVE_DEMO
-
 clear all; x = sym('x',[1 2],'real'); syms t;
 % USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % domain bounds
-xLim_dom = [0 3];
+xLim_dom = [0 1];
 yLim_dom = [0 1];
 
 % Y bounds
-xLim_Y = [0 1/2];
+xLim_Y = [0 1];
 yLim_Y = [0 1];
 
 % number of inclusions
-eps = 1/3;
+eps = 1/2;
 incRatio = pi/2; % <~~~ incRatio = |delta Q| / |Y|
 
 % mesh parameters
@@ -23,10 +22,10 @@ c = 1;
 k = 1;
 
 % specify source
-f = 0;
+f = 2;
 
 % specify BCs
-bTypes = {'R' 'R' 'R' 'R'};
+bTypes = 'DDDD';
 bTypes2 = 'R';
 
 % specify Dirichlet conditions
@@ -50,29 +49,29 @@ dt = 0.001;
 
 % RUN TRIAL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SETUP TRIAL
-fprintf('Pennes Trial Begun\n')
+fprintf('Heat Trial Begun\n')
 
 % assemble domain
 fprintf(' Contructing Domain:'), tic
 	inc = Inclusion2d_circle(xLim_Y,yLim_Y,incRatio);
 	%inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
-	dom = GalerkinHeat2d_assembler.assembleDomainGeometry(xLim_dom,yLim_dom,inc,eps);
-	dom = GalerkinHeat2d_assembler.assembleBoundary(dom,bTypes,u_D,u_N,beta,u_R,bTypes2); 
-	dom = GalerkinHeat2d_assembler.assembleMesh(dom,p,base); 
+	dom = GalerkinAssembler2d_heat.assembleDomainGeometry(xLim_dom,yLim_dom,inc,eps);
+	dom = GalerkinAssembler2d_heat.assembleTimeStepping(dom,T,dt,eq);
+	dom = dom.add_yline;
+	dom = dom.inclusionsON;
+	dom = GalerkinAssembler2d_heat.assembleBoundary(dom,bTypes,u_D,u_N,beta,u_R,bTypes2); 
+	dom = GalerkinAssembler2d_heat.assembleMesh(dom,p,base); 
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
 
 % assemble other parameters
 fprintf(' Assembling Parameters:'), tic
-	cofs   = GalerkinHeat2d_assembler.assembleCoefficients(c,k);
-	uInit  = GalerkinHeat2d_assembler.assembleInitialCondition(u_o);
-	time   = GalerkinHeat2d_assembler.assembleTimeStepping(T,dt);
-	source = GalerkinHeat2d_assembler.assembleSource(f);
+	auxfun = GalerkinAssembler2d_heat.assembleCoefficients(c,k,0,f,u_o);
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
 
 % RUN TRIAL
 fprintf(' Generating Solution:'), tic
-	prob = GalerkinHeat2d_solver(dom,time,cofs,uInit,source);
+	prob = GalerkinSolver2d_heat(dom,auxfun);
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)

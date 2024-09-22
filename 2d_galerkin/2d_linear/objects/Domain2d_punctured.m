@@ -180,7 +180,7 @@ classdef Domain2d_punctured < Domain2d
 				dl_Qeps = Domain2d_punctured.dl_Qeps(x,y,inc,eps);
 			end
 			dl = [dl_domain dl_Qeps];
-
+			
 			% set properties related to domain and inclusions
 			self.epsilon = eps;
 			self.inclusion = inc;

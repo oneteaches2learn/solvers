@@ -146,10 +146,11 @@ classdef Boundary2d
 		function edges = setEdges(self)
 
 			edges(self.nEdges) = BoundaryEdge2d;
+			edgeCoords = self.dl.edgeCoords;
 			for j = 1:self.nEdges;
 
 				% create new edge
-				vert = self.dl.edgeCoords(:,:,j);
+				vert = edgeCoords(:,:,j);
 				edges(j).vertex1 = vert(1,:);
 				edges(j).vertex2 = vert(2,:);
 				edges(j).segIDs = self.dl.edgeSegDict{j};

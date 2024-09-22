@@ -113,7 +113,7 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 			self.vectors.U_prevTime = self.solution(:,self.timestep);
 
 			% update time stepping
-			self.t = self.timestep * self.domain.time.dt;
+			self.t = double(self.timestep) * double(self.domain.time.dt);
 			self.timestep = self.timestep + 1;
 
 		end

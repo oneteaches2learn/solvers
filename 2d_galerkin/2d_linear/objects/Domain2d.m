@@ -25,9 +25,13 @@ classdef Domain2d
 		end
 
 		% SETTERS
-		function self = set.time(self,time)
+		function self = setTime(self,T,dt,eq)
 
-			self.time = time;
+			if nargin == 3
+				self.time = TimeStepping(T,dt);
+			elseif nargin == 4
+				self.time = TimeStepping(T,dt,eq);
+			end
 
 		end
 

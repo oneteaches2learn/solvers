@@ -2,15 +2,15 @@
 clear all; x = sym('x',[1 2],'real'); syms t;
 % USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % domain bounds
-xLim_dom = [0 3];
+xLim_dom = [0 1];
 yLim_dom = [0 1];
 
 % Y bounds
-xLim_Y = [0 1/2];
+xLim_Y = [0 1];
 yLim_Y = [0 1];
 
 % number of inclusions
-eps = 1/3;
+eps = 1/2;
 incRatio = pi/2; % <~~~ incRatio = |delta Q| / |Y|
 
 % mesh parameters
@@ -27,7 +27,7 @@ uStar = 1;
 f = 1;
 
 % specify BCs
-bTypes = {'D' 'D' 'D' 'D'};
+bTypes = 'DDDD';
 bTypes2 = 'R';
 
 % specify Dirichlet conditions
@@ -56,23 +56,23 @@ fprintf('Pennes Trial Begun\n')
 fprintf(' Contructing Domain:'), tic
 	%inc = Inclusion2d_circle(xLim_Y,yLim_Y,incRatio);
 	inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
-	dom = GalerkinPennes2d_assembler.assembleDomainGeometry(xLim_dom,yLim_dom,inc,eps);
-	dom = GalerkinPennes2d_assembler.assembleBoundary(dom,bTypes,u_D,u_N,beta,u_R,bTypes2); 
-	dom = GalerkinPennes2d_assembler.assembleMesh(dom,p,base); 
+	dom = GalerkinAssembler2d_pennes.assembleDomainGeometry(xLim_dom,yLim_dom,inc,eps);
+	dom = GalerkinAssembler2d_pennes.assembleTimeStepping(dom,T,dt,eq);
+	dom = dom.add_yline;
+	dom = dom.inclusionsOFF;
+	dom = GalerkinAssembler2d_pennes.assembleBoundary(dom,bTypes,u_D,u_N,beta,u_R,bTypes2); 
+	dom = GalerkinAssembler2d_pennes.assembleMesh(dom,p,base); 
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
 
 % assemble other parameters
 fprintf(' Assembling Parameters:'), tic
-	cofs   = GalerkinPennes2d_assembler.assembleCoefficients(c,k,r,uStar);
-	uInit  = GalerkinPennes2d_assembler.assembleInitialCondition(u_o);
-	time   = GalerkinPennes2d_assembler.assembleTimeStepping(T,dt,eq);
-	source = GalerkinPennes2d_assembler.assembleSource(f);
+	auxfun = GalerkinAssembler2d_pennes.assembleCoefficients(c,k,r,uStar,f,u_o);
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
 
 % RUN TRIAL
 fprintf(' Generating Solution:'), tic
-	prob = GalerkinPennes2d_solver(dom,time,cofs,uInit,source);
+	prob = GalerkinSolver2d_pennes(dom,auxfun);
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)

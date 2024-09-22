@@ -163,10 +163,11 @@ classdef GalerkinAssembler2d
 
 		end
 
-		function dom = assembleMesh(dom,p,base)
+		function dom = assembleMesh(dom,p,base,region)
 
+			if nargin == 3, region = 'skip'; end
 			% set mesh on domain
-			dom = dom.setMesh(p,base);
+			dom = dom.setMesh(p,base,region);
 			dom = dom.setBoundaryNodes;
 
 		end

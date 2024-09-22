@@ -130,6 +130,7 @@ classdef GalerkinMMS2d
 			tFac = self.mmsParams.timeFactor;
 			region = self.mmsParams.effectiveRegion;
 
+
 			% run mms test
 			fprintf('MMS Test Begun\n')
 			fprintf('Solving Problems\n')
