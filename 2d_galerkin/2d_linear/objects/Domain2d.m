@@ -827,7 +827,7 @@ classdef Domain2d
 
 
 		% NODAL QUADRATURE
-		function int = nodalQuadrature(self,arg)
+		function [int,elemInt] = nodalQuadrature(self,arg)
 		% Computes nodal quadrature on elements of the mesh.
 		% Input arg should be either a function_handle, a symbolic function, or
 		% a vector of function evaluations on the mesh nodes. If:
@@ -848,6 +848,9 @@ classdef Domain2d
 							Arg(self.mesh.elements(:,3),:,:)],2) / 3;
 			int = sum(self.mesh.areas .* nodalAvg,"omitnan");
 			int = reshape(int,[],1,1);
+
+			% store element integrals
+			elemInt = nodalAvg .* self.mesh.areas;
 
 		end
 

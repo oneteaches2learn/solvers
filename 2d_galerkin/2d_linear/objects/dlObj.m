@@ -44,7 +44,7 @@ classdef dlObj
         edgeCoords_outerWest
     end
 
-    properties (Hidden)
+    properties (Hidden,Constant)
         typeRow = 1
         xLowRow = 2
         xHighRow = 3
@@ -510,6 +510,7 @@ classdef dlObj
 				(yBar > dl_outer(5,i) & yBar < dl_outer(4,i));
 		
 		end
+
     end
 
 end

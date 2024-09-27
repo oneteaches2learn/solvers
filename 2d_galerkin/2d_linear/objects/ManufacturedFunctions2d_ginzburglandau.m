@@ -1,23 +1,17 @@
-classdef ManufacturedFunctions2d_poisson < ManufacturedFunctions2d_elliptic
+classdef ManufacturedFunctions2d_ginzburglandau < ManufacturedFunctions2d_elliptic
 
 	properties
 		r
-		dr_du
 	end
 
 	methods
-		function self = ManufacturedFunctions2d_poisson(k,r,uTrue)
+		function self = ManufacturedFunctions2d_ginzburglandau(k,r,uTrue)
 			
 			% call superclass constructor
 			self@ManufacturedFunctions2d_elliptic(k,uTrue)
 
 			% store additional coefficients
 			self.r = r;
-
-			if Coefficients.isNonlinear(r)
-				u = sym('u','real');
-				self.dr_du = diff(r,u);
-			end
 
 			% manufacture RHS
 			self.f = self.manufactureRHS; 
@@ -33,11 +27,6 @@ classdef ManufacturedFunctions2d_poisson < ManufacturedFunctions2d_elliptic
 			x = sym('x',[1 2]);
 			funcs.cofs.r = matlabFunction(symfun(self.r,x));
 
-			% store derivatives of nonlinear functions
-			if Coefficients.isNonlinear(self.r)
-				funcs.cofs.dr_du = matlabFunction(symfun(self.dr_du,x));
-			end
-
 		end
 
 		function f = manufactureRHS(self)
@@ -45,7 +34,7 @@ classdef ManufacturedFunctions2d_poisson < ManufacturedFunctions2d_elliptic
 
 			% manufacture RHS
 			x = sym('x',[1 2]); syms t;
-			f = self.divq + self.r;
+			f = self.divq - self.uTrue + self.uTrue^3;
 
 		end
 

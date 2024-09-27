@@ -25,6 +25,10 @@ classdef Coefficients
 
 		function result = hasVariable(f,checkVar)
 
+			if isa(f,'sym') || isa(f,'symfun')
+				f = matlabFunction(f);
+			end
+			
 			usedVars = Coefficients.getFunctionVariables(f);
 			result = any(strcmp(usedVars,checkVar));
 
@@ -32,7 +36,21 @@ classdef Coefficients
 
 		function result = isTimeVarying(f)
 
+			if isa(f,'sym') || isa(f,'symfun')
+				f = matlabFunction(f);
+			end
+
 			result = Coefficients.hasVariable(f,'t');
+
+		end
+
+		function result = isNonlinear(f)
+
+			if isa(f,'sym') || isa(f,'symfun')
+				f = matlabFunction(f);
+			end
+			
+			result = Coefficients.hasVariable(f,'u');
 
 		end
 	end
