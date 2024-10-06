@@ -130,7 +130,6 @@ classdef GalerkinMMS2d
 			tFac = self.mmsParams.timeFactor;
 			region = self.mmsParams.effectiveRegion;
 
-
 			% run mms test
 			fprintf('MMS Test Begun\n')
 			fprintf('Solving Problems\n')
@@ -166,9 +165,10 @@ classdef GalerkinMMS2d
 			tOff = self.mmsParams.timeOffset;
 			tFac = self.mmsParams.timeFactor;
 			region = self.mmsParams.effectiveRegion;
+			inc_onoff = self.mmsParams.meshInclusions;
 
 			dom_p = self.domain;
-			dom_p = dom_p.setMesh(p,base,region);
+			dom_p = dom_p.setMesh(p,base,meshInclusions=inc_onoff,effectiveRegion=region);
 
 			% assign boundary nodes to edges
 			dom_p = dom_p.setBoundaryNodes;
@@ -260,7 +260,6 @@ classdef GalerkinMMS2d
 				dom.boundary.edges(j).outwardNormal = n;
 
 			end
-
 		end
 
 		function dom = setEdgeNormalVectors_inclusions(self,dom)
@@ -279,16 +278,16 @@ classdef GalerkinMMS2d
 				n_upper = dom.inclusion.Q.unitNormal_upper;
 			end
 
-			for i = dl.edgeSegDict_inclusions
+			for i = 1:length(dl.edgeSegDict_inclusions)
 
-				% dictionary entries are cells containing ints; convert to ints
-				i = i{1};
+				% get first segment of edge
+				seg = dl.edgeSegDict_inclusions{i}(1);
 
 				%if segment is of type: circle
-				if dl.segType(i) == 1
+				if dl.segType(seg) == 1
 
 					% set x-translation
-					temp = dl.circleCenter(i);
+					temp = dl.circleCenter(seg);
 					x_translate = temp(1);
 					x_transformed = scale_eps * (x(1) - x_translate);
 
@@ -305,15 +304,18 @@ classdef GalerkinMMS2d
 					end
 
 				% if segment is of type: line
-				elseif dl.segType(i) == 2
+				elseif dl.segType(seg) == 2
 
-					orientation = dl.squareEdgeOrientation(i);
+					% for now, presume there are four outer edges
+					edgeNum = i + 4;
+					orientation = dl.squareEdgeOrientation(edgeNum);
 					n = dom.inclusion.Q.unitNormal(:,orientation);
 					
 				end
 				
 				% store normal vector
-				dom.boundary.edges(edgeIDs(i)).outwardNormal = n;
+				% for now, presume there are four outer edges
+				dom.boundary.edges(i + 4).outwardNormal = n;
 
 			end
 

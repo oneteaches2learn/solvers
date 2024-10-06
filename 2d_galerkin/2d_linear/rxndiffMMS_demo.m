@@ -38,14 +38,17 @@ fprintf('MMS Test Begun\n')
 
 % assemble inputs
 auxfun    = ManufacturedFunctions2d_rxndiff(p,k,r,uTrue);
-mmsparams = MMSParams(base,demo=demo,timeOffset=4,timeFactor=2,pmin=4,pmax=6);
+mmsparams = MMSParams(base,demo=demo,timeOffset=3,timeFactor=2,pmin=3,pmax=5, ...
+				meshInclusions='on',effectiveRegion='Omega_eps');
 
 % build domain
 fprintf('Initialization\n')
 fprintf(' Contructing Domain:'), tic
+	%dom = Domain2d(xLim_dom,yLim_dom);
 	%inc = Inclusion2d_circle(xLim_Y,yLim_Y,incRatio);
 	inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
 	dom = Domain2d_punctured(xLim_dom,yLim_dom,inc,eps);
+	dom = dom.add_yline(0.5);
 	dom = dom.setBCTypes([bTypes_outer,bTypes_inner]);
 	dom.time = TimeStepping(T,1);
 executionTime = toc; 

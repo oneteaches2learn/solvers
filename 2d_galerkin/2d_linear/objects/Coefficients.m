@@ -25,8 +25,13 @@ classdef Coefficients
 
 		function result = hasVariable(f,checkVar)
 
+			if isa(f,'double')
+				x = sym('x',[1 2]);
+				f = symfun(f,x);
+			end
+			
 			if isa(f,'sym') || isa(f,'symfun')
-				f = matlabFunction(f);
+				f = matlabFunction(f,x);
 			end
 			
 			usedVars = Coefficients.getFunctionVariables(f);
@@ -36,8 +41,13 @@ classdef Coefficients
 
 		function result = isTimeVarying(f)
 
+			if isa(f,'double')
+				x = sym('x',[1 2]);
+				f = symfun(f,x);
+			end
+			
 			if isa(f,'sym') || isa(f,'symfun')
-				f = matlabFunction(f);
+				f = matlabFunction(f,x);
 			end
 
 			result = Coefficients.hasVariable(f,'t');
@@ -45,6 +55,11 @@ classdef Coefficients
 		end
 
 		function result = isNonlinear(f)
+
+			if isa(f,'double')
+				x = sym('x',[1 2]);
+				f = symfun(f,x);
+			end
 
 			if isa(f,'sym') || isa(f,'symfun')
 				f = matlabFunction(f);

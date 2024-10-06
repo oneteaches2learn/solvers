@@ -12,6 +12,7 @@ classdef (Abstract) GalerkinSolver2d_elliptic < GalerkinSolver2d
 			if nargin == 2
 
 				% calculate solution
+				self.domain.time = [];
             	self = self.solve;
 
 			end

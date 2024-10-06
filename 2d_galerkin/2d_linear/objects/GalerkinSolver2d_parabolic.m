@@ -298,6 +298,27 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 
 		end
 
+		function animate_yline(self,NameValuePairs)
+
+			arguments
+				self
+				NameValuePairs.plotInclusions = 'off'
+			end
+
+			N_t = self.domain.time.N_t;
+
+			% plot first time step
+			self.plot_yline(timestep=1,plotInclusions=NameValuePairs.plotInclusions);
+			pause();
+
+			% animate remaining steps
+			for i = 1:N_t
+				self.plot_yline(timestep=i,plotInclusions=NameValuePairs.plotInclusions);
+				pause(1/N_t)
+			end
+		end
+
+
 
 		% SOLUTION ANALYSIS
 		function [t,timestep] = getConvergenceTime(self,tol)

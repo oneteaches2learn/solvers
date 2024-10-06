@@ -16,10 +16,10 @@ classdef Domain2d
 				gd = Domain2d.getGeometryDescriptionMatrix(x,y);
 				ns = Domain2d.getNameSpace;
 				sf = Domain2d.getSetFunction;
-				dl = decsg(gd,sf,ns);
+				dl_mat = decsg(gd,sf,ns);
 
 				% create boundary object
-				self.boundary = Boundary2d(dl);
+				self.boundary = Boundary2d(dl_mat);
 			end
 
 		end

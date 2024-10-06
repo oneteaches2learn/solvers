@@ -170,7 +170,7 @@ classdef Domain2d_punctured < Domain2d
 			end
 
 			% call Domain2d superclass constructor
-			self@Domain2d(x,y);
+			self@Domain2d();
 
 			% create decomposed geometry description matrix 
 			dl_domain = Domain2d_punctured.dl_domain(x,y);
@@ -178,8 +178,9 @@ classdef Domain2d_punctured < Domain2d
 				dl_Qeps = [];
 			else
 				dl_Qeps = Domain2d_punctured.dl_Qeps(x,y,inc,eps);
+				dl_Qeps = Domain2d_punctured.dl_Qeps_faces(dl_domain,dl_Qeps);
 			end
-			dl = [dl_domain dl_Qeps];
+			dl_mat = [dl_domain dl_Qeps];
 			
 			% set properties related to domain and inclusions
 			self.epsilon = eps;
@@ -188,10 +189,10 @@ classdef Domain2d_punctured < Domain2d
 			self.effectiveRegion = NameValueArgs.effectiveRegion;
 
 			% generate and store edges
-			self.boundary = Boundary2d(dl);
+			self.boundary = Boundary2d(dl_mat);
 
 			% set inclusion number
-			self.nInclusions = size(dl,2) / 4 - 1;
+			self.nInclusions = size(dl_mat,2) / 4 - 1;
 
 		end
 
@@ -231,15 +232,37 @@ classdef Domain2d_punctured < Domain2d
 
 
 		% SETTERS
-		function self = setMesh(self,p,base,effectiveRegion)
+		function self = setMesh(self,p,base,NameValueArgs)
+
+			arguments
+				self
+				p double
+				base double
+				NameValueArgs.effectiveRegion string = self.effectiveRegion
+				NameValueArgs.meshInclusions = self.meshInclusions
+			end
+
+			% specify whether inclusions are to be meshed
+			if strcmp(NameValueArgs.meshInclusions,"on")
+				self.meshInclusions = "on";
+			else
+				self.meshInclusions = "off";
+			end
 
 			% if inclusions are to meshed, specify effective region
-			if nargin == 4
+			if strcmp(self.meshInclusions,"on")
+				effectiveRegion = NameValueArgs.effectiveRegion;
 				self = self.setEffectiveRegion(effectiveRegion);
 			end
 
 			% generate the mesh
-			self.mesh = Mesh2d(self.boundary.dl.mat,p,base);
+			if strcmp(self.meshInclusions,"off")
+				dl_mat = self.boundary.dl.mat_reduced;
+				self.mesh = Mesh2d(dl_mat,p,base);
+			else
+				dl_mat = self.boundary.dl.mat;
+				self.mesh = Mesh2d(dl_mat,p,base);
+			end
 
 			% if BCs already set, distribute BC nodes
 			if ~isempty(self.boundary.edges(end).boundaryType)
@@ -254,6 +277,7 @@ classdef Domain2d_punctured < Domain2d
 
 		function self = setEffectiveRegion(self,input)
 
+			% I think this function no longer is necessary?
 			% set effective region
 			self.effectiveRegion = input;
 			if strcmp(input,'Omega')
@@ -266,6 +290,7 @@ classdef Domain2d_punctured < Domain2d
 
 		function self = inclusionsON(self)
 
+			% I think this function no longer is necessary?
 			self.effectiveRegion = 'Omega';
 			self.boundary = self.boundary.inclusionsON;
 			if ~isempty(self.mesh), self = self.setBoundaryNodes; end
@@ -274,6 +299,7 @@ classdef Domain2d_punctured < Domain2d
 
 		function self = inclusionsOFF(self)
 
+			% I think this function no longer is necessary?
 			self.effectiveRegion = 'Omega_eps';
 			self.boundary = self.boundary.inclusionsOFF;
 			if ~isempty(self.mesh), self = self.setBoundaryNodes; end
@@ -304,7 +330,6 @@ classdef Domain2d_punctured < Domain2d
 
 		function self = setEffectiveElements(self)
 			
-		
 			input = self.effectiveRegion;
 
 			% set effective nodes/elements
@@ -589,6 +614,20 @@ classdef Domain2d_punctured < Domain2d
 			dl(yRows,:) = dl(yRows,:) + translate_y;
 
 		end
+
+		function dl_Qeps = dl_Qeps_faces(dl_domain,dl_Qeps)
+
+			% enumerate inclusions
+			enum = dlObj.enumerateInclusions(dl_Qeps);
+
+			% get largest face number in Omega_eps
+			maxID = max(dl_domain(dlObj.leftRow,:));
+
+			% set face IDs for Q_eps
+			dl_Qeps(dlObj.leftRow,:) = enum + maxID;
+
+		end
+
 
 		function orientation = orientation(self,P,Q,R)
 

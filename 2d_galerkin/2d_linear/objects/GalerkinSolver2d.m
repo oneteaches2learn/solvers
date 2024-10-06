@@ -462,6 +462,63 @@ classdef GalerkinSolver2d
 
 		end
 
+		function plot_yline(self,NameValuePairs)
+		% for now, assumes only 1 yline
+
+			arguments
+				self
+				NameValuePairs.plotInclusions = 'off'
+				NameValuePairs.timestep = 0;
+			end
+
+			% store variables
+			dl = self.domain.boundary.dl;
+			mesh = self.domain.mesh.Mesh;
+
+			% get yline nodes
+			segIDs1 = dl.segIDs_yLines;
+			segIDs2 = dl.segIDs_yLines_inc;
+			nodes1 = findNodes(mesh,"region","Edge",segIDs1);
+			nodes2 = findNodes(mesh,"region","Edge",segIDs2);
+			nodes = [nodes1, nodes2];
+
+			% get x- and solution vals; sort by x vals
+			x = self.domain.mesh.nodes(nodes,1);
+			sol = self.solution(nodes,:);
+			if NameValuePairs.timestep == 0
+				sol = sol(:,end);
+			else
+				sol = sol(:,NameValuePairs.timestep);
+			end
+			val = sortrows([x,sol]);
+
+			% get yline height
+			y = dl.mat(dlObj.yLowRow,segIDs1(1));
+
+			% plot
+			plot(val(:,1),val(:,2),"LineWidth",6);
+			
+			% set yLim
+			uMax = max(max(self.solution));
+			uMin = min(min(self.solution));
+			ylim([uMin uMax*1.1]);
+
+			% get x-vals at edges of inclusions
+			if strcmp(NameValuePairs.plotInclusions,'on')
+				if ~isempty(segIDs2)
+					for i = 1:length(segIDs2)
+						nodes_temp = findNodes(mesh,"region","Edge",segIDs2(i));
+						incBounds(2*i-1) = self.domain.mesh.nodes(nodes_temp(1),1);
+						incBounds(2*i) = self.domain.mesh.nodes(nodes_temp(end),1);
+					end
+				end
+				
+				% plot inclusion bounds
+				xline(incBounds,'--');
+			end
+
+		end
+
 
 		% VTK EXPORT FUNCTIONS
 		function tria2vtk(self,filename,dir,timesteps)

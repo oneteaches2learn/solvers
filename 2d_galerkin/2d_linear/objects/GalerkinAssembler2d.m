@@ -163,11 +163,20 @@ classdef GalerkinAssembler2d
 
 		end
 
-		function dom = assembleMesh(dom,p,base,region)
+		function dom = assembleMesh(dom,p,base,NameValuePairs)
 
-			if nargin == 3, region = 'skip'; end
+			arguments
+				dom
+				p
+				base
+				NameValuePairs.effectiveRegion = 'Omega_eps';
+				NameValuePairs.meshInclusions = 'off';
+			end
+
 			% set mesh on domain
-			dom = dom.setMesh(p,base,region);
+			dom = dom.setMesh(p,base, ...
+					effectiveRegion = NameValuePairs.effectiveRegion, ...
+					meshInclusions = NameValuePairs.meshInclusions);
 			dom = dom.setBoundaryNodes;
 
 		end

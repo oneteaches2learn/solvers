@@ -22,7 +22,7 @@ demo = 0;
 
 % specify BCs
 bTypes_outer = 'RRRR';
-bTypes_inner = 'D';
+bTypes_inner = 'R';
 
 % specify coefficients
 c = 1 + x(1) * x(2) * t;
@@ -38,7 +38,7 @@ fprintf('MMS Test Begun\n')
 % assemble inputs
 auxfun    = ManufacturedFunctions2d_heat(c,k,uTrue);
 mmsparams = MMSParams(base,demo=demo,timeOffset=3,timeFactor=2,pmin=3,pmax=5, ...
-				effectiveRegion='Omega_eps');
+				meshInclusions='on',effectiveRegion='Omega');
 
 % build domain
 fprintf('Initialization\n')
@@ -47,7 +47,7 @@ fprintf(' Contructing Domain:'), tic
 	%inc = Inclusion2d_circle(xLim_Y,yLim_Y,incRatio);
 	inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
 	dom = Domain2d_punctured(xLim_dom,yLim_dom,inc,eps);
-	dom = dom.add_yline;
+	dom = dom.add_yline(0.5);
 	dom = dom.setBCTypes([bTypes_outer,bTypes_inner]);
 	dom.time = TimeStepping(T,1);
 executionTime = toc; 

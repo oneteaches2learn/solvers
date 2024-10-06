@@ -97,7 +97,7 @@ classdef GalerkinSolver2d_pennes < GalerkinSolver2d_parabolic
 			b = sparse(nNodes,1);
 
 			% compute volume forces
-			for j = 1:nElem3
+			for j = self.domain.mesh.effectiveElems
 				elementInd    = elements3(j,:);
 				elementCoord  = coords(elementInd,:);
 				b(elementInd) = b(elementInd) + ...

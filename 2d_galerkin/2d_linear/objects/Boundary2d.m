@@ -1,56 +1,4 @@
 classdef Boundary2d
-% NOTE: The way Boundary2d and Mesh2d interact reflects the state of two
-% variables: meshInclusions and effectiveRegion, which are properties of
-% Domain2d_punctured. If meshInclusions is 'on', then the interior of inclusions
-% are meshed. If effectiveRegion is 'Omega', then the interior of the
-% inclusions is included in the effective region. 
-%
-% In more detail, there are four cases to consider:
-%
-%  1. The domain has no inclusions. If this is the desired case, then construct
-%  a Domain2d object. When using the Domain2d object, the state of the
-%  'meshInclusions' and 'effectiveRegion' properties is irrelevant (and indeed
-%  these variables are never stored even if, for example, they are included in
-%  the mmsParams variable during an mmsTest). In this case, the Boundary2d
-%  object will have no inclusions and the effective region will be the entire
-%  domain.
-%  
-%  2. The domain has inclusions and they are not meshed. If this is the desired
-%  case, then construct a Domain2d_punctured object. The default state of the
-%  'meshInclusions' property is 'off', so this object can be constructed with no
-%  additional name-value pair parameters. If one does pass name-value pair
-%  parameters to the Domain2d_punctured object, then passing
-%  meshInclusions='off' will have the same result. Because the interior of the
-%  inclusions is not meshed, the effective region will automatically be
-%  Omega_eps, i.e. Omega minus the interior of the inclusions. Thus,
-%  effectiveRegion='Omega_eps' is the default state of the 'effectiveRegion'
-%  property. However, even if effectiveRegion='Omega' is passed as a name-value
-%  pair parameter, this will have no effect. 
-%
-%  3. The domain has inclusions and they are meshed, but not included in the
-%  effective region. This state can be acheived by passing meshInclusions='on'
-%  and effectiveRegion='Omega_eps'. Importantly, the boundaries of the inclusion
-%  are considered as part of the 'boundary' of the domain, and boundary
-%  conditions also need to be set / calculated on these boundary edges. 
-%
-%  4. The domain has inclusions and they are meshed and included in the
-%  effective region. This state can be acheived by passing meshInclusions='on'
-%  and effectiveRegion='Omega'. In this case, the boundaries of the inclusion
-%  are not considered as part of the 'boundary' of the domain, and boundary
-%  conditions do not need to be set / calculated on these boundary edges. Note
-%  that in this case, if boundary conditions *are* calculated and stored on the
-%  corresponding boundary edges, they will nevertheless be ignored as the nEdges
-%  property will be set to 4, and so any loops that try to apply boundary
-%  conditions will terminate before reaching the edges that correspond to the
-%  inclusions. 
-%
-% The reason for all of this trouble is that I want to compare the results of a
-% homogenized PDE on all of Omega versus that of the sequence of individual PDEs
-% just on Omega_eps. Thus, in each such trial, I want to ensure that the mesh in
-% Omega_eps is the same whether the inclusions are included in the mesh or not.
-% Thus, a mesh is generated over all of Omega, including within the inclusions.
-% Then, the effective region is set to Omega_eps, and the inclusions are either
-% included in the effective region or not.
 
 	properties
 		effectiveRegion = 'Omega_eps'
@@ -92,11 +40,11 @@ classdef Boundary2d
 
 	methods
 		% CONSTUCTOR
-		function self = Boundary2d(dl)
+		function self = Boundary2d(dl_mat)
 
 			% create edge geometry
 			if nargin > 0
-				self.dl = dlObj(dl);
+				self.dl = dlObj(dl_mat);
 				self.edges = self.setEdges;
 			end
 
@@ -145,15 +93,19 @@ classdef Boundary2d
 		% SETTERS
 		function edges = setEdges(self)
 
+			% store data
 			edges(self.nEdges) = BoundaryEdge2d;
 			edgeCoords = self.dl.edgeCoords;
+			edgeSegDict = self.dl.edgeSegDict;
+
+			% loop over edges
 			for j = 1:self.nEdges;
 
 				% create new edge
 				vert = edgeCoords(:,:,j);
 				edges(j).vertex1 = vert(1,:);
 				edges(j).vertex2 = vert(2,:);
-				edges(j).segIDs = self.dl.edgeSegDict{j};
+				edges(j).segIDs = edgeSegDict{j};
 
 			end
 
@@ -360,8 +312,9 @@ classdef Boundary2d
 
 		function self = set_edgeSegIDs(self)
 
+			edgeSegDict = self.dl.edgeSegDict;
 			for i = 1:self.nEdges
-				self.edges(i).segIDs = self.dl.edgeSegDict{i};
+				self.edges(i).segIDs = edgeSegDict{i};
 			end
 
 		end
@@ -382,7 +335,7 @@ classdef Boundary2d
 			else, edgeBCConds = []; end
 
 			% Turn inclusions on
-			self.dl = self.dl.inclusionsON;
+			%self.dl = self.dl.inclusionsON;
 			self = Boundary2d(self.dl.mat);
 			self.effectiveRegion = 'Omega';
 			self.edges = self.setEdges;
@@ -412,7 +365,7 @@ classdef Boundary2d
 			else, edgeBCConds = []; end
 
 			% Turn inclusions on
-			self.dl = self.dl.inclusionsON;
+			%self.dl = self.dl.inclusionsON;
 			self = Boundary2d(self.dl.mat);
 			self.effectiveRegion = 'Omega_eps';
 			self.edges = self.setEdges;

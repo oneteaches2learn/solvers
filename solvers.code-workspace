@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../experiments"
+		},
+		{
+			"path": "../third_party_packages/50_lines_fem/fem2d_nonlinear"
+		}
+	],
+	"settings": {}
+}

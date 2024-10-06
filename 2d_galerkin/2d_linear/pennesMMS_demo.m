@@ -2,7 +2,7 @@
 clear all; x = sym('x',[1 2],'real'); syms t;
 % USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % domain bounds
-xLim_dom = [0 2];
+xLim_dom = [0 1];
 yLim_dom = [0 1];
 
 % Y bounds
@@ -40,14 +40,16 @@ fprintf('MMS Test Begun\n')
 % assemble inputs
 auxfun    = ManufacturedFunctions2d_pennes(p,k,r,uStar,uTrue);
 mmsparams = MMSParams(base,demo=demo,timeOffset=3,timeFactor=2,pmin=3,pmax=5,...
-				meshInclusions='off',effectiveRegion='Omega');
+				meshInclusions='on',effectiveRegion='Omega');
 
 % build domain
 fprintf('Initialization\n')
 fprintf(' Contructing Domain:'), tic
+	%dom = Domain2d(xLim_dom,yLim_dom);
 	inc = Inclusion2d_circle(xLim_Y,yLim_Y,incRatio);
 	%inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
 	dom = Domain2d_punctured(xLim_dom,yLim_dom,inc,eps);
+	dom = dom.add_yline(0.8);
 	dom = dom.setBCTypes([bTypes_outer,bTypes_inner]);
 	dom.time = TimeStepping(T,1);
 executionTime = toc; 
@@ -62,3 +64,15 @@ else
 	mms = GalerkinMMS2d_pennes(dom,auxfun,mmsparams);
 	prob = mms.problems{1};
 end
+
+% plot results
+%{
+mms.problems{3}.domain.boundary.plot(FaceLabels='on',EdgeLabels='on')
+pause(); close();
+mms.problems{3}.domain.mesh.plot;
+pause(); close();
+mms.problems{3}.animate;
+pause(); close();
+mms.problems{3}.animatePatch;
+pause(); close();
+%}
