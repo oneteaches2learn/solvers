@@ -15,7 +15,7 @@ classdef GalerkinSolver2d_poisson < GalerkinSolver2d_elliptic
             vectors = self.vectors;
 
             % assemble LHS
-			S = tensors.A + tensors.M_r + tensors.E;
+			S = tensors.A + tensors.M_r + tensors.M_rob;
 
             % assemble RHS
 			b = vectors.b_vol - vectors.b_neu + vectors.b_rob + vectors.b_per - S * vectors.U_D;

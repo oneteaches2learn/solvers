@@ -81,7 +81,7 @@ classdef (Abstract) Inclusion2d
 		% computes stiffness tensor K, scaled by volume fraction
 
 			% number of inclusions
-			eps = 1;
+			epsCof = 1;
 
 			% mesh parameters
 			p = 6;
@@ -102,8 +102,8 @@ classdef (Abstract) Inclusion2d
 			% build domains
 			a = GalerkinAssembler2d_poisson;
 			auxfun = a.assembleCoefficients(k,r,f);
-			dom(1) = Domain2d_punctured(self.Y.xLim,self.Y.yLim,self,eps);
-			dom(2) = Domain2d_punctured(self.Y.xLim,self.Y.yLim,self,eps);
+			dom(1) = Domain2d_punctured(self.Y.xLim,self.Y.yLim,self,epsCof);
+			dom(2) = Domain2d_punctured(self.Y.xLim,self.Y.yLim,self,epsCof);
 			for i = 1:2
 				dom(i) = a.assembleBoundary(dom(i),bcTypes,bcConds(i,:)); 
 				dom(i) = a.assembleMesh(dom(i),p,base);
@@ -135,7 +135,7 @@ classdef (Abstract) Inclusion2d
 		%   single coefficient k, which this function computes.
 		
 			% number of inclusions
-			eps = 1;
+			epsCof = 1;
 
 			% mesh parameters
 			p = 7;
@@ -153,7 +153,7 @@ classdef (Abstract) Inclusion2d
 			% build domains
 			a = GalerkinAssembler2d_poisson;
 			auxfun = a.assembleCoefficients(k,r,f);
-			dom = Domain2d_punctured(self.Y.xLim,self.Y.yLim,self,eps);
+			dom = Domain2d_punctured(self.Y.xLim,self.Y.yLim,self,epsCof);
 			dom = a.assembleBoundary(dom,bcTypes,bcConds); 
 			dom = a.assembleMesh(dom,p,base);
 
@@ -179,7 +179,7 @@ classdef (Abstract) Inclusion2d
 		%   single coefficient k, which this function computes.
 		
 			% number of inclusions
-			eps = 1;
+			epsCof = 1;
 
 			% mesh parameters
 			p = 7;
@@ -197,7 +197,7 @@ classdef (Abstract) Inclusion2d
 			% build domains
 			a = GalerkinAssembler2d_poisson;
 			auxfun = a.assembleCoefficients(k,r,f);
-			dom = Domain2d_punctured(self.Y.xLim,self.Y.yLim,self,eps);
+			dom = Domain2d_punctured(self.Y.xLim,self.Y.yLim,self,epsCof);
 			dom = a.assembleBoundary(dom,bcTypes,bcConds); 
 			dom = a.assembleMesh(dom,p,base);
 

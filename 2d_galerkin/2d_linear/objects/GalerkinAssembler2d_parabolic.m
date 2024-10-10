@@ -15,6 +15,10 @@ classdef GalerkinAssembler2d_parabolic < GalerkinAssembler2d
 			if nargin == 7
 				bcTypes_inc = varargin{5};
 				bcTypes = [bcTypes bcTypes_inc];
+			
+			elseif nargin == 11
+				bcTypes_inc = varargin{9};
+				bcTypes = [bcTypes bcTypes_inc];
 			end
 
 			% create symbolic variables
@@ -22,7 +26,7 @@ classdef GalerkinAssembler2d_parabolic < GalerkinAssembler2d
 			vars = [x t];
 
 			% if inputs passed by boundary condition type
-			if nargin >= 6
+			if nargin == 6 || nargin == 7
 
 				% check function variables
 				u_D = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{1},vars);
@@ -33,6 +37,23 @@ classdef GalerkinAssembler2d_parabolic < GalerkinAssembler2d
 				% call parent method
 				dom = GalerkinAssembler2d.assembleBoundary(dom,bcTypes,u_D,u_N,alpha,u_R);
 			
+			% if inputs passed by boundary condition type, including dynamic boundary conditions
+			elseif nargin == 10 || nargin == 11
+
+				% check function variables
+				u_D = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{1},vars);
+				u_N = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{2},vars);
+				alpha_R = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{3},vars);
+				u_R = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{4},vars);
+				alpha_T = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{5},vars);
+				beta_T = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{6},vars);
+				gamma_T = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{7},vars);
+				u_T = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{8},vars);
+
+				% call parent method
+				dom = GalerkinAssembler2d.assembleBoundary( ...
+							dom,bcTypes,u_D,u_N,alpha_R,u_R,alpha_T,beta_T,gamma_T,u_T);
+
 			% if inputs passed by edge
 			elseif nargin == 3
 

@@ -79,10 +79,12 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 		function self = initializeTensors(self)
 
 			% create fields for tensor storage
-			tensors.A   = [];
-			tensors.M_p = [];
-			tensors.E   = [];
+			tensors.A     = [];
+			tensors.M_p   = [];
+			tensors.M_rob = [];
+			tensors.M_dyn = [];
 			tensors.M_p_prevTime = self.assembleMassMatrix(self.coefficients.c);
+			[temp,tensors.M_dyn_prevTime,temp] = self.computeDynamicBCs;
 
 			% check which tensors are time-varying
 			tensors.timeVarying.A   = Coefficients.isTimeVarying(self.coefficients.k);
@@ -100,6 +102,7 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 			self.vectors.U_D   = [];
 			self.vectors.b_neu = []; 
 			self.vectors.b_rob = []; 
+			self.vectors.b_dyn = []; 
 			self.vectors.U_prevTime = []; 
 
 			% check which vectors are time-varying
@@ -141,6 +144,11 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 					cof = self.coefficients.c;
 					self.tensors.M_p = self.assembleMassMatrix(cof);
 				end
+
+				% update M_dyn
+				% note: have not yet implemented logic for time-varying dynamic BCs
+				self.tensors.M_dyn_prevTime = self.tensors.M_dyn;
+
 			end
 		end
 

@@ -115,11 +115,13 @@ classdef GalerkinSolver2d_pennes < GalerkinSolver2d_parabolic
 			vectors = self.vectors;
 
 			% assemble LHS
-			S = self.domain.time.dt * (tensors.A + tensors.M_r + tensors.E) + tensors.M_p;
+			S = self.domain.time.dt * (tensors.A + tensors.M_r + tensors.M_rob) + ...
+							tensors.M_p + tensors.M_dyn;
 
 			% assemble RHS
 			b = self.domain.time.dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob + ...
-			 		 vectors.r_times_uStar) - S * vectors.U_D + tensors.M_p_prevTime * vectors.U_prevTime;
+			 		 vectors.r_times_uStar + vectors.b_dyn) ...
+					 - S * vectors.U_D + (tensors.M_p_prevTime + tensors.M_dyn_prevTime) * vectors.U_prevTime;
 
 		end
 

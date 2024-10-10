@@ -152,7 +152,8 @@ classdef GalerkinSolver2d
 			self = self.computePeriodicBCs;
 			self.vectors.U_D   = self.computeDirichletBCs;
 			self.vectors.b_neu = self.computeNeumannBCs;
-			[self.tensors.E,self.vectors.b_rob] = self.computeRobinBCs;
+			[self.tensors.M_rob,self.vectors.b_rob] = self.computeRobinBCs;
+			[self.tensors.M_rob,self.tensors.M_dyn,self.vectors.b_dyn] = self.computeDynamicBCs;
 
 		end
 
@@ -232,7 +233,7 @@ classdef GalerkinSolver2d
 			end
 		end
 
-		function [E,b_rob] = computeRobinBCs(self)
+		function [E,b] = computeRobinBCs(self)
 
 			% unpack variables
 			dom    = self.domain;
@@ -240,7 +241,7 @@ classdef GalerkinSolver2d
 			coords = self.domain.mesh.nodes;
 
 			% initialize storage
-			b_rob = sparse(nNodes,1);
+			b = sparse(nNodes,1);
 			E = sparse(nNodes,nNodes);
 
 			% compute boundary conditions
@@ -253,7 +254,7 @@ classdef GalerkinSolver2d
 
 					% unpack functions
 					alpha = bCond{1};
-					u_R = bCond{2};
+					u_BC  = bCond{2};
 
                     % check if alpha is time-varying
                     if Coefficients.isTimeVarying(alpha) == 0
@@ -264,8 +265,8 @@ classdef GalerkinSolver2d
                     end
 
                     % check if u_R is time-varying
-                    if Coefficients.isTimeVarying(u_R) == 0
-                        u_R = @(x1,x2,t)(u_R(x1,x2));
+                    if Coefficients.isTimeVarying(u_BC) == 0
+                        u_BC = @(x1,x2,t)(u_BC(x1,x2));
                         t = 0;
                     else
                         t = self.t;
@@ -283,15 +284,106 @@ classdef GalerkinSolver2d
 						edgeLength = norm(coords(edge(1),:) - coords(edge(2),:));
 
 						% compute RHS vector
-						b_rob(edge) = b_rob(edge) + ...
+						b(edge) = b(edge) + ...
 							edgeLength * alpha(edgeMidPt(1),edgeMidPt(2),t) * ...
-							u_R(edgeMidPt(1),edgeMidPt(2),t) / 2;
+							u_BC(edgeMidPt(1),edgeMidPt(2),t) / 2;
 
 						% compute E matrix
 						E(edge(1),edge(1)) = E(edge(1),edge(1)) + ...
 							1/2 * edgeLength * alpha(coords(edge(1),:),t);
 						E(edge(2),edge(2)) = E(edge(2),edge(2)) + ...
 							1/2 * edgeLength * alpha(coords(edge(2),:),t);
+
+					end
+				end
+			end
+		end
+
+		function [E,F,g] = computeDynamicBCs(self)
+
+			% unpack variables
+			dom    = self.domain;
+			nNodes = self.domain.mesh.nNodes;
+			coords = self.domain.mesh.nodes;
+
+			% initialize storage
+			E = sparse(nNodes,nNodes);
+			F = sparse(nNodes,nNodes);
+			g = sparse(nNodes,1);
+
+			% compute boundary conditions
+			for i = 1:self.domain.boundary.nEdges
+				
+				% compute Dirichlet condition
+				if dom.boundary.edges(i).boundaryType == 'T'
+					
+					bCond = dom.boundary.edges(i).boundaryCondition;
+
+					% unpack functions
+					alpha = bCond{1};
+					beta  = bCond{2};
+					gamma = bCond{3};
+					u_BC  = bCond{4};
+
+                    % check if alpha is time-varying
+                    if Coefficients.isTimeVarying(alpha) == 0
+                        alpha = @(x1,x2,t)(alpha(x1,x2));
+                        t = 0;
+                    else
+                        t = self.t;
+                    end
+
+                    % check if beta is time-varying
+                    if Coefficients.isTimeVarying(beta) == 0
+                        beta = @(x1,x2,t)(beta(x1,x2));
+                        t = 0;
+                    else
+                        t = self.t;
+                    end
+
+                    % check if alpha is time-varying
+                    if Coefficients.isTimeVarying(gamma) == 0
+                        gamma = @(x1,x2,t)(gamma(x1,x2));
+                        t = 0;
+                    else
+                        t = self.t;
+                    end
+
+                    % check if u_R is time-varying
+                    if Coefficients.isTimeVarying(u_BC) == 0
+                        u_BC = @(x1,x2,t)(u_BC(x1,x2));
+                        t = 0;
+                    else
+                        t = self.t;
+                    end
+                    
+					% store nodes on i-th edge of domain
+					bNodes_i = dom.boundary.edges(i).nodes;
+
+					% loop over segments of i-th edge
+					for j = 1:length(bNodes_i)-1
+
+						% get edge data
+						edge = [bNodes_i(j) bNodes_i(j+1)];
+						edgeMidPt = sum(coords(edge,:)/2);
+						edgeLength = norm(coords(edge(1),:) - coords(edge(2),:));
+
+						% E matrix corresponds to u term
+						E(edge(1),edge(1)) = E(edge(1),edge(1)) + ...
+							1/2 * edgeLength * alpha(coords(edge(1),:),t);
+						E(edge(2),edge(2)) = E(edge(2),edge(2)) + ...
+							1/2 * edgeLength * alpha(coords(edge(2),:),t);
+
+						% F matrix corresponds to du/dt term
+						F(edge(1),edge(1)) = F(edge(1),edge(1)) + ...
+							1/2 * edgeLength * beta(coords(edge(1),:),t);
+						F(edge(2),edge(2)) = F(edge(2),edge(2)) + ...
+							1/2 * edgeLength * beta(coords(edge(2),:),t);
+
+						% compute RHS vector
+						g(edge) = g(edge) + ...
+							edgeLength * gamma(edgeMidPt(1),edgeMidPt(2),t) * ...
+							u_BC(edgeMidPt(1),edgeMidPt(2),t) / 2;
 
 					end
 				end
@@ -667,6 +759,112 @@ classdef GalerkinSolver2d
             end
 
 		end
+
+		function result = getMaxSolutionValue_omegaEps(self,timestep)
+
+			% get solution on omegaEps
+			sol = self.solution_omegaEps;
+
+			% capture max value at each timestep
+			maxVal = max(sol);
+
+			% if max value at specified timestep is desired
+			if nargin == 2
+
+				% return max value across all timesteps,
+				if strcmp(timestep,'all')
+					result = max(maxVal);
+
+				% return max value at given timestep
+				else
+					result = maxVal(timestep);
+				end
+
+			% else return vector of max values at each timestep
+			else
+				result = maxVal;
+			end
+		end
+
+		function result = getMinSolutionValue_omegaEps(self,timestep)
+
+			% get solution on omegaEps
+			sol = self.solution_omegaEps;
+
+			% capture min value at each timestep
+			minVal = min(sol);
+
+			% if min value at specified timestep is desired
+			if nargin == 2
+
+				% return min value across all timesteps,
+				if strcmp(timestep,'all')
+					result = min(minVal);
+
+				% return min value at given timestep
+				else
+					result = minVal(timestep);
+				end
+
+			% else return vector of min values at each timestep
+			else
+				result = minVal;
+			end
+		end
+
+		function result = getAverageSolutionValue_omegaEps(self,timestep)
+
+			% capture average value at each timestep
+			avgVal = self.getSolutionIntegral_omegaEps;
+			avgVal = avgVal / (self.domain.getDomainArea * self.domain.inclusion.volumeFraction);
+
+			% if average value at specified timestep is desired
+			if nargin == 2
+					
+				% return average value at specified timestep					
+				result = avgVal(timestep);
+
+			% else return vector of average values at each timestep
+			else
+				result = avgVal;
+			end
+		end
+
+		function int = getSolutionIntegral_omegaEps(self,timestep)
+
+			% get solution on omegaEps
+			sol = self.solution_omegaEps;
+
+            % reshape solution for integration
+            input(:,1,:) = sol(:,:);
+
+            % if timestep is specified, integrate at that timestep
+            if nargin == 2
+			    int = self.domain.nodalQuadrature(input(:,1,timestep));
+
+            % else integrate across all timesteps
+            else
+                int = self.domain.nodalQuadrature(input);
+            end
+
+		end
+
+		function sol = solution_omegaEps(self)
+
+			keep_nodes = [];
+			self.domain.boundary.dl.faceIDs_Omega_eps
+			for i = self.domain.boundary.dl.faceIDs_Omega_eps
+				keep_nodes = [keep_nodes, self.domain.mesh.Mesh.findNodes('region','Face',i)];
+			end
+
+			discard_nodes = setdiff(1:self.domain.mesh.nNodes,keep_nodes);
+
+			sol = self.solution;
+			sol(discard_nodes,:) = NaN;
+
+		end
+
+
 
     end
 end

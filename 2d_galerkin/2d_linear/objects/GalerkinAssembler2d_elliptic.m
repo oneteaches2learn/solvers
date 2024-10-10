@@ -15,6 +15,10 @@ classdef GalerkinAssembler2d_elliptic < GalerkinAssembler2d
 			if nargin == 7
 				bcTypes_inc = varargin{5};
 				bcTypes = [bcTypes bcTypes_inc];
+			
+			elseif nargin == 9
+				bcTypes_inc = varargin{7};
+				bcTypes = [bcTypes bcTypes_inc];
 			end
 
 			% create symbolic variables
@@ -22,16 +26,30 @@ classdef GalerkinAssembler2d_elliptic < GalerkinAssembler2d
 			vars = x;
 
 			% if inputs passed by boundary condition type
-			if nargin >= 6
+			if nargin == 6 || nargin == 7
 
 				% check function variables
 				u_D = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{1},vars);
-A				u_N = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{2},vars);
-				u_R = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{3},vars);
-				alpha = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{4},vars);
+				u_N = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{2},vars);
+				alpha = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{3},vars);
+				u_R = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{4},vars);
 
 				% call parent method
-				dom = GalerkinAssembler2d.assembleBoundary(dom,bcTypes,0,u_N,0,0);
+				dom = GalerkinAssembler2d.assembleBoundary(dom,bcTypes,u_D,u_N,alpha,u_R);
+			
+			% if inputs passed by boundary condition type, including dynamic boundary conditions
+			elseif nargin == 8 || nargin == 9
+
+				% check function variables
+				u_D = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{1},vars);
+				u_N = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{2},vars);
+				alpha = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{3},vars);
+				u_R = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{4},vars);
+				beta = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{5},vars);
+				u_T = GalerkinAssembler2d_parabolic.getFunctionHandles(varargin{6},vars);
+
+				% call parent method
+				dom = GalerkinAssembler2d.assembleBoundary(dom,bcTypes,u_D,u_N,alpha,u_R,beta,u_T);
 			
 			% if inputs passed by edge
 			elseif nargin == 3

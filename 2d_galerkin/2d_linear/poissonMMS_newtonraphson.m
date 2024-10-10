@@ -25,7 +25,7 @@ bTypes_inner = 'R';
 
 % specify coefficients
 k = 1;
-r = u^3 - u;
+r = u^3 - 3*u;
 
 % specify desired result
 uTrue = sin(pi * x(1)) * sin(pi * x(2));

@@ -21,8 +21,8 @@ base = 2;
 demo = 0;
 
 % specify BCs
-bTypes_outer = 'RRRR';
-bTypes_inner = 'R';
+bTypes_outer = 'DDDD';
+bTypes_inner = 'T';
 
 % specify coefficients
 c = 1 + x(1) * x(2) * t;

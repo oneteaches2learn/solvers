@@ -184,6 +184,9 @@ classdef GalerkinMMS2d
 
 			% unpack coefficients
 			uTrue = self.auxFunctions.uTrue;
+			if isa(self,'GalerkinMMS2d_parabolic')
+				u_t = self.auxFunctions.u_t;
+			end
 			q = self.auxFunctions.q;
 			nEdges = dom.boundary.nEdges;
 
@@ -228,6 +231,19 @@ classdef GalerkinMMS2d
 					alpha_i = matlabFunction(alpha_i);
 					g_i = matlabFunction(g_i);
 					dom.boundary.edges(i).boundaryCondition = {alpha_i,g_i};
+
+				% assign dynamic BC
+				elseif dom.boundary.edges(i).boundaryType == 'T'
+					alpha_i = symfun(1.0,vars);
+					beta_i  = symfun(1.0,vars);
+					gamma_i = symfun(1.0,vars);
+					n_i = symfun(dom.boundary.edges(i).outwardNormal,vars);
+					g_i = symfun((alpha_i * uTrue + beta_i * u_t - sum(q .* n_i)) / gamma_i,vars);
+					alpha_i = matlabFunction(alpha_i);
+					beta_i  = matlabFunction(beta_i);
+					gamma_i = matlabFunction(gamma_i);
+					g_i = matlabFunction(g_i);
+					dom.boundary.edges(i).boundaryCondition = {alpha_i,beta_i,gamma_i,g_i};
 				end
 			end
 
