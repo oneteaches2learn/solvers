@@ -1,10 +1,11 @@
-classdef NewtonRaphsonSolver2d_elliptic < GalerkinSolver2d_elliptic
+classdef NewtonGalerkinSolver2d_elliptic < GalerkinSolver2d_elliptic
 
 	properties
+		U
 	end
 
 	methods
-		function self = NewtonRaphsonSolver2d_elliptic(dom,auxfun)
+		function self = NewtonGalerkinSolver2d_elliptic(dom,auxfun)
 			
 			% call superclass constructor
 			self@GalerkinSolver2d_elliptic(dom,auxfun);
@@ -12,25 +13,28 @@ classdef NewtonRaphsonSolver2d_elliptic < GalerkinSolver2d_elliptic
 		end
 
 		function self = solve(self)
-						
+
+			% Initial guess
+			self.U = ones(self.domain.mesh.nNodes,1);
+
 			% Initialisation
 			dirichlet = self.domain.boundary.D_nodes;
 			FreeNodes = self.domain.boundary.freeNodes;
-
-			% Initial guess
-			U = ones(self.domain.mesh.nNodes,1);
+			self = self.assembleTensors;
+			self = self.assembleVectors;
 
 			% Update initial guess with Dirichlet BC values
 			self = self.assembleBCs;
-			U(unique(dirichlet)) = self.vectors.U_D(unique(dirichlet));
+			self.U(unique(dirichlet)) = self.vectors.U_D(unique(dirichlet));
 
-			% Newton-Raphson iteration
+			% Newton-Galerkin iteration
 			for i = 1:50
 			
 				% Assembly
-				self = self.assembleTensors(U);
-				self = self.assembleVectors(U);
-				[DJ,J] = self.finalAssembly(U);
+				self = self.assembleTensors;
+				self = self.assembleVectors;
+				self = self.assembleBCs;
+				[DJ,J] = self.finalAssembly(self.U);
 							
 				% Dirichlet conditions
 				W = zeros(self.domain.mesh.nNodes,1);
@@ -38,20 +42,106 @@ classdef NewtonRaphsonSolver2d_elliptic < GalerkinSolver2d_elliptic
 				
 				% Solving one Newton step
 				W(FreeNodes) = DJ(FreeNodes,FreeNodes) \ J(FreeNodes);
-				U = U - W;
+				self.U = self.U - W;
+
+				% check convegence
 				if norm(W) < 10^(-10)
 					fprintf(' %d iterations,',i)
 					break
 				end
+
 			end
 
-			% graphic representation
-			%self.show(self.domain.mesh.elements,[],self.domain.mesh.nodes,full(U));
-			self.solution = U;
+			% store result
+			self.solution = self.U;
 
 		end
 
-		function self = assembleTensors(self,U)
+
+		function [DJ,J] = finalAssembly(self,U)
+
+			% note: placeholder function. Actually handled by specific subclasses.
+			% ...
+
+		end
+
+		function self = assembleTensors(self) 
+
+			% call superclass method
+			self = self.assembleTensors@GalerkinSolver2d_elliptic;
+
+			% assemble additional tensors
+			self.tensors.M_dr = self.assembleMassMatrix(self.coefficients.dr_du);
+			self.tensors.M_dneu = self.computeNonlinearNeumannContribution;
+
+		end
+
+		function self = assembleVectors(self) 
+
+			% call superclass method
+			self = self.assembleVectors@GalerkinSolver2d_elliptic;
+
+			% assemble additional tensors
+			self.vectors.M_r = self.computeVolumeForces(self.coefficients.r);
+
+		end
+
+		function self = assembleBCs(self)
+
+			% note: as of Oct 11, 2024 periodic BCs don't work, so they are muted
+			%self = self.computePeriodicBCs;
+			self.vectors.U_D   = self.computeDirichletBCs;
+			self.vectors.b_neu = self.computeNeumannBCs;
+			[self.tensors.M_rob,self.vectors.b_rob] = self.computeRobinBCs;
+			%[self.tensors.M_rob,self.tensors.M_dyn,self.vectors.b_dyn] = self.computeDynamicBCs;
+
+		end
+
+		function E = computeNonlinearNeumannContribution(self)
+
+			% unpack variables
+			dom    = self.domain;
+			nNodes = self.domain.mesh.nNodes;
+			coords = self.domain.mesh.nodes;
+
+			% initialize storage
+			E = sparse(nNodes,nNodes);
+
+			% compute boundary conditions
+			for i = 1:self.domain.boundary.nEdges
+				
+				% compute Dirichlet condition
+				if dom.boundary.edges(i).boundaryType == 'N'
+					
+					bCond = dom.boundary.edges(i).boundaryCondition_ddu;
+
+                    % check if alpha is time-varying
+					[bCond,t,U] = self.checkVariables(bCond);
+                    
+					% store nodes on i-th edge of domain
+					bNodes_i = dom.boundary.edges(i).nodes;
+
+					% loop over segments of i-th edge
+					for j = 1:length(bNodes_i)-1
+
+						% get edge data
+						edge = [bNodes_i(j) bNodes_i(j+1)];
+						edgeMidPt = sum(coords(edge,:)/2);
+						edgeLength = norm(coords(edge(1),:) - coords(edge(2),:));
+
+						% compute E matrix
+						E(edge(1),edge(1)) = E(edge(1),edge(1)) + ...
+							1/2 * edgeLength * bCond(coords(edge(1),1),coords(edge(1),2),t,U(edge(1)));
+						E(edge(2),edge(2)) = E(edge(2),edge(2)) + ...
+							1/2 * edgeLength * bCond(coords(edge(2),1),coords(edge(2),2),t,U(edge(2)));
+
+					end
+				end
+			end
+		end
+
+		%{
+		function A = assembleStiffnessMatrix(self,U)
 
 			% Initialisation
 			nodes = self.domain.mesh.nodes;
@@ -63,10 +153,10 @@ classdef NewtonRaphsonSolver2d_elliptic < GalerkinSolver2d_elliptic
 					+ self.localdj(nodes(elems(j,:),:),U(elems(j,:)));
 			end
 
-			self.tensors.DJ = A;
-
 		end
+		%}
 
+		%{
 		function self = assembleVectors(self,U)
 
 			% Initialisation
@@ -91,13 +181,6 @@ classdef NewtonRaphsonSolver2d_elliptic < GalerkinSolver2d_elliptic
 			self.vectors.U_D   = self.computeDirichletBCs;
 			self.vectors.b_neu = self.computeNeumannBCs;
 			[self.tensors.E,self.vectors.b_rob] = self.computeRobinBCs;
-
-		end
-
-		function [DJ,J] = finalAssembly(self,U)
-
-			DJ = self.tensors.DJ + self.tensors.E;
-			J = self.vectors.b_diffeq + self.tensors.E * U - self.vectors.b_load + self.vectors.b_neu - self.vectors.b_rob;
 
 		end
 
@@ -233,6 +316,7 @@ classdef NewtonRaphsonSolver2d_elliptic < GalerkinSolver2d_elliptic
 					f(sum(elementCoord(:,1))/3,sum(elementCoord(:,2))/3,t,U(elementInd)) / 3;
 			end
 		end
+		%}
 
 	end
 end

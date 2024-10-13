@@ -1,13 +1,13 @@
-classdef NewtonRaphsonSolver2d_ginzburglandau < NewtonRaphsonSolver2d_elliptic
+classdef NewtonGalerkinSolver2d_ginzburglandau < NewtonRaphsonSolver2d_elliptic
 
 	properties
 	end
 
 	methods
-		function self = NewtonRaphsonSolver2d_ginzburglandau(dom,auxfun)
+		function self = NewtonGalerkinSolver2d_ginzburglandau(dom,auxfun)
 			
 			% call superclass constructor
-			self@NewtonRaphsonSolver2d_elliptic(dom,auxfun);
+			self@NewtonGalerkinSolver2d_elliptic(dom,auxfun);
 
 		end
 
@@ -24,7 +24,7 @@ classdef NewtonRaphsonSolver2d_ginzburglandau < NewtonRaphsonSolver2d_elliptic
 			self = self.assembleBCs;
 			U(unique(dirichlet)) = self.vectors.U_D(unique(dirichlet));
 
-			% Newton-Raphson iteration
+			% Newton-Galerkin iteration
 			for i = 1:50
 			
 				% Assembly

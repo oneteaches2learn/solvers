@@ -7,6 +7,7 @@ classdef BoundaryEdge2d
 		outwardNormal
 		boundaryType
 		boundaryCondition
+		boundaryCondition_ddu
 		nodes
 		nNodes
 	end

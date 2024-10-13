@@ -1,4 +1,4 @@
-classdef NewtonRaphsonMMS2d_poisson < GalerkinMMS2d_elliptic
+classdef NewtonGalerkinMMS2d_ginzburglandau < GalerkinMMS2d_elliptic
 % DOCUMENTATION NEEDED! In the meantime, see the documentation for
 % poissonFD1d_finegrid, which is a very similar object. 
 %
@@ -12,11 +12,11 @@ classdef NewtonRaphsonMMS2d_poisson < GalerkinMMS2d_elliptic
 	end
 
 	methods
-		function self = NewtonRaphsonMMS2d_poisson(dom,auxfun,mmsparams,NameValueArgs)
+		function self = NewtonGalerkinMMS2d_ginzburglandau(dom,auxfun,mmsparams,NameValueArgs)
 
 			arguments
 				dom 		Domain2d
-				auxfun  	ManufacturedFunctions2d_poisson
+				auxfun  	ManufacturedFunctions2d_ginzburglandau
 				mmsparams 	MMSParams
 				NameValueArgs.errType = "L2"
 			end
@@ -28,7 +28,8 @@ classdef NewtonRaphsonMMS2d_poisson < GalerkinMMS2d_elliptic
 
 		function prob = solve(self,dom,cofs)
 
-			prob = NewtonRaphsonSolver2d_poisson(dom,cofs);
+			%prob = GalerkinSolverNR2d_poisson(dom,cofs);
+			prob = NewtonGalerkinSolver2d_ginzburglandau(dom,cofs);
 
 		end
 

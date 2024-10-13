@@ -74,20 +74,15 @@ classdef GalerkinSolver2d
 
 		function B = assembleMassMatrix(self,c)
 
-			% check coefficient variables
-			if Coefficients.isTimeVarying(c) == 0
-				c = @(x1,x2,t)(c(x1,x2));
-                t = 0;
-            else
-                t = self.t;
-			end
-				
 			% unpack variables
 			nNodes    = self.domain.mesh.nNodes;
 			nElem3    = self.domain.mesh.nElems;
 			coords 	  = self.domain.mesh.nodes;
 			elements3 = self.domain.mesh.elements;
 
+			% check coefficient variables
+			[c,t,U] = self.checkVariables(c);
+				
 			% initialize storage
 			B = sparse(nNodes,nNodes);
 			
@@ -100,7 +95,7 @@ classdef GalerkinSolver2d
 			end
 
 			% compute c on nodes
-			C(:) = c(coords(:,1),coords(:,2),t);
+			C(:) = c(coords(:,1),coords(:,2),t,U);
 
 			% scale mass matrix by c values
 			B = B.*C';
@@ -115,24 +110,21 @@ classdef GalerkinSolver2d
 
 		end
 
-		function b = computeVolumeForces(self)
-
-			% store variables
-			f = self.f;
-
-			% check coefficient variables
-			if Coefficients.isTimeVarying(f) == 0
-				f = @(x1,x2,t)(f(x1,x2));
-                t = 0;
-            else
-                t = self.t;
-			end
+		function b = computeVolumeForces(self,f)
 
 			% unpack variables
 			nNodes    = self.domain.mesh.nNodes;
 			nElem3    = self.domain.mesh.nElems;
 			coords    = self.domain.mesh.nodes;
 			elements3 = self.domain.mesh.elements;
+
+			% store function
+			if nargin == 1,
+				f = self.f;
+			end
+
+			% check coefficient variables
+			[f,t,U] = self.checkVariables(f);
 
 			% initialize storage
 			b = sparse(nNodes,1);
@@ -143,7 +135,31 @@ classdef GalerkinSolver2d
 				elementCoord  = coords(elementInd,:);
 				b(elementInd) = b(elementInd) + ...
 					self.domain.mesh.areas(j) * ...
-					f(sum(elementCoord(:,1))/3,sum(elementCoord(:,2))/3,t) / 3;
+					f( sum(elementCoord(:,1))/3, sum(elementCoord(:,2))/3, t, sum(U(elementInd))/3 ) / 3;
+			end
+		end
+
+		function [f,t,U] = checkVariables(self,f)
+
+			% unpack variables
+			nNodes    = self.domain.mesh.nNodes;
+
+			% check coefficient variables
+			if ~Coefficients.isNonlinear(f) && ~Coefficients.isTimeVarying(f)
+				f = @(x1,x2,t,u)(f(x1,x2));
+				t = 0;
+				U = zeros(nNodes,1);
+			elseif ~Coefficients.isNonlinear(f) && Coefficients.isTimeVarying(f)
+				f = @(x1,x2,t,u)(f(x1,x2,t));
+				t = self.t;
+				U = zeros(nNodes,1);
+			elseif Coefficients.isNonlinear(f) && ~Coefficients.isTimeVarying(f)
+				f = @(x1,x2,t,u)(f(x1,x2,u));
+				t = 0;
+				U = self.U;
+			else
+				t = self.t;
+				U = self.U;
 			end
 		end
 
@@ -213,13 +229,18 @@ classdef GalerkinSolver2d
 					bNodes_i = dom.boundary.edges(i).nodes;
 					bCond = dom.boundary.edges(i).boundaryCondition;
 
-                    % check if boundary condition is time-varying
+					%{
+                    % OLD: check if boundary condition is time-varying
                     if Coefficients.isTimeVarying(bCond) == 0
                         bCond = @(x1,x2,t)(bCond(x1,x2));
                         t = 0;
                     else
                         t = self.t;
                     end
+					%}
+
+					% NEW: check boundary condition variables
+					[bCond,t,U] = checkVariables(self,bCond);
 
 					% loop over segments of i-th edge
 					for j = 1:length(bNodes_i)-1
@@ -227,7 +248,7 @@ classdef GalerkinSolver2d
 						edgeMidPt = sum(coords(edge,:)/2);
 						edgeLength = norm(coords(edge(1),:) - coords(edge(2),:));
 						b_neu(edge) = b_neu(edge) + ...
-							edgeLength * bCond(edgeMidPt(1),edgeMidPt(2),t) / 2;
+							edgeLength * bCond(edgeMidPt(1),edgeMidPt(2),t,sum(U(edge))/2) / 2;
 					end
 				end
 			end
