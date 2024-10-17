@@ -76,14 +76,9 @@ classdef NewtonGalerkinMMS2d < GalerkinMMS2d
 					n_i = dom.boundary.edges(i).outwardNormal;
 					u_N = symfun(auxfun.u_N,vars);
 
-					% compute residual
+					% compute residual (NOTE: works, but not for time-varying problems)
 					n_i = symfun(n_i,vars);
 					q_i = symfun(sum(q.*n_i),vars);
-
-					% attempt 1: doesn't work, compose is too hard to work with
-					%s_i = q_i - compose(u_N,uTrue,u,x);
-
-					% attempt 2: works, but isn't extensible to time-varying problem
 					s_i = q_i - u_N(x(1),x(2),uTrue(x(1),x(2)));
 
 					% assemble BC
@@ -98,12 +93,27 @@ classdef NewtonGalerkinMMS2d < GalerkinMMS2d
 
 				% assign Robin BC
 				elseif dom.boundary.edges(i).boundaryType == 'R'
-					alpha_i = symfun(1.0,vars);
+
+					% store coefficients
+					alpha_i = symfun(auxfun.alpha_R,vars);
 					n_i = symfun(dom.boundary.edges(i).outwardNormal,vars);
-					g_i = symfun(uTrue - sum(q .* n_i) / alpha_i,vars);
+					u_R = symfun(auxfun.u_R,vars);
+
+					% compute residual
+					q_i = symfun(sum(q.*n_i),vars);
+					s_i = uTrue(x(1),x(2)) - u_R(x(1),x(2),uTrue(x(1),x(2))) - ...
+							q_i(x(1),x(2),uTrue(x(1),x(2))) / alpha_i(x(1),x(2),uTrue(x(1),x(2)));
+
+					% assemble BC
+					g_i = u_R + s_i;
+					dg_i = diff(g_i,u);
 					alpha_i = matlabFunction(alpha_i);
 					g_i = matlabFunction(g_i);
+					dg_i = matlabFunction(dg_i);
+
+					% store result
 					dom.boundary.edges(i).boundaryCondition = {alpha_i,g_i};
+					dom.boundary.edges(i).boundaryCondition_ddu = dg_i;
 
 				% assign dynamic BC
 				elseif dom.boundary.edges(i).boundaryType == 'T'

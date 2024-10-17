@@ -8,6 +8,7 @@ classdef BoundaryEdge2d
 		boundaryType
 		boundaryCondition
 		boundaryCondition_ddu
+		boundaryCondition_corr
 		nodes
 		nNodes
 	end

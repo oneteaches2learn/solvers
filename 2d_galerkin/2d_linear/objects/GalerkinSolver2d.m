@@ -229,17 +229,7 @@ classdef GalerkinSolver2d
 					bNodes_i = dom.boundary.edges(i).nodes;
 					bCond = dom.boundary.edges(i).boundaryCondition;
 
-					%{
-                    % OLD: check if boundary condition is time-varying
-                    if Coefficients.isTimeVarying(bCond) == 0
-                        bCond = @(x1,x2,t)(bCond(x1,x2));
-                        t = 0;
-                    else
-                        t = self.t;
-                    end
-					%}
-
-					% NEW: check boundary condition variables
+					% check boundary condition variables
 					[bCond,t,U] = checkVariables(self,bCond);
 
 					% loop over segments of i-th edge
@@ -277,6 +267,12 @@ classdef GalerkinSolver2d
 					alpha = bCond{1};
 					u_BC  = bCond{2};
 
+					% NEW: check boundary condition variables
+					[alpha,t,U] = checkVariables(self,alpha);
+					[u_BC,t,U] = checkVariables(self,u_BC);
+
+					%{
+					OLD
                     % check if alpha is time-varying
                     if Coefficients.isTimeVarying(alpha) == 0
                         alpha = @(x1,x2,t)(alpha(x1,x2));
@@ -292,6 +288,7 @@ classdef GalerkinSolver2d
                     else
                         t = self.t;
                     end
+					%}
                     
 					% store nodes on i-th edge of domain
 					bNodes_i = dom.boundary.edges(i).nodes;
@@ -306,14 +303,14 @@ classdef GalerkinSolver2d
 
 						% compute RHS vector
 						b(edge) = b(edge) + ...
-							edgeLength * alpha(edgeMidPt(1),edgeMidPt(2),t) * ...
-							u_BC(edgeMidPt(1),edgeMidPt(2),t) / 2;
+							edgeLength * alpha(edgeMidPt(1),edgeMidPt(2),t,sum(U(edge))/2) * ...
+							u_BC(edgeMidPt(1),edgeMidPt(2),t,sum(U(edge))/2) / 2;
 
 						% compute E matrix
 						E(edge(1),edge(1)) = E(edge(1),edge(1)) + ...
-							1/2 * edgeLength * alpha(coords(edge(1),:),t);
+							1/2 * edgeLength * alpha(coords(edge(1),1),coords(edge(1),2),t,sum(U(edge))/2);
 						E(edge(2),edge(2)) = E(edge(2),edge(2)) + ...
-							1/2 * edgeLength * alpha(coords(edge(2),:),t);
+							1/2 * edgeLength * alpha(coords(edge(2),1),coords(edge(2),2),t,sum(U(edge))/2);
 
 					end
 				end
