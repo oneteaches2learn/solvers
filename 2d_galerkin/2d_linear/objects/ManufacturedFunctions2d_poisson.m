@@ -61,7 +61,15 @@ classdef ManufacturedFunctions2d_poisson < ManufacturedFunctions2d_elliptic
 
 			% manufacture RHS
 			x = sym('x',[1 2]); syms t;
-			f = self.divq + compose(self.r,self.uTrue);
+
+			% note: this is a kludge. The linear and nonlinear solvers make
+			% different assumptions about how the reaction term is handled. So
+			% that leads to different methods of manufacting the RHS. 
+			if Coefficients.isNonlinear(self.r)
+				f = self.divq + compose(self.r,self.uTrue);
+			else
+				f = self.divq + self.r * self.uTrue;
+			end
 
 		end
 

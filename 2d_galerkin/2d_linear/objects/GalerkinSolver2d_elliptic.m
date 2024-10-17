@@ -42,8 +42,15 @@ classdef (Abstract) GalerkinSolver2d_elliptic < GalerkinSolver2d
 
 		function self = assembleTensors(self) 
 
-			self.tensors.A = self.assembleStiffnessMatrix;
-			self.tensors.M_r = self.assembleMassMatrix(self.coefficients.r);
+			% OLD: tensors assembled individually
+			%self.tensors.A = self.assembleStiffnessMatrix;
+			%self.tensors.M_r = self.assembleMassMatrix(self.coefficients.r);
+
+			% NEW: tensors assembled together
+			self.tensors.A = self.assembleStiffnessMatrix_local(self.coefficients.r);
+			temp = size(self.tensors.A);
+			self.tensors.M_r = sparse(temp(1),temp(2));			
+			%self.tensors.M_r = [];
 
 		end
 

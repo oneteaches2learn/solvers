@@ -32,6 +32,139 @@ classdef GalerkinSolver2d
 
 
         % ASSEMBLY FUNCTIONS
+		function A = assembleStiffnessMatrix_local(self,c)
+
+			% ASSEMBLE STIFFNESS MATRIX
+			% store variables
+			k = self.coefficients.k;
+
+			% check coefficient variables
+			[k,t,U] = self.checkVariables(k);
+			[c,t,U] = self.checkVariables(c);
+
+			% unpack variables
+			nNodes    = self.domain.mesh.nNodes;
+			nElem3    = self.domain.mesh.nElems;
+			coords    = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements;
+			centroids = self.domain.mesh.centroids;
+
+			% initialize storage
+			A = sparse(nNodes,nNodes);
+			B = sparse(nNodes,nNodes);
+
+			%{
+			% compute k on nodes
+			K = k(coords(:,1),coords(:,2),t);
+			if size(K,1) > 1
+				K_avg = sum(K(elements3),2) / 3;
+			else
+				K_avg = K * ones(self.domain.mesh.nElems,1);
+			end
+
+			% compute c on nodes
+			C = c(coords(:,1),coords(:,2),t,U);
+			if size(K,1) > 1
+				C_avg = sum(C(elements3),2) / 3;
+			else
+				C_avg = C * ones(self.domain.mesh.nElems,1);
+			end
+			%}
+
+			% compute k on centroids
+			K = k(centroids(:,1),centroids(:,2),t,U);
+			if length(K) == 1
+				K = K * ones(self.domain.mesh.nElems,1);
+			end
+
+			% compute c on centroids
+			C = c(centroids(:,1),centroids(:,2),t,U);
+			if length(C) == 1
+				C = C * ones(self.domain.mesh.nElems,1);
+			end
+
+			tic
+			% assemble stiffness matrix
+			for j = self.domain.mesh.effectiveElems;
+				elementInd   = elements3(j,:);
+				elementCoord = coords(elementInd,:);
+
+				%{
+				% version 1: separate assembly
+				A(elementInd,elementInd) = A(elementInd,elementInd) + ...
+					K_avg(j) * self.stima3(elementCoord);
+
+				B(elementInd,elementInd) = B(elementInd,elementInd) + ...
+					self.domain.mesh.areas(j) * [2,1,1;1,2,1;1,1,2] / 12;
+				%}
+				
+				%{
+				% version 2: combined assembly
+				A(elementInd,elementInd) = A(elementInd,elementInd) + ...
+					K_avg(j) * self.stima3(elementCoord) + ...
+					self.domain.mesh.areas(j) * [2,1,1;1,2,1;1,1,2] / 12;
+				%}
+
+				%{
+				% version 3: combined assembly with separate storage
+				A_loc = K_avg(j) * self.stima3(elementCoord);
+				B_loc = self.domain.mesh.areas(j) * [2,1,1; 1,2,1; 1,1,2] / 12;
+				A(elementInd,elementInd) = A(elementInd,elementInd) + A_loc + B_loc;
+				%}
+
+				%{
+				% version 4: like ver3, but wit coefficient
+				A_loc = K_avg(j) * self.stima3(elementCoord);
+				C_avg = sum(C(elementInd)) / 3;
+				M_loc = self.domain.mesh.areas(j) * [2,1,1; 1,2,1; 1,1,2] / 12 * C_avg;
+				A(elementInd,elementInd) = A(elementInd,elementInd) + A_loc + M_loc;
+				%}
+
+				%{
+				% version 5: exporting local matrix computation
+				A_loc = K_avg(j) * self.localStiffnessMatrix(elementCoord);
+				M_loc = C_avg(j) * self.localMassMatrix();
+				area  = self.elementArea(elementCoord);
+				A(elementInd,elementInd) = A(elementInd,elementInd) + ...
+							area * (A_loc + M_loc);
+				%}
+
+				% version 6: using centroids
+				A_loc = K(j) * self.localStiffnessMatrix(elementCoord);
+				M_loc = C(j) * self.localMassMatrix();
+				area  = self.elementArea(elementCoord);
+				A(elementInd,elementInd) = A(elementInd,elementInd) + ...
+							area * (A_loc + M_loc);
+
+				
+			end
+			toc
+
+		end
+
+		function M = localStiffnessMatrix(self,vertices)
+
+			d = size(vertices,2);
+			G = [ones(1,d+1);vertices'] \ [zeros(1,d);eye(d)];
+			M = G * G';
+
+		end
+
+		function M = localMassMatrix(self)
+
+			M = [2,1,1; 1,2,1; 1,1,2] / 12;
+
+		end
+
+		function area = elementArea(self,vertices)
+			
+			d = size(vertices,2);
+			area = det([ones(1,d+1);vertices']) / prod(1:d);
+
+		end
+
+
+		%{
 		function A = assembleStiffnessMatrix(self)
 
 			% store variables
@@ -101,6 +234,7 @@ classdef GalerkinSolver2d
 			B = B.*C';
 
 		end
+		%}
 
 		function M = stima3(self,vertices)
 
@@ -271,25 +405,6 @@ classdef GalerkinSolver2d
 					[alpha,t,U] = checkVariables(self,alpha);
 					[u_BC,t,U] = checkVariables(self,u_BC);
 
-					%{
-					OLD
-                    % check if alpha is time-varying
-                    if Coefficients.isTimeVarying(alpha) == 0
-                        alpha = @(x1,x2,t)(alpha(x1,x2));
-                        t = 0;
-                    else
-                        t = self.t;
-                    end
-
-                    % check if u_R is time-varying
-                    if Coefficients.isTimeVarying(u_BC) == 0
-                        u_BC = @(x1,x2,t)(u_BC(x1,x2));
-                        t = 0;
-                    else
-                        t = self.t;
-                    end
-					%}
-                    
 					% store nodes on i-th edge of domain
 					bNodes_i = dom.boundary.edges(i).nodes;
 

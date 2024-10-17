@@ -21,16 +21,16 @@ base = 2;
 demo = 0;
 
 % specify BCs
-bTypes_outer = 'RRRR';
+bTypes_outer = 'DDDD';
 bTypes_inner = 'R';
 
 % specify coefficients
-k = 2 + sin(2 * pi * x(1)) * sin(2 * pi * x(2));
-r = 0; % <~~ currently only r = 0 is supported
+k = 2 + sin(x(1) + x(2));
+r = 2 + sin(x(1) + x(2));
 
 % specify desired result
 %uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2));
-uTrue = sin(2 * pi * x(1)) * sin(2 * pi * x(2));
+%uTrue = sin(2 * pi * x(1)) * sin(2 * pi * x(2));
 uTrue = cos(2 * pi * x(1)) * cos(2 * pi * x(2));
 
 
@@ -39,7 +39,7 @@ fprintf('MMS Test Begun\n')
 
 % assemble inputs
 auxfun    = ManufacturedFunctions2d_poisson(k,r,uTrue);
-mmsparams = MMSParams(base,demo=demo,timeOffset=4,timeFactor=2,pmin=4,pmax=6, ...
+mmsparams = MMSParams(base,demo=demo,timeOffset=4,timeFactor=2,pmin=4,pmax=7, ...
 				meshInclusions='on',effectiveRegion='Omega_eps');
 
 % build dom_eps_epsain
