@@ -32,19 +32,43 @@ classdef GalerkinSolver2d
 
 
         % ASSEMBLY FUNCTIONS
-		function S = assembleStiffnessMatrix_local(self,c)
+
+
+		% NOTE: This function is specific to the poisson problem. It should be replicated in each of the various solvers. In this new model, this is like the "final assembly" function. Specifically, instead of a "final assembly" function, you will have individual "computeLocalTensor" functions, which will each return the set of local tensors, stacked up in a way that the assembly function knows how to sum.
+		function S_vec = computeLocalTensors_vec(self)
+
+			% store variables
+			r = self.coefficients.r;
+
+			% compute local tensors
+			A_vec = self.localStiffnessMatrix_vec;
+			M_vec = self.localMassMatrix_vec(r);
+
+			% sum local matrices
+			S_vec = A_vec + M_vec;
+
+		end
+
+
+		function self = assembleTensors_vec(self)
+
+			% get local tensors
+			% note: computeLocalTensors_vec function is specific to each individual problem
+			S_vec = self.computeLocalTensors_vec;
 
 			% unpack variables
 			nNodes     = self.domain.mesh.nNodes;
-			elementInd = self.domain.mesh.elements(self.domain.mesh.effectiveElems, :);
+			elementInd = self.domain.mesh.elements(self.domain.mesh.effectiveElems,:);
 
-			% get local tensors
-			S_vec = self.computeLocalTensors_vec(c);
+			% scale S_vec by areas to complete centroid quadrature
+			areas = self.domain.mesh.areas(self.domain.mesh.effectiveElems);
+			areas = permute(areas,[3,2,1]);
+			S_vec = pagemtimes(areas,S_vec);
 
 			% Get summation locations
 			[I, J] = ndgrid(1:3, 1:3);
-			ind_vec = sub2ind([nNodes, nNodes], elementInd(:, I(:)), elementInd(:, J(:)));
-			ind_vec = reshape(ind_vec', [], 1);
+			ind_vec = sub2ind([nNodes,nNodes], elementInd(:,I(:)), elementInd(:,J(:)));
+			ind_vec = reshape(ind_vec',[],1);
 
 			% sum the values
 			% note: flag 'true' below indicates sparse matrix is to be created
@@ -52,37 +76,27 @@ classdef GalerkinSolver2d
 			S = accumarray(ind_vec,S_vec_flat,[nNodes * nNodes,1],[],[],true);
 			S = reshape(S,[nNodes,nNodes]);
 
-		end
-
-		function S_vec = computeLocalTensors_vec(self,c)
-
-			% compute local tensors
-			A_vec = self.localStiffnessMatrix_vec;
-			M_vec = self.localMassMatrix_vec(c);
-
-			% sum local matrices
-			S_vec = A_vec + M_vec;
-
-			% scale by areas
-			areas = self.domain.mesh.areas;
-			areas = permute(areas,[3,2,1]);
-			S_vec = pagemtimes(areas,S_vec);
+			% temporary: store matrices
+			self.tensors.A = S;
+			temp = size(self.tensors.A);
+			self.tensors.M_r = sparse(temp(1),temp(2));			
 
 		end
+
 
 		function A_vec = localStiffnessMatrix_vec(self)
 
 			% store variables
 			k = self.coefficients.k;
 
+			% unpack variables
+			coords    = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements(self.domain.mesh.effectiveElems,:);
+			centroids = self.domain.mesh.centroids(self.domain.mesh.effectiveElems,:);
+			nElems    = size(elements3,1);
+
 			% check coefficient variables
 			[k,t,U] = self.checkVariables(k);
-
-			% unpack variables
-			nElems    = self.domain.mesh.nElems;
-			coords    = self.domain.mesh.nodes;
-			elements3 = self.domain.mesh.elements;
-			centroids = self.domain.mesh.centroids;
 
 			% compute k on centroids
 			K = k(centroids(:,1),centroids(:,2),t,U);
@@ -122,18 +136,11 @@ classdef GalerkinSolver2d
 		function M_vec = localMassMatrix_vec(self,c);
 
 			% unpack variables
-			nNodes    = self.domain.mesh.nNodes;
-			coords    = self.domain.mesh.nodes;
-			elements3 = self.domain.mesh.elements;
-
-			% initialize storage
-			S = sparse(nNodes,nNodes);
+			centroids = self.domain.mesh.centroids(self.domain.mesh.effectiveElems, :);
+			nElems    = size(centroids,1);
 
 			% check coefficient variables
 			[c,t,U] = self.checkVariables(c);
-
-			nElems    = self.domain.mesh.nElems;
-			centroids = self.domain.mesh.centroids;
 
 			% compute c on centroids
 			C = c(centroids(:,1),centroids(:,2),t,U);
@@ -145,7 +152,6 @@ classdef GalerkinSolver2d
 			M_loc = self.localMassMatrix();
 			C_vec = permute(C,[3,2,1]);
 			M_vec = pagemtimes(M_loc,C_vec);
-
 
 		end
 
@@ -224,7 +230,6 @@ classdef GalerkinSolver2d
 		end
 
 
-		%{
 		function A = assembleStiffnessMatrix(self)
 
 			% store variables
@@ -294,7 +299,10 @@ classdef GalerkinSolver2d
 			B = B.*C';
 
 		end
-		%}
+
+		
+
+
 
 		function M = stima3(self,vertices)
 
@@ -308,9 +316,9 @@ classdef GalerkinSolver2d
 
 			% unpack variables
 			nNodes    = self.domain.mesh.nNodes;
-			nElem3    = self.domain.mesh.nElems;
+			elements3 = self.domain.mesh.elements(self.domain.mesh.effectiveElems, :);
+			nElem3    = size(elements3,1);
 			coords    = self.domain.mesh.nodes;
-			elements3 = self.domain.mesh.elements;
 
 			% store function
 			if nargin == 1,
@@ -323,15 +331,23 @@ classdef GalerkinSolver2d
 			% initialize storage
 			b = sparse(nNodes,1);
 
+			% compute centroids of elements
+			elementCoordsX = reshape(coords(elements3, 1), [nElem3, 3]);
+			elementCoordsY = reshape(coords(elements3, 2), [nElem3, 3]);
+			centroidsX = sum(elementCoordsX, 2) / 3;
+			centroidsY = sum(elementCoordsY, 2) / 3;
+			centroidsU = sum(U(elements3), 2) / 3;
+
 			% compute volume forces
-			for j = self.domain.mesh.effectiveElems
-				elementInd    = elements3(j,:);
-				elementCoord  = coords(elementInd,:);
-				b(elementInd) = b(elementInd) + ...
-					self.domain.mesh.areas(j) * ...
-					f( sum(elementCoord(:,1))/3, sum(elementCoord(:,2))/3, t, sum(U(elementInd))/3 ) / 3;
-			end
+			areas = self.domain.mesh.areas(self.domain.mesh.effectiveElems);
+			forces = f(centroidsX, centroidsY, t, centroidsU) / 3;
+			volumeForces = areas .* forces;
+
+			% accumulate forces into the global vector
+			b = accumarray(elements3(:), repmat(volumeForces, 3, 1), [nNodes, 1], @sum, 0, true);
+
 		end
+
 
 		function [f,t,U] = checkVariables(self,f)
 

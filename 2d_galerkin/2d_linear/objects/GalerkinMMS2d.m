@@ -137,7 +137,7 @@ classdef GalerkinMMS2d
 			for p = pmin:pmax
 				
 				% successively refine mese
-				fprintf(' p = %i solved:',p); %tic;
+				fprintf(' p = %i solved:',p); tic;
 
 				dom_p = self.configureDomain(p); 
 				prob_p = self.solve(dom_p,cofs);
@@ -149,8 +149,8 @@ classdef GalerkinMMS2d
 
 				% prepare next trial
 				ind = ind + 1;
-				%executionTime = toc;
-				%fprintf(' %f s\n',executionTime)
+				executionTime = toc;
+				fprintf(' %f s\n',executionTime)
 
 			end
 		end

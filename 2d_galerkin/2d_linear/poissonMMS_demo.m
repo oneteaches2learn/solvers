@@ -18,15 +18,17 @@ incRatio = 1; % <~~~ incRatio = |delta Q| / |Y|
 
 % mms parameters
 base = 2;
-demo = 8;
+demo = 0;
 
 % specify BCs
-bTypes_outer = 'DDDD';
-bTypes_inner = 'R';
+bTypes_outer = 'RRDD';
+bTypes_inner = 'D';
 
 % specify coefficients
 k = 2 + sin(x(1) + x(2));
 r = 2 + sin(x(1) + x(2));
+k = 1;
+r = 0;
 
 % specify desired result
 %uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2));

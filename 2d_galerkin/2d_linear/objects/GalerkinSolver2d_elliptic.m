@@ -22,10 +22,12 @@ classdef (Abstract) GalerkinSolver2d_elliptic < GalerkinSolver2d
 		function self = solve(self)
 
 			% assemble problem
-			self = self.assembleTensors;
+			%self = self.assembleTensors; 		%<~~~ unvectorized 
+			self = self.assembleTensors_vec;    %<~~~ vectorized
 			self = self.assembleVectors;
 			self = self.assembleBCs;
 			[S,b] = self.finalAssembly;
+
 
 			% load variables
 			FreeNodes = self.domain.boundary.freeNodes;
@@ -42,14 +44,8 @@ classdef (Abstract) GalerkinSolver2d_elliptic < GalerkinSolver2d
 
 		function self = assembleTensors(self) 
 
-			% OLD: tensors assembled individually
-			%self.tensors.A = self.assembleStiffnessMatrix;
-			%self.tensors.M_r = self.assembleMassMatrix(self.coefficients.r);
-
-			% NEW: tensors assembled together
-			self.tensors.A = self.assembleStiffnessMatrix_local(self.coefficients.r);
-			temp = size(self.tensors.A);
-			self.tensors.M_r = sparse(temp(1),temp(2));			
+			self.tensors.A = self.assembleStiffnessMatrix;
+			self.tensors.M_r = self.assembleMassMatrix(self.coefficients.r);
 
 		end
 
