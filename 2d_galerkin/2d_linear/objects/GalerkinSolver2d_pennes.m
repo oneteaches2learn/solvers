@@ -77,10 +77,6 @@ classdef GalerkinSolver2d_pennes < GalerkinSolver2d_parabolic
 		function b = compute_r_times_uStar(self)
 
 			% store variables
-			nNodes    = self.domain.mesh.nNodes;
-			nElem3    = self.domain.mesh.nElems;
-			coords    = self.domain.mesh.nodes;
-			elements3 = self.domain.mesh.elements;
 			uStar     = self.coefficients.uStar;
 			r         = self.coefficients.r;
 
@@ -92,6 +88,17 @@ classdef GalerkinSolver2d_pennes < GalerkinSolver2d_parabolic
 			if Coefficients.isTimeVarying(r) == 0
 				r = @(x1,x2,t)(r(x1,x2));
 			end
+
+			% compute volume forces
+			b = self.computeVolumeForces(uStar,r);
+
+			%{
+			% OLD CODE: loop-based version
+			% store more variables
+			nNodes    = self.domain.mesh.nNodes;
+			nElem3    = self.domain.mesh.nElems;
+			coords    = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements;
 
 			% initialize storage
 			b = sparse(nNodes,1);
@@ -106,6 +113,8 @@ classdef GalerkinSolver2d_pennes < GalerkinSolver2d_parabolic
 					uStar(sum(elementCoord(:,1))/3,sum(elementCoord(:,2))/3,self.t) / 6;
 
 			end
+			%}
+
 		end
 
 		function [S,b] = finalAssembly(self)
@@ -115,8 +124,8 @@ classdef GalerkinSolver2d_pennes < GalerkinSolver2d_parabolic
 			vectors = self.vectors;
 
 			% assemble LHS
-			S = self.domain.time.dt * (tensors.A + tensors.M_r + tensors.M_rob) + ...
-							tensors.M_p + tensors.M_dyn;
+			S = self.domain.time.dt * (tensors.A + tensors.M_r + tensors.M_rob + tensors.M_dyn_u) + ...
+							tensors.M_p + tensors.M_dyn_du;
 
 			% assemble RHS
 			b = self.domain.time.dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob + ...

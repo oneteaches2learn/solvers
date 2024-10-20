@@ -51,8 +51,8 @@ classdef GalerkinSolver2d_rxndiff < GalerkinSolver2d_parabolic
 			vectors = self.vectors;
 
 			% assemble LHS
-			S = self.domain.time.dt * (tensors.A + tensors.M_r + tensors.M_rob) + ...
-						tensors.M_p + tensors.M_dyn;
+			S = self.domain.time.dt * (tensors.A + tensors.M_r + tensors.M_rob + tensors.M_dyn_u) + ...
+						tensors.M_p + tensors.M_dyn_du;
 
 			% assemble RHS
 			b = self.domain.time.dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob + vectors.b_dyn) - ...

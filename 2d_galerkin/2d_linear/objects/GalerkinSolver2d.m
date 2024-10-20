@@ -147,7 +147,7 @@ classdef GalerkinSolver2d
 
 		end
 
-		function b = computeVolumeForces(self,f)
+		function b = computeVolumeForces(self,f1,f2)
 
 			% unpack variables
 			nNodes    = self.domain.mesh.nNodes;
@@ -157,11 +157,15 @@ classdef GalerkinSolver2d
 
 			% store function
 			if nargin == 1,
-				f = self.f;
+				f1 = self.f;
+				f2 = @(x1,x2,t)1; 
+			elseif nargin == 2
+				f2 = @(x1,x2,t)1;
 			end
 
 			% check coefficient variables
-			[f,t,U] = self.checkVariables(f);
+			[f1,t,U] = self.checkVariables(f1);
+			f2 = self.checkVariables(f2);
 
 			% initialize storage
 			b = sparse(nNodes,1);
@@ -175,7 +179,9 @@ classdef GalerkinSolver2d
 
 			% compute volume forces
 			areas = self.domain.mesh.areas(self.domain.mesh.effectiveElems);
-			forces = f(centroidsX, centroidsY, t, centroidsU) / 3;
+			f1_vals = f1(centroidsX, centroidsY, t, centroidsU);
+			f2_vals = f2(centroidsX, centroidsY, t, centroidsU);
+			forces = f1_vals .* f2_vals / 3;
 			volumeForces = areas .* forces;
 
 			% accumulate forces into the global vector
