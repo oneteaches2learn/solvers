@@ -147,7 +147,7 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 
 				% update M_dyn
 				% note: have not yet implemented logic for time-varying dynamic BCs
-				self.tensors.M_dyn_prevTime = self.tensors.M_dyn;
+				self.tensors.M_dyn_prevTime = self.tensors.M_dyn_du;
 
 			end
 		end

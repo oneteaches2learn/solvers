@@ -32,57 +32,19 @@ classdef GalerkinSolver2d
 
 
         % ASSEMBLY FUNCTIONS
+		function A = assembleStiffnessMatrix(self)
 
-
-		% NOTE: This function is specific to the poisson problem. It should be replicated in each of the various solvers. In this new model, this is like the "final assembly" function. Specifically, instead of a "final assembly" function, you will have individual "computeLocalTensor" functions, which will each return the set of local tensors, stacked up in a way that the assembly function knows how to sum.
-		function S_vec = computeLocalTensors_vec(self)
-
-			% store variables
-			r = self.coefficients.r;
-
-			% compute local tensors
 			A_vec = self.localStiffnessMatrix_vec;
-			M_vec = self.localMassMatrix_vec(r);
-
-			% sum local matrices
-			S_vec = A_vec + M_vec;
+			A = self.sumLocalMatrices(A_vec);
 
 		end
 
+		function M = assembleMassMatrix(self,c)
 
-		function self = assembleTensors_vec(self)
-
-			% get local tensors
-			% note: computeLocalTensors_vec function is specific to each individual problem
-			S_vec = self.computeLocalTensors_vec;
-
-			% unpack variables
-			nNodes     = self.domain.mesh.nNodes;
-			elementInd = self.domain.mesh.elements(self.domain.mesh.effectiveElems,:);
-
-			% scale S_vec by areas to complete centroid quadrature
-			areas = self.domain.mesh.areas(self.domain.mesh.effectiveElems);
-			areas = permute(areas,[3,2,1]);
-			S_vec = pagemtimes(areas,S_vec);
-
-			% Get summation locations
-			[I, J] = ndgrid(1:3, 1:3);
-			ind_vec = sub2ind([nNodes,nNodes], elementInd(:,I(:)), elementInd(:,J(:)));
-			ind_vec = reshape(ind_vec',[],1);
-
-			% sum the values
-			% note: flag 'true' below indicates sparse matrix is to be created
-			S_vec_flat = S_vec(:);
-			S = accumarray(ind_vec,S_vec_flat,[nNodes * nNodes,1],[],[],true);
-			S = reshape(S,[nNodes,nNodes]);
-
-			% temporary: store matrices
-			self.tensors.A = S;
-			temp = size(self.tensors.A);
-			self.tensors.M_r = sparse(temp(1),temp(2));			
+			M_vec = self.localMassMatrix_vec(c);
+			M = self.sumLocalMatrices(M_vec);
 
 		end
-
 
 		function A_vec = localStiffnessMatrix_vec(self)
 
@@ -155,160 +117,33 @@ classdef GalerkinSolver2d
 
 		end
 
-		%{
-		function S = assembleStiffnessMatrix_localOLD(self,c)
-
-			% ASSEMBLE STIFFNESS MATRIX
-			% store variables
-			k = self.coefficients.k;
-
-			% check coefficient variables
-			[k,t,U] = self.checkVariables(k);
-			[c,t,U] = self.checkVariables(c);
-
-			% unpack variables
-			nNodes    = self.domain.mesh.nNodes;
-			nElem3    = self.domain.mesh.nElems;
-			coords    = self.domain.mesh.nodes;
-			elements3 = self.domain.mesh.elements;
-			centroids = self.domain.mesh.centroids;
-
-			% initialize storage
-			S = sparse(nNodes,nNodes);
-
-			% compute k on centroids
-			K = k(centroids(:,1),centroids(:,2),t,U);
-			if length(K) == 1
-				K = K * ones(self.domain.mesh.nElems,1);
-			end
-
-			% compute c on centroids
-			C = c(centroids(:,1),centroids(:,2),t,U);
-			if length(C) == 1
-				C = C * ones(self.domain.mesh.nElems,1);
-			end
-
-			% assemble stiffness matrix
-			for j = self.domain.mesh.effectiveElems;
-
-				elementInd   = elements3(j,:);
-				elementCoord = coords(elementInd,:);
-
-				% compute local matrices and element area
-				A_loc = K(j) * self.localStiffnessMatrix(elementCoord);
-				M_loc = C(j) * self.localMassMatrix();
-				area  = self.elementArea(elementCoord);
-
-				% add local matrices to global matrix
-				S(elementInd,elementInd) = S(elementInd,elementInd) + ...
-							area * (A_loc + M_loc);
-				
-			end
-
-		end
-
-		function M = localStiffnessMatrix(self,vertices)
-
-			d = size(vertices,2);
-			G = [ones(1,d+1);vertices'] \ [zeros(1,d);eye(d)];
-			M = G * G';
-
-		end
-		%}
-
 		function M = localMassMatrix(self)
 
 			M = [2,1,1; 1,2,1; 1,1,2] / 12;
 
 		end
 
-		function area = elementArea(self,vertices)
-			
-			d = size(vertices,2);
-			area = det([ones(1,d+1);vertices']) / prod(1:d);
-
-		end
-
-
-		function A = assembleStiffnessMatrix(self)
-
-			% store variables
-			k = self.coefficients.k;
-
-			% check coefficient variables
-			if Coefficients.isTimeVarying(k) == 0
-				k = @(x1,x2,t)(k(x1,x2));
-                t = 0;
-            else
-                t = self.t;
-			end
+		function M = sumLocalMatrices(self,M_vec)
 
 			% unpack variables
-			nNodes    = self.domain.mesh.nNodes;
-			nElem3    = self.domain.mesh.nElems;
-			coords    = self.domain.mesh.nodes;
-			elements3 = self.domain.mesh.elements;
+			nNodes     = self.domain.mesh.nNodes;
+			elementInd = self.domain.mesh.elements(self.domain.mesh.effectiveElems,:);
 
-			% initialize storage
-			A = sparse(nNodes,nNodes);
+			% scale M_vec by areas to complete centroid quadrature
+			areas = self.domain.mesh.areas(self.domain.mesh.effectiveElems);
+			areas = permute(areas,[3,2,1]);
+			M_vec = pagemtimes(areas,M_vec);
 
-			% compute k on nodes
-			K = k(coords(:,1),coords(:,2),t);
-			if size(K,1) > 1
-				K_avg = sum(K(elements3),2) / 3;
-			else
-				K_avg = K * ones(self.domain.mesh.nElems,1);
-			end
+			% Get summation locations
+			[I, J] = ndgrid(1:3, 1:3);
+			ind_vec = sub2ind([nNodes,nNodes], elementInd(:,I(:)), elementInd(:,J(:)));
+			ind_vec = reshape(ind_vec',[],1);
 
-			% assemble stiffness matrix
-			for j = self.domain.mesh.effectiveElems;
-				elementInd   = elements3(j,:);
-				elementCoord = coords(elementInd,:);
-				A(elementInd,elementInd) = A(elementInd,elementInd) + ...
-					K_avg(j) * self.stima3(elementCoord);
-
-			end
-		end
-
-		function B = assembleMassMatrix(self,c)
-
-			% unpack variables
-			nNodes    = self.domain.mesh.nNodes;
-			nElem3    = self.domain.mesh.nElems;
-			coords 	  = self.domain.mesh.nodes;
-			elements3 = self.domain.mesh.elements;
-
-			% check coefficient variables
-			[c,t,U] = self.checkVariables(c);
-				
-			% initialize storage
-			B = sparse(nNodes,nNodes);
-			
-			% assemble base mass matrix
-			for j = self.domain.mesh.effectiveElems
-				elementInd = elements3(j,:);
-				elementCoord = coords(elementInd,:);
-				B(elementInd,elementInd) = B(elementInd,elementInd) + ...
-					self.domain.mesh.areas(j) * [2,1,1;1,2,1;1,1,2] / 12;
-			end
-
-			% compute c on nodes
-			C(:) = c(coords(:,1),coords(:,2),t,U);
-
-			% scale mass matrix by c values
-			B = B.*C';
-
-		end
-
-		
-
-
-
-		function M = stima3(self,vertices)
-
-			d = size(vertices,2);
-			G = [ones(1,d+1);vertices'] \ [zeros(1,d);eye(d)];
-			M = det([ones(1,d+1);vertices']) * G * G' / prod(1:d);
+			% sum the values
+			% note: flag 'true' below indicates sparse matrix is to be created
+			M_vec_flat = M_vec(:);
+			M = accumarray(ind_vec,M_vec_flat,[nNodes * nNodes,1],[],[],true);
+			M = reshape(M,[nNodes,nNodes]);
 
 		end
 
@@ -348,38 +183,13 @@ classdef GalerkinSolver2d
 
 		end
 
-
-		function [f,t,U] = checkVariables(self,f)
-
-			% unpack variables
-			nNodes    = self.domain.mesh.nNodes;
-
-			% check coefficient variables
-			if ~Coefficients.isNonlinear(f) && ~Coefficients.isTimeVarying(f)
-				f = @(x1,x2,t,u)(f(x1,x2));
-				t = 0;
-				U = zeros(nNodes,1);
-			elseif ~Coefficients.isNonlinear(f) && Coefficients.isTimeVarying(f)
-				f = @(x1,x2,t,u)(f(x1,x2,t));
-				t = self.t;
-				U = zeros(nNodes,1);
-			elseif Coefficients.isNonlinear(f) && ~Coefficients.isTimeVarying(f)
-				f = @(x1,x2,t,u)(f(x1,x2,u));
-				t = 0;
-				U = self.U;
-			else
-				t = self.t;
-				U = self.U;
-			end
-		end
-
 		function self = assembleBCs(self)
 
 			self = self.computePeriodicBCs;
 			self.vectors.U_D   = self.computeDirichletBCs;
 			self.vectors.b_neu = self.computeNeumannBCs;
 			[self.tensors.M_rob,self.vectors.b_rob] = self.computeRobinBCs;
-			[self.tensors.M_rob,self.tensors.M_dyn,self.vectors.b_dyn] = self.computeDynamicBCs;
+			[self.tensors.M_dyn_u,self.tensors.M_dyn_du,self.vectors.b_dyn] = self.computeDynamicBCs;
 
 		end
 
@@ -697,6 +507,30 @@ classdef GalerkinSolver2d
             % ensure solution is full
             self.solution = full(self.solution);
 
+		end
+
+		function [f,t,U] = checkVariables(self,f)
+
+			% unpack variables
+			nNodes    = self.domain.mesh.nNodes;
+
+			% check coefficient variables
+			if ~Coefficients.isNonlinear(f) && ~Coefficients.isTimeVarying(f)
+				f = @(x1,x2,t,u)(f(x1,x2));
+				t = 0;
+				U = zeros(nNodes,1);
+			elseif ~Coefficients.isNonlinear(f) && Coefficients.isTimeVarying(f)
+				f = @(x1,x2,t,u)(f(x1,x2,t));
+				t = self.t;
+				U = zeros(nNodes,1);
+			elseif Coefficients.isNonlinear(f) && ~Coefficients.isTimeVarying(f)
+				f = @(x1,x2,t,u)(f(x1,x2,u));
+				t = 0;
+				U = self.U;
+			else
+				t = self.t;
+				U = self.U;
+			end
 		end
 
 
@@ -1077,3 +911,188 @@ classdef GalerkinSolver2d
 
     end
 end
+
+
+
+
+		%{
+		% UNVECTORIZED ASSEMBLY FUNCTIONS (FOR REFERENCE) --------------------%
+		function A = assembleStiffnessMatrix(self)
+
+			% store variables
+			k = self.coefficients.k;
+
+			% check coefficient variables
+			if Coefficients.isTimeVarying(k) == 0
+				k = @(x1,x2,t)(k(x1,x2));
+                t = 0;
+            else
+                t = self.t;
+			end
+
+			% unpack variables
+			nNodes    = self.domain.mesh.nNodes;
+			nElem3    = self.domain.mesh.nElems;
+			coords    = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements;
+
+			% initialize storage
+			A = sparse(nNodes,nNodes);
+
+			% compute k on nodes
+			K = k(coords(:,1),coords(:,2),t);
+			if size(K,1) > 1
+				K_avg = sum(K(elements3),2) / 3;
+			else
+				K_avg = K * ones(self.domain.mesh.nElems,1);
+			end
+
+			% assemble stiffness matrix
+			for j = self.domain.mesh.effectiveElems;
+				elementInd   = elements3(j,:);
+				elementCoord = coords(elementInd,:);
+				A(elementInd,elementInd) = A(elementInd,elementInd) + ...
+					K_avg(j) * self.stima3(elementCoord);
+
+			end
+		end
+
+		function B = assembleMassMatrix(self,c)
+
+			% unpack variables
+			nNodes    = self.domain.mesh.nNodes;
+			nElem3    = self.domain.mesh.nElems;
+			coords 	  = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements;
+
+			% check coefficient variables
+			[c,t,U] = self.checkVariables(c);
+				
+			% initialize storage
+			B = sparse(nNodes,nNodes);
+			
+			% assemble base mass matrix
+			for j = self.domain.mesh.effectiveElems
+				elementInd = elements3(j,:);
+				elementCoord = coords(elementInd,:);
+				B(elementInd,elementInd) = B(elementInd,elementInd) + ...
+					self.domain.mesh.areas(j) * [2,1,1;1,2,1;1,1,2] / 12;
+			end
+
+			% compute c on nodes
+			C(:) = c(coords(:,1),coords(:,2),t,U);
+
+			% scale mass matrix by c values
+			B = B.*C';
+
+		end
+
+		function M = stima3(self,vertices)
+
+			d = size(vertices,2);
+			G = [ones(1,d+1);vertices'] \ [zeros(1,d);eye(d)];
+			M = det([ones(1,d+1);vertices']) * G * G' / prod(1:d);
+
+		end
+
+		function area = elementArea(self,vertices)
+			
+			d = size(vertices,2);
+			area = det([ones(1,d+1);vertices']) / prod(1:d);
+
+		end
+
+		% --------------------------------------------------------------------%
+		%}
+
+
+		%{
+		% VECTORIZED ASSEMBLY FUNCTIONS (Attempt 1) --------------------------%
+		% NOTE: In this model, the local tensors are computed as 3 x 3 x nElem
+		% arrays, where each slice corresponds to the local tensor for a single
+		% element. These local tensor arrays are summed to get an overall set of
+		% local tensors called S_vec. This is scaled by the areas of the
+		% elements, which completes centroid quadrature for the local tensors.
+		% Then these local tensors are summed in a vectorized way to get the
+		% global tensor S. This idea is technically faster than the method I
+		% settled on above. But the run-time savings is very small; and at the
+		% same time this approach requires fundamentally rewriting the way that
+		% each solver comptues its solution. That is because currently, the
+		% solvers compute global tensors individually, then these global tensors
+		% are summed; but the approach below would require computing local
+		% tensors, then summing, then making one global tensor. Ultimately, this
+		% would require extensive rewrites to core parts of the code. At the
+		% same time, testing shows that the approach below is only a few
+		% hundredths of a second faster. So it's just not worth it. That said,
+		% maybe in the future I will revisit this approach, so I am keeping it
+		% here for reference.
+		
+		function S_vec = computeLocalTensors_vec(self)
+		% NOTE: To implement this approach, each individual solver would have
+		% its own version of the "computeLocalTensors_vec" function. Currently,
+		% each solver has its own "pattern" for how it sums the global tensors.
+		% That same pattern would appear in the computation of the local
+		% tensors, obtaining some 3 x 3 x nElem output called S_vec, which would
+		% then be assembled into the single global tensor S. Based on this
+		% model, not only is the code below specific to the Poisson problem, but
+		% the code below is incomplete since it does not account for the tensor
+		% that is introduced by the Robin boundary values. You could (1) add
+		% that tensor to the code below, or (2) add a separate function that
+		% computes the Robin tensor, and then sum that tensor with the tensor
+		% below. Either way, you can see that this approach requires extensive
+		% rewrites to the code base.
+		
+			% store variables
+			r = self.coefficients.r;
+
+			% compute local tensors
+			A_vec = self.localStiffnessMatrix_vec;
+			M_vec = self.localMassMatrix_vec(r);
+
+			% sum local matrices
+			S_vec = A_vec + M_vec;
+
+		end
+
+
+		function self = assembleTensors_vec(self)
+		% This function creates the local stiffness matrices S_vec, and then
+		% assembles them into the global stiffness matrix S. The code below does
+		% get used in the final approach above. It's just that I'm using
+		% something like the code below to assemble each individual tensor into
+		% its respective global counterpart. For example, A_vec becomes A; M_vec
+		% becomes M, etc. Then I am summing these individual global tensors to
+		% get the final global tensor S. 
+		
+			% get local tensors
+			% note: computeLocalTensors_vec function is specific to each individual problem
+			S_vec = self.computeLocalTensors_vec;
+
+			% unpack variables
+			nNodes     = self.domain.mesh.nNodes;
+			elementInd = self.domain.mesh.elements(self.domain.mesh.effectiveElems,:);
+
+			% scale S_vec by areas to complete centroid quadrature
+			areas = self.domain.mesh.areas(self.domain.mesh.effectiveElems);
+			areas = permute(areas,[3,2,1]);
+			S_vec = pagemtimes(areas,S_vec);
+
+			% Get summation locations
+			[I, J] = ndgrid(1:3, 1:3);
+			ind_vec = sub2ind([nNodes,nNodes], elementInd(:,I(:)), elementInd(:,J(:)));
+			ind_vec = reshape(ind_vec',[],1);
+
+			% sum the values
+			% note: flag 'true' below indicates sparse matrix is to be created
+			S_vec_flat = S_vec(:);
+			S = accumarray(ind_vec,S_vec_flat,[nNodes * nNodes,1],[],[],true);
+			S = reshape(S,[nNodes,nNodes]);
+
+			% temporary: store matrices
+			self.tensors.A = S;
+			temp = size(self.tensors.A);
+			self.tensors.M_r = sparse(temp(1),temp(2));			
+
+		end
+		%}
+

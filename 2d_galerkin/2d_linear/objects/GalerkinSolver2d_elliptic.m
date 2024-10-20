@@ -22,12 +22,10 @@ classdef (Abstract) GalerkinSolver2d_elliptic < GalerkinSolver2d
 		function self = solve(self)
 
 			% assemble problem
-			%self = self.assembleTensors; 		%<~~~ unvectorized 
-			self = self.assembleTensors_vec;    %<~~~ vectorized
+			self = self.assembleTensors;	
 			self = self.assembleVectors;
 			self = self.assembleBCs;
 			[S,b] = self.finalAssembly;
-
 
 			% load variables
 			FreeNodes = self.domain.boundary.freeNodes;
@@ -52,6 +50,15 @@ classdef (Abstract) GalerkinSolver2d_elliptic < GalerkinSolver2d
 		function self = assembleVectors(self)
 
 			self.vectors.b_vol = self.computeVolumeForces();
+
+		end
+
+		function self = assembleBCs(self)
+
+			self = self.computePeriodicBCs;
+			self.vectors.U_D   = self.computeDirichletBCs;
+			self.vectors.b_neu = self.computeNeumannBCs;
+			[self.tensors.M_rob,self.vectors.b_rob] = self.computeRobinBCs;
 
 		end
 
