@@ -22,7 +22,7 @@ demo = 0;
 
 % specify BCs
 bTypes_outer = 'DDDD';
-bTypes_inner = 'T';
+bTypes_inner = 'D';
 
 % specify coefficients
 p = 1 + x(1) * x(2) * t;
@@ -39,7 +39,7 @@ fprintf('MMS Test Begun\n')
 
 % assemble inputs
 auxfun    = ManufacturedFunctions2d_pennes(p,k,r,uStar,uTrue);
-mmsparams = MMSParams(base,demo=demo,timeOffset=3,timeFactor=2,pmin=3,pmax=5,...
+mmsparams = MMSParams(base,demo=demo,timeOffset=3,timeFactor=2,pmin=3,pmax=6,...
 				meshInclusions='on',effectiveRegion='Omega');
 
 % build domain
