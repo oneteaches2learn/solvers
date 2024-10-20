@@ -50,7 +50,6 @@ classdef (Abstract) GalerkinSolver2d_elliptic < GalerkinSolver2d
 			self.tensors.A = self.assembleStiffnessMatrix_local(self.coefficients.r);
 			temp = size(self.tensors.A);
 			self.tensors.M_r = sparse(temp(1),temp(2));			
-			%self.tensors.M_r = [];
 
 		end
 

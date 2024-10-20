@@ -18,7 +18,7 @@ incRatio = 1; % <~~~ incRatio = |delta Q| / |Y|
 
 % mms parameters
 base = 2;
-demo = 0;
+demo = 8;
 
 % specify BCs
 bTypes_outer = 'DDDD';
@@ -45,11 +45,11 @@ mmsparams = MMSParams(base,demo=demo,timeOffset=4,timeFactor=2,pmin=4,pmax=7, ..
 % build dom_eps_epsain
 fprintf('Initialization\n')
 fprintf(' Contructing Domain:'), tic
-	%dom = Domain2d(xLim_dom,yLim_dom);
-	inc = Inclusion2d_circle(xLim_Y,yLim_Y,incRatio);
+	dom = Domain2d(xLim_dom,yLim_dom);
+	%inc = Inclusion2d_circle(xLim_Y,yLim_Y,incRatio);
 	%inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
-	dom = Domain2d_punctured(xLim_dom,yLim_dom,inc,eps);
-	dom = dom.add_yline(0.8);
+	%dom = Domain2d_punctured(xLim_dom,yLim_dom,inc,eps);
+	%dom = dom.add_yline(0.8);
 	dom = dom.setBCTypes([bTypes_outer,bTypes_inner]);
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)

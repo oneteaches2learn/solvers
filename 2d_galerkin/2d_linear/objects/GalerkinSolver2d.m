@@ -32,7 +32,125 @@ classdef GalerkinSolver2d
 
 
         % ASSEMBLY FUNCTIONS
-		function A = assembleStiffnessMatrix_local(self,c)
+		function S = assembleStiffnessMatrix_local(self,c)
+
+			% unpack variables
+			nNodes     = self.domain.mesh.nNodes;
+			elementInd = self.domain.mesh.elements(self.domain.mesh.effectiveElems, :);
+
+			% get local tensors
+			S_vec = self.computeLocalTensors_vec(c);
+
+			% Get summation locations
+			[I, J] = ndgrid(1:3, 1:3);
+			ind_vec = sub2ind([nNodes, nNodes], elementInd(:, I(:)), elementInd(:, J(:)));
+			ind_vec = reshape(ind_vec', [], 1);
+
+			% sum the values
+			% note: flag 'true' below indicates sparse matrix is to be created
+			S_vec_flat = S_vec(:);
+			S = accumarray(ind_vec,S_vec_flat,[nNodes * nNodes,1],[],[],true);
+			S = reshape(S,[nNodes,nNodes]);
+
+		end
+
+		function S_vec = computeLocalTensors_vec(self,c)
+
+			% compute local tensors
+			A_vec = self.localStiffnessMatrix_vec;
+			M_vec = self.localMassMatrix_vec(c);
+
+			% sum local matrices
+			S_vec = A_vec + M_vec;
+
+			% scale by areas
+			areas = self.domain.mesh.areas;
+			areas = permute(areas,[3,2,1]);
+			S_vec = pagemtimes(areas,S_vec);
+
+		end
+
+		function A_vec = localStiffnessMatrix_vec(self)
+
+			% store variables
+			k = self.coefficients.k;
+
+			% check coefficient variables
+			[k,t,U] = self.checkVariables(k);
+
+			% unpack variables
+			nElems    = self.domain.mesh.nElems;
+			coords    = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements;
+			centroids = self.domain.mesh.centroids;
+
+			% compute k on centroids
+			K = k(centroids(:,1),centroids(:,2),t,U);
+			if length(K) == 1
+				K = K * ones(nElems,1);
+			end
+
+			% get 2 x nElem arrays of node coordinates by element
+			node1 = coords(elements3(:,1),:)';
+			node2 = coords(elements3(:,2),:)';
+			node3 = coords(elements3(:,3),:)';
+
+			% rotate into 2 x 3 x nElem sized array
+			node1 = permute(node1,[1,3,2]);
+			node2 = permute(node2,[1,3,2]);
+			node3 = permute(node3,[1,3,2]);
+			coords_vec = cat(2, node1, node2, node3);
+
+			% pad with 1's to make 3 x 3 x nElem sized array
+			pad = ones(1,3,nElems);
+			coords_vec = cat(1, pad, coords_vec);
+
+			% compute G_vec and G_vec'
+			divisor = [zeros(1,2);eye(2)];
+			G_vec = pagemldivide(coords_vec,divisor);
+			G_vec_prime = permute(G_vec,[2,1,3]);
+
+			% Compute unscaled A_vec
+			A_vec = pagemtimes(G_vec, G_vec_prime);
+
+			% scale by K to complete centroid quadrature
+			K_vec = permute(K,[3,2,1]);
+			A_vec = pagemtimes(K_vec,A_vec);
+
+		end
+
+		function M_vec = localMassMatrix_vec(self,c);
+
+			% unpack variables
+			nNodes    = self.domain.mesh.nNodes;
+			coords    = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements;
+
+			% initialize storage
+			S = sparse(nNodes,nNodes);
+
+			% check coefficient variables
+			[c,t,U] = self.checkVariables(c);
+
+			nElems    = self.domain.mesh.nElems;
+			centroids = self.domain.mesh.centroids;
+
+			% compute c on centroids
+			C = c(centroids(:,1),centroids(:,2),t,U);
+			if length(C) == 1
+				C = C * ones(nElems,1);
+			end
+
+			% compute local mass matrices
+			M_loc = self.localMassMatrix();
+			C_vec = permute(C,[3,2,1]);
+			M_vec = pagemtimes(M_loc,C_vec);
+
+
+		end
+
+		%{
+		function S = assembleStiffnessMatrix_localOLD(self,c)
 
 			% ASSEMBLE STIFFNESS MATRIX
 			% store variables
@@ -50,26 +168,7 @@ classdef GalerkinSolver2d
 			centroids = self.domain.mesh.centroids;
 
 			% initialize storage
-			A = sparse(nNodes,nNodes);
-			B = sparse(nNodes,nNodes);
-
-			%{
-			% compute k on nodes
-			K = k(coords(:,1),coords(:,2),t);
-			if size(K,1) > 1
-				K_avg = sum(K(elements3),2) / 3;
-			else
-				K_avg = K * ones(self.domain.mesh.nElems,1);
-			end
-
-			% compute c on nodes
-			C = c(coords(:,1),coords(:,2),t,U);
-			if size(K,1) > 1
-				C_avg = sum(C(elements3),2) / 3;
-			else
-				C_avg = C * ones(self.domain.mesh.nElems,1);
-			end
-			%}
+			S = sparse(nNodes,nNodes);
 
 			% compute k on centroids
 			K = k(centroids(:,1),centroids(:,2),t,U);
@@ -83,62 +182,22 @@ classdef GalerkinSolver2d
 				C = C * ones(self.domain.mesh.nElems,1);
 			end
 
-			tic
 			% assemble stiffness matrix
 			for j = self.domain.mesh.effectiveElems;
+
 				elementInd   = elements3(j,:);
 				elementCoord = coords(elementInd,:);
 
-				%{
-				% version 1: separate assembly
-				A(elementInd,elementInd) = A(elementInd,elementInd) + ...
-					K_avg(j) * self.stima3(elementCoord);
-
-				B(elementInd,elementInd) = B(elementInd,elementInd) + ...
-					self.domain.mesh.areas(j) * [2,1,1;1,2,1;1,1,2] / 12;
-				%}
-				
-				%{
-				% version 2: combined assembly
-				A(elementInd,elementInd) = A(elementInd,elementInd) + ...
-					K_avg(j) * self.stima3(elementCoord) + ...
-					self.domain.mesh.areas(j) * [2,1,1;1,2,1;1,1,2] / 12;
-				%}
-
-				%{
-				% version 3: combined assembly with separate storage
-				A_loc = K_avg(j) * self.stima3(elementCoord);
-				B_loc = self.domain.mesh.areas(j) * [2,1,1; 1,2,1; 1,1,2] / 12;
-				A(elementInd,elementInd) = A(elementInd,elementInd) + A_loc + B_loc;
-				%}
-
-				%{
-				% version 4: like ver3, but wit coefficient
-				A_loc = K_avg(j) * self.stima3(elementCoord);
-				C_avg = sum(C(elementInd)) / 3;
-				M_loc = self.domain.mesh.areas(j) * [2,1,1; 1,2,1; 1,1,2] / 12 * C_avg;
-				A(elementInd,elementInd) = A(elementInd,elementInd) + A_loc + M_loc;
-				%}
-
-				%{
-				% version 5: exporting local matrix computation
-				A_loc = K_avg(j) * self.localStiffnessMatrix(elementCoord);
-				M_loc = C_avg(j) * self.localMassMatrix();
-				area  = self.elementArea(elementCoord);
-				A(elementInd,elementInd) = A(elementInd,elementInd) + ...
-							area * (A_loc + M_loc);
-				%}
-
-				% version 6: using centroids
+				% compute local matrices and element area
 				A_loc = K(j) * self.localStiffnessMatrix(elementCoord);
 				M_loc = C(j) * self.localMassMatrix();
 				area  = self.elementArea(elementCoord);
-				A(elementInd,elementInd) = A(elementInd,elementInd) + ...
-							area * (A_loc + M_loc);
 
+				% add local matrices to global matrix
+				S(elementInd,elementInd) = S(elementInd,elementInd) + ...
+							area * (A_loc + M_loc);
 				
 			end
-			toc
 
 		end
 
@@ -149,6 +208,7 @@ classdef GalerkinSolver2d
 			M = G * G';
 
 		end
+		%}
 
 		function M = localMassMatrix(self)
 

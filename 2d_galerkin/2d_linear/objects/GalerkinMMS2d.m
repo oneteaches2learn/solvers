@@ -112,7 +112,7 @@ classdef GalerkinMMS2d
 
 			% else, if in demo-mode, only run one trial
 			else
-				self.problems = self.solveManufacturedProblems(time);
+				self.problems = self.solveManufacturedProblems;
 			end
 
 		end
@@ -137,7 +137,6 @@ classdef GalerkinMMS2d
 			for p = pmin:pmax
 				
 				% successively refine mese
-				% note: I muted the tic and toc functions. Unmute them.
 				fprintf(' p = %i solved:',p); %tic;
 
 				dom_p = self.configureDomain(p); 
@@ -169,7 +168,11 @@ classdef GalerkinMMS2d
 			inc_onoff = self.mmsParams.meshInclusions;
 
 			dom_p = self.domain;
-			dom_p = dom_p.setMesh(p,base,meshInclusions=inc_onoff,effectiveRegion=region);
+			if isa(dom_p,'Domain2d_punctured')
+				dom_p = dom_p.setMesh(p,base,meshInclusions=inc_onoff,effectiveRegion=region);
+			else
+				dom_p = dom_p.setMesh(p,base);
+			end
 
 			% assign boundary nodes to edges
 			dom_p = dom_p.setBoundaryNodes;
