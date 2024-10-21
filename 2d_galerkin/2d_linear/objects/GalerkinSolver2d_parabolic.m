@@ -48,9 +48,7 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 				[S,b] = self.finalAssembly;
 
 				% solve and store solution
-				v = sparse(self.domain.mesh.nNodes,1);
-				v(FreeNodes) = S(FreeNodes,FreeNodes) \ b(FreeNodes);
-				self.solution(:,self.timestep) = v + self.vectors.U_D;
+				self = self.solveTimestep(S,b,FreeNodes);
 
 				% break at equilibrium
 				if self.equilibrium == 1, break; end
@@ -61,6 +59,13 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 
 		end
 
+		function self = solveTimestep(self,S,b,FreeNodes);
+
+			v = sparse(self.domain.mesh.nNodes,1);
+			v(FreeNodes) = S(FreeNodes,FreeNodes) \ b(FreeNodes);
+			self.solution(:,self.timestep) = v + self.vectors.U_D;
+
+		end
 
 		% INITIALIZATION FUNCTIONS
 		function self = initializeProblem(self)
@@ -82,7 +87,8 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 			tensors.A     = [];
 			tensors.M_p   = [];
 			tensors.M_rob = [];
-			tensors.M_dyn = [];
+			tensors.M_dyn_u  = [];
+			tensors.M_dyn_du = [];
 			tensors.M_p_prevTime = self.assembleMassMatrix(self.coefficients.c);
 			[temp,tensors.M_dyn_prevTime,temp] = self.computeDynamicBCs;
 
@@ -147,7 +153,7 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 
 				% update M_dyn
 				% note: have not yet implemented logic for time-varying dynamic BCs
-				self.tensors.M_dyn_prevTime = self.tensors.M_dyn_du;
+				%self.tensors.M_dyn_prevTime = self.tensors.M_dyn_du;
 
 			end
 		end

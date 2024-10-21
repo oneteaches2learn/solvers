@@ -1,6 +1,7 @@
 classdef (Abstract) GalerkinSolver2d_elliptic < GalerkinSolver2d
 
-	properties
+	properties (Hidden)
+		t = 0;
 	end
 
 	methods

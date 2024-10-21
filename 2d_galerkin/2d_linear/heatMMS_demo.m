@@ -21,15 +21,16 @@ base = 2;
 demo = 0;
 
 % specify BCs
-bTypes_outer = 'NDRR';
-bTypes_inner = 'T';
+bTypes_outer = 'DDDD';
+bTypes_inner = 'D';
 
 % specify coefficients
-c = 1 + x(1) * x(2) * t;
-k = 1 + x(1) * x(2) + t;
+c = 1;
+k = 1;
 
 % specify desired result
 uTrue = sin(2 * pi * x(1)) * sin(2 * pi * x(2)) * (t + 1) + (t + 1);
+uTrue = t;
 
 
 % MMS TEST %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -43,11 +44,11 @@ mmsparams = MMSParams(base,demo=demo,timeOffset=3,timeFactor=2,pmin=3,pmax=6, ..
 % build domain
 fprintf('Initialization\n')
 fprintf(' Contructing Domain:'), tic
-	%dom = Domain2d(xLim_dom,yLim_dom);
+	dom = Domain2d(xLim_dom,yLim_dom);
 	%inc = Inclusion2d_circle(xLim_Y,yLim_Y,incRatio);
-	inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
-	dom = Domain2d_punctured(xLim_dom,yLim_dom,inc,eps);
-	dom = dom.add_yline(0.5);
+	%inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
+	%dom = Domain2d_punctured(xLim_dom,yLim_dom,inc,eps);
+	%dom = dom.add_yline(0.5);
 	dom = dom.setBCTypes([bTypes_outer,bTypes_inner]);
 	dom.time = TimeStepping(T,1);
 executionTime = toc; 

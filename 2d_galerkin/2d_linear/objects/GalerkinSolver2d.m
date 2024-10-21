@@ -100,12 +100,16 @@ classdef GalerkinSolver2d
 			% unpack variables
 			centroids = self.domain.mesh.centroids(self.domain.mesh.effectiveElems, :);
 			nElems    = size(centroids,1);
+    		elements3 = self.domain.mesh.elements(self.domain.mesh.effectiveElems, :);
 
 			% check coefficient variables
 			[c,t,U] = self.checkVariables(c);
 
+			% interpolate U on centroids
+			U_centroids = mean(U(elements3), 2);
+
 			% compute c on centroids
-			C = c(centroids(:,1),centroids(:,2),t,U);
+			C = c(centroids(:,1),centroids(:,2),t,U_centroids);
 			if length(C) == 1
 				C = C * ones(nElems,1);
 			end

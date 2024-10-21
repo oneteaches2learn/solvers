@@ -72,7 +72,5 @@ classdef ManufacturedFunctions2d_poisson < ManufacturedFunctions2d_elliptic
 			end
 
 		end
-
 	end
-
 end

@@ -24,11 +24,25 @@ classdef ManufacturedFunctions2d_heat < ManufacturedFunctions2d_parabolic
 	end
 
 	methods
-		function self = ManufacturedFunctions2d_heat(c,k,uTrue)
+		function self = ManufacturedFunctions2d_heat(c,k,uTrue,NameValueArgs)
 		% ManufacturedFunctions2d_heat(c,k,uTrue) inputs are symfun objects
+			
+			arguments
+				c
+				k
+				uTrue
+				NameValueArgs.u_N = 0;
+				NameValueArgs.alpha_R = 0;
+				NameValueArgs.u_R = 0;
+			end
 			
 			% call superclass constructor
 			self@ManufacturedFunctions2d_parabolic(c,k,uTrue)
+
+			% store additional coefficients
+			self.u_N = NameValueArgs.u_N;
+			self.alpha_R = NameValueArgs.alpha_R;
+			self.u_R = NameValueArgs.u_R;
 
 			% manufacture RHS
 			self.f = self.manufactureRHS;

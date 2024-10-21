@@ -178,7 +178,7 @@ classdef GalerkinMMS2d
 			dom_p = dom_p.setBoundaryNodes;
 
 			% set time grid
-			if isa(self,'GalerkinMMS2d_parabolic')
+			if isa(self,'GalerkinMMS2d_parabolic') || isa(self,'NewtonGalerkinMMS2d_parabolic')
 				dom_p.time = dom_p.time.setMesh(tFac*(p-tOff),base);
 			end
 
@@ -356,7 +356,10 @@ classdef GalerkinMMS2d
 			fprintf('Computing Errors:\n')
 			uTrue = self.auxFunctions.uTrue;
 			for i = 1:self.mmsParams.nTrials
+
 				fprintf(' Trial: '); tic;
+
+				% compute quadrature (on each timestep, if time-varying)
 				sol = self.problems{i}.solution;
 				if strcmp(self.mmsParams.quadType,'threePoint')
 					err = self.problems{i}.domain.L2err_threePointQuadrature_nodal(sol,uTrue);
@@ -365,7 +368,10 @@ classdef GalerkinMMS2d
 				elseif strcmp(self.mmsParams.quadType,'nodal')
 					err = self.problems{i}.domain.L2err_nodalQuadrature(sol,uTrue);
 				end
+
+				% compute L_infty error across all time steps
 				errors(i) = max(err);
+
 				executionTime = toc;
 				fprintf('%f s\n',executionTime) 
 			end

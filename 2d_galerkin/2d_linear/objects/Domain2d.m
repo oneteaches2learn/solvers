@@ -223,6 +223,16 @@ classdef Domain2d
 						temp{i} = func(self.mesh.midpoints(:,1), ...
 											self.mesh.midpoints(:,2),tGrid);
 
+					
+						% if uTrue is constant in space, then must be manually duplicated
+						if size(temp{i},1) == 1
+							sol = temp{i};
+							for i = 1:size(sol,2)
+								sol2(:,i) = sol(i) * ones(self.mesh.nEdges,1);
+							end
+							temp{i} = sol2;
+						end
+
 						% if uTrue is constant in time, then N_t-many copies must be manually made
 						if size(temp{i},2) == 1
 							temp{i} = repmat(temp{i},1,self.time.N_t);
