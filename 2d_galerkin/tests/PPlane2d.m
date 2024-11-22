@@ -163,26 +163,27 @@ classdef PPlane2d
             if useSubplots
                 % Display plots separately using subplots
                 figure;
+                
                 subplot(2,1,1);
-                plot(self.tode, self.yode(:,1), 'k-', 'LineWidth', 1.5);
+                plot(self.tode, self.yode(:,1), 'ko-', 'LineWidth', 1.5, 'MarkerSize', 5);
                 xlabel('Time');
                 ylabel('x(t)');
                 title('Solution Component x(t) over Time');
                 grid on;
                 
                 subplot(2,1,2);
-                plot(self.tode, self.yode(:,2), 'r+', 'LineWidth', 1.5);
+                plot(self.tode, self.yode(:,2), 'r+-', 'LineWidth', 1.5, 'MarkerSize', 5);
                 xlabel('Time');
                 ylabel('y(t)');
                 title('Solution Component y(t) over Time');
                 grid on;
                 legend('y(t)');
             else
-                % Overlay plots on the same figure
+                % Overlay plots on the same figure with lines and markers
                 figure;
-                plot(self.tode, self.yode(:,1), 'k-', 'LineWidth', 1.5);
+                plot(self.tode, self.yode(:,1), 'ko-', 'LineWidth', 1.5, 'MarkerSize', 5);  % x(t) with circles
                 hold on;
-                plot(self.tode, self.yode(:,2), 'r+', 'LineWidth', 1.5);
+                plot(self.tode, self.yode(:,2), 'r+-', 'LineWidth', 1.5, 'MarkerSize', 5);  % y(t) with pluses
                 xlabel('Time');
                 ylabel('Solution Components');
                 title('Solution Components over Time');
@@ -199,15 +200,15 @@ classdef PPlane2d
             % Displays:
             %   - Left subplot: Phase portrait with trajectory
             %   - Right subplot: Solution components over time
-            
+                
             if isempty(self.yode)
                 self.solveODE();
             end
             
-            % Create a new figure
-            figure;
+            % Create a new figure with specified location
+            figure('Position', [100, 100, 1200, 600]);  % [left, bottom, width, height]
             
-            % Create subplots
+            % Left subplot: Phase portrait with trajectory
             subplot(1,2,1);
             % Plot slope field
             quiver(self.xx, self.yy, self.dxx, self.dyy, 'r');
@@ -224,11 +225,12 @@ classdef PPlane2d
             legend('Slope Field', 'Trajectory', 'Initial Condition');
             hold off;
             
+            % Right subplot: Solution components over time
             subplot(1,2,2);
-            % Plot solution components over time
-            plot(self.tode, self.yode(:,1), 'k-', 'LineWidth', 1.5);
+            % Plot solution components with lines and markers
+            plot(self.tode, self.yode(:,1), 'ko-', 'LineWidth', 1.5, 'MarkerSize', 5);  % x(t) with circles
             hold on;
-            plot(self.tode, self.yode(:,2), 'r+', 'LineWidth', 1.5);
+            plot(self.tode, self.yode(:,2), 'r+-', 'LineWidth', 1.5, 'MarkerSize', 5);  % y(t) with pluses
             xlabel('Time');
             ylabel('Solution Components');
             title('Solution Components over Time');
