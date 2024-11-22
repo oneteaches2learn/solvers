@@ -1,43 +1,80 @@
-function my_pplane(x0,y0,Tend)
+function my_pplane(x0, y0, Tend, dx_sym, dy_sym)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % M. Peszynska for MTH 4/581
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % plot phase portrait for x'=Ax and a trajectory with some I.C.
-    % example (MUST uncomment one of lines [tode,yode] below
-    % my_pplane(1,2,5)
+    % Modified to accept symbolic ODEs
+    % plot phase portrait for x'=f(x,y) and y'=g(x,y) and a trajectory with some I.C.
+    % example:
+    %   syms f g
+    %   f = -x;
+    %   g = -2*y;
+    %   my_pplane(1,2,5, f, g)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    [xx,yy]=meshgrid(-1:.1:1,-1:.1:1);
 
-    % calculate slope fields when A = [-2 0; 0 -1]
-    % define the functions
-    dx = @(x,y)(-x); dy = @(x,y)(-2*y);
-    % now actually calculate these on a grid
-    dxx = dx(xx,yy); dyy = dy(xx,yy);
-    % plot these slope fields
-    quiver(xx,yy,dxx,dyy);
-    % now find a trajectory
-    tdum =0;
-    pause
-    % EXPLORE two different ways to set up ode45 for t in [0,Tend]
-    %UNCOMMENT one of the two lines
-    [tode,yode]=ode45(@linear_direct,[0,Tend],[x0;y0]);
-    %[tode,yode]=ode45(@linear_with_matrix,[0,Tend],[x0;y0]);
+    % Validate input arguments
+    if nargin ~= 5
+        error('my_pplane requires five input arguments: x0, y0, Tend, dx_sym, dy_sym');
+    end
+
+    % Create a grid for the phase portrait
+    [xx, yy] = meshgrid(-5:0.5:5, -5:0.5:5);  % Increased range for better visualization
+
+    % Convert symbolic expressions to function handles
+    % Assume that dx_sym and dy_sym are symbolic expressions involving x and y
+    % Convert them to MATLAB function handles using matlabFunction
+    try
+        dx_func = matlabFunction(dx_sym, 'Vars', {'x', 'y'});
+        dy_func = matlabFunction(dy_sym, 'Vars', {'x', 'y'});
+    catch ME
+        error('Error converting symbolic expressions to function handles: %s', ME.message);
+    end
+
+    % Calculate slope fields on the grid
+    dxx = dx_func(xx, yy);
+    dyy = dy_func(xx, yy);
+
+    % Plot the slope fields using quiver
+    figure;
+    quiver(xx, yy, dxx, dyy, 'r');
     hold on;
-    plot(yode(:,1),yode(:,2));
-    pause
-    hold off;
-    % plot in time
-    plot(tode,yode(:,1),'k-',tode,yode(:,2),'r+');
-    legend('y1','y2');
-end
-    
-function dy = linear_direct(t,y)
-    dy = zeros(2,1); %% this line is not mandatory
-    dy = [-2*y(1,:);-y(2,:)];
-end
+    xlabel('x');
+    ylabel('y');
+    title('Phase Portrait and Trajectory');
+    axis equal;
+    grid on;
 
-function dy = linear_with_matrix(t,y)
-    dy = zeros(2,1); %% this line is not mandatory
-    A = [-2,0;0,-1];
-    dy = A*y;
+    % Pause to allow user to inspect the slope field
+    fprintf('Slope field plotted. Press any key to continue with trajectory...\n');
+    pause;
+
+    % Define the system of ODEs as a function handle for ode45
+    ode_system = @(t, Y) [dx_func(Y(1), Y(2)); dy_func(Y(1), Y(2))];
+
+    % Solve the ODE using ode45
+    try
+        [tode, yode] = ode45(ode_system, [0, Tend], [x0; y0]);
+    catch ME
+        error('Error solving ODEs: %s', ME.message);
+    end
+
+    % Plot the trajectory on the phase portrait
+    plot(yode(:,1), yode(:,2), 'b-', 'LineWidth', 2);
+    plot(x0, y0, 'ko', 'MarkerFaceColor', 'g');  % Initial condition
+    legend('Slope Field', 'Trajectory', 'Initial Condition');
+    pause;
+
+    % Plot the solutions over time
+    figure;
+    subplot(2,1,1);
+    plot(tode, yode(:,1), 'k-', 'LineWidth', 1.5);
+    xlabel('Time');
+    ylabel('x(t)');
+    title('Solution Components over Time');
+    grid on;
+
+    subplot(2,1,2);
+    plot(tode, yode(:,2), 'r+', 'LineWidth', 1.5);
+    xlabel('Time');
+    ylabel('y(t)');
+    grid on;
+    legend('y(t)');
 end
