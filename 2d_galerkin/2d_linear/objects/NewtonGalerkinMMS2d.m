@@ -40,7 +40,7 @@ classdef NewtonGalerkinMMS2d < GalerkinMMS2d
 			nEdges = dom.boundary.nEdges;
 
 			% set symbolic variables
-			if isa(self,'GalerkinMMS2d_parabolic')
+			if isa(self,'GalerkinMMS2d_parabolic') || isa(self,'NewtonGalerkinMMS2d_parabolic')
 				x = sym('x',[1 2]); syms t;
 				vars = [x t];
 			else
@@ -51,6 +51,9 @@ classdef NewtonGalerkinMMS2d < GalerkinMMS2d
 			% TEMPORARY: VARIABLE HANDLING, ALWAYS INCLUDES U...SHOULD IT STAY THIS WAY??
 			x = sym('x',[1 2]); syms t; syms u;
 			vars = [x u];
+
+			% TEMPORARY: VARIABLE HANDLING, INCLUDES T AND U ... WHAT NOW???
+			vars = [x t u];
 
 			% set edge normal vectors
 			dom = self.setEdgeNormalVectors_outerBoundary(dom);
@@ -76,10 +79,12 @@ classdef NewtonGalerkinMMS2d < GalerkinMMS2d
 					n_i = dom.boundary.edges(i).outwardNormal;
 					u_N = symfun(auxfun.u_N,vars);
 
-					% compute residual (NOTE: works, but not for time-varying problems)
+					% compute residual (NOTE: works, but maybe not for stationary problem)
+					uTrue = symfun(uTrue,[x t]);
 					n_i = symfun(n_i,vars);
 					q_i = symfun(sum(q.*n_i),vars);
-					s_i = q_i - u_N(x(1),x(2),uTrue(x(1),x(2)));
+					%s_i = q_i - u_N(x(1),x(2),uTrue(x(1),x(2)));
+					s_i = q_i - u_N(x(1),x(2),t,uTrue(x(1),x(2),t));
 
 					% assemble BC
 					g_i  = u_N + s_i;
@@ -95,14 +100,15 @@ classdef NewtonGalerkinMMS2d < GalerkinMMS2d
 				elseif dom.boundary.edges(i).boundaryType == 'R'
 
 					% store coefficients
+					uTrue = symfun(uTrue,[x t]);
 					alpha_i = symfun(auxfun.alpha_R,vars);
 					n_i = symfun(dom.boundary.edges(i).outwardNormal,vars);
 					u_R = symfun(auxfun.u_R,vars);
 
 					% compute residual
 					q_i = symfun(sum(q.*n_i),vars);
-					s_i = uTrue(x(1),x(2)) - u_R(x(1),x(2),uTrue(x(1),x(2))) - ...
-							q_i(x(1),x(2),uTrue(x(1),x(2))) / alpha_i(x(1),x(2),uTrue(x(1),x(2)));
+					s_i = uTrue(x(1),x(2),t) - u_R(x(1),x(2),t,uTrue(x(1),x(2),t)) - ...
+							q_i(x(1),x(2),t,uTrue(x(1),x(2),t)) / alpha_i(x(1),x(2),t,uTrue(x(1),x(2),t));
 
 					% assemble BC
 					g_i = u_R + s_i;

@@ -20,8 +20,8 @@ base = 2;
 demo = 0;
 
 % specify BCs
-bTypes_outer = 'NDRD';
-bTypes_inner = 'R';
+bTypes_outer = 'NDND';
+bTypes_inner = 'N';
 
 % specify coefficients
 k = 1 + x(1) + x(2);

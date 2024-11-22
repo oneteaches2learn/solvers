@@ -13,38 +13,24 @@ classdef NewtonGalerkinSolver2d_heat < NewtonGalerkinSolver2d_parabolic
 
 		function [DJ,J] = finalAssembly(self,U)
 
+			% store variables
             tensors = self.tensors;
             vectors = self.vectors;
 
+			% assemble Tensor
+			S = self.domain.time.dt * (tensors.A + tensors.M_rob) + tensors.M_p;
 
-			%{
-			% copied from heat solver
-			% assemble LHS
-			S = self.domain.time.dt * (tensors.A + tensors.M_rob + tensors.M_dyn_u) + ...
-							tensors.M_p + tensors.M_dyn_du;
-
-			% assemble RHS
-			b = self.domain.time.dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob + vectors.b_dyn) - ... 
-					S * vectors.U_D + (tensors.M_p_prevTime + tensors.M_dyn_prevTime) * vectors.U_prevTime;
-			%}
-			
-			S = self.domain.time.dt * tensors.A + tensors.M_p;
-
-			b = self.domain.time.dt * (vectors.b_vol) - ... 
+			% assemble Load Vector
+			b = self.domain.time.dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob) - ... 
 					S * vectors.U_D + (tensors.M_p_prevTime) * vectors.U_prevTime;
 
-			b = self.domain.time.dt * (vectors.b_vol) ... 
-					+ (tensors.M_p_prevTime) * vectors.U_prevTime;
-
-            J = (tensors.M_p + self.domain.time.dt * (tensors.A)) * self.U - b;
+			% assemble J
+            J = S * self.U - b;
                 
-			DJ = tensors.M_p + self.domain.time.dt * tensors.A;
-			
-
-
+			% assemble DJ
+			DJ = tensors.M_p + self.domain.time.dt * (tensors.A + tensors.M_dneu - tensors.M_drob);
 
 		end
-
 
 	end
 end

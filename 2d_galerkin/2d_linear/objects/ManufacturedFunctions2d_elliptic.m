@@ -4,10 +4,10 @@ classdef ManufacturedFunctions2d_elliptic < ManufacturedFunctions2d
 	end
 
 	methods
-		function self = ManufacturedFunctions2d_elliptic(k,uTrue)
+		function self = ManufacturedFunctions2d_elliptic(k,uTrue,NameValueArgs)
 			
 			% call superclass constructor
-			self@ManufacturedFunctions2d(k,uTrue)
+			self@ManufacturedFunctions2d(k,uTrue,NameValueArgs);
 
 		end
 	end

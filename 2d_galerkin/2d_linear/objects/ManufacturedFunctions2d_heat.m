@@ -37,12 +37,7 @@ classdef ManufacturedFunctions2d_heat < ManufacturedFunctions2d_parabolic
 			end
 			
 			% call superclass constructor
-			self@ManufacturedFunctions2d_parabolic(c,k,uTrue)
-
-			% store additional coefficients
-			self.u_N = NameValueArgs.u_N;
-			self.alpha_R = NameValueArgs.alpha_R;
-			self.u_R = NameValueArgs.u_R;
+			self@ManufacturedFunctions2d_parabolic(c,k,uTrue,NameValueArgs);
 
 			% manufacture RHS
 			self.f = self.manufactureRHS;

@@ -56,16 +56,22 @@ classdef ManufacturedFunctions2d
 		divq	% symfun, divq = div q = - div (k grad uTrue)
 		f		% symfun, manufactured source function
 		uTrue	% symfun, represents desired true solution
+		u_N
+		alpha_R
+		u_R
 	end
 
 	methods
 		% CONSTRUCTOR
-		function self = ManufacturedFunctions2d(k,uTrue)
+		function self = ManufacturedFunctions2d(k,uTrue,NameValueArgs)
 
 			% store inputs
 			x = sym('x',[1 2]);
 			self.uTrue = symfun(uTrue,x);
 			self.k = symfun(k,x);
+			self.u_N = NameValueArgs.u_N;
+			self.alpha_R = NameValueArgs.alpha_R;
+			self.u_R = NameValueArgs.u_R;
 
 			% manufacture data
 			self.q = self.manufactureFlux;

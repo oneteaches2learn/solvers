@@ -3,9 +3,6 @@ classdef ManufacturedFunctions2d_poisson < ManufacturedFunctions2d_elliptic
 	properties
 		r
 		dr_du
-		u_N
-		alpha_R
-		u_R
 	end
 
 	methods
@@ -21,13 +18,10 @@ classdef ManufacturedFunctions2d_poisson < ManufacturedFunctions2d_elliptic
 			end
 			
 			% call superclass constructor
-			self@ManufacturedFunctions2d_elliptic(k,uTrue)
+			self@ManufacturedFunctions2d_elliptic(k,uTrue,NameValueArgs);
 
 			% store additional coefficients
 			self.r = r;
-			self.u_N = NameValueArgs.u_N;
-			self.alpha_R = NameValueArgs.alpha_R;
-			self.u_R = NameValueArgs.u_R;
 
 			% compute derivatives of nonlinear functions
 			if Coefficients.isNonlinear(r)

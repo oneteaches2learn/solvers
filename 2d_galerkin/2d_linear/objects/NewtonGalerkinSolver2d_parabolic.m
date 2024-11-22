@@ -1,7 +1,8 @@
-classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic
+classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic & NewtonGalerkinSolver2d
 
     properties
         U
+        iterHistory
     end
 
     methods
@@ -9,6 +10,7 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic
 
             % Call superclass constructor
             self@GalerkinSolver2d_parabolic(dom, auxfun);
+            self@NewtonGalerkinSolver2d();
 
         end
 
@@ -17,7 +19,7 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic
 			dirichlet = self.domain.boundary.D_nodes;
    
             % Newton-Galerkin loop
-            for i = 1:100
+            for iter = 1:100
 
                 % Assembly
                 self = self.assembleTensors;
@@ -35,14 +37,14 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic
 
                 % check convegence
                 if norm(W) < 10^(-10)
-                    %fprintf(' %d iterations,',i)
+                    %fprintf(' %d iterations,',iter)
+                    self.iterHistory(self.timestep) = iter;
                     break
                 end
             end
 
             % store result
-            %self.solution(:,self.timestep) = self.U + self.vectors.U_D;
-            self.solution(:,self.timestep) = self.U;
+            self.solution(:,self.timestep) = self.U + self.vectors.U_D;
         end
 
         function self = initializeProblem(self)
@@ -54,6 +56,18 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic
             self.U = self.solution(:,1);
 
         end
+
+		function self = assembleTensors(self) 
+
+			% call superclass method
+			self = self.assembleTensors@GalerkinSolver2d_parabolic;
+
+			% assemble additional tensors
+			self.tensors.M_dneu = self.computeNonlinearNeumannContribution;
+			self.tensors.M_drob = self.computeNonlinearRobinContribution;
+
+		end
+
     end
 end
 
