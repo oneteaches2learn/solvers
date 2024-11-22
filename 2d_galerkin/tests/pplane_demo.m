@@ -18,13 +18,9 @@ pplane.solveODE();
 fprintf('hi\n');
 
 % Plot the slope field
-pplane.plotSlopeField();
-
-% Plot the trajectory on the phase portrait
-pplane.plotTrajectory();
-
-% Plot the solution components over time
-pplane.plotSolutionOverTime();
+%pplane.plotSlopeField();
+%pplane.plotTrajectory();
+pplane.plotSolutionOverTime(1);
 
 % Alternatively, plot everything at once
-% pplane.plotAll();
+pplane.plotAll();

@@ -13,6 +13,9 @@ classdef PPlane2d
     %   pplane.plotSlopeField();
     %   pplane.plotTrajectory();
     %   pplane.plotSolutionOverTime();
+    %
+    %   % Plot everything using subplots
+    %   pplane.plotAll();
 
     properties
         x0          % Initial condition for x
@@ -20,6 +23,9 @@ classdef PPlane2d
         Tend        % End time for ODE solver
         dx_sym      % Symbolic expression for dx/dt
         dy_sym      % Symbolic expression for dy/dt
+    end
+    
+    properties (Hidden)
         dx_func     % Function handle for dx/dt
         dy_func     % Function handle for dy/dt
         xx          % Grid points for x
@@ -139,38 +145,96 @@ classdef PPlane2d
         end
         
         % PLOT SOLUTION OVER TIME
-        function plotSolutionOverTime(self)
+        function plotSolutionOverTime(self, useSubplots)
             % PLOTSOLUTIONOVERTIME Plots the solution components over time
+            %
+            % Usage:
+            %   plotSolutionOverTime()             % Overlay plots (default)
+            %   plotSolutionOverTime(true)         % Use subplots
+            
+            if nargin < 2
+                useSubplots = false;  % Default behavior: overlay
+            end
+            
             if isempty(self.yode)
                 error('ODE not solved yet. Call solveODE() before plotting solutions.');
             end
             
-            figure;
-            subplot(2,1,1);
-            plot(self.tode, self.yode(:,1), 'k-', 'LineWidth', 1.5);
-            xlabel('Time');
-            ylabel('x(t)');
-            title('Solution Components over Time');
-            grid on;
-            
-            subplot(2,1,2);
-            plot(self.tode, self.yode(:,2), 'r+', 'LineWidth', 1.5);
-            xlabel('Time');
-            ylabel('y(t)');
-            title('Solution Components over Time');
-            grid on;
-            legend('y(t)');
+            if useSubplots
+                % Display plots separately using subplots
+                figure;
+                subplot(2,1,1);
+                plot(self.tode, self.yode(:,1), 'k-', 'LineWidth', 1.5);
+                xlabel('Time');
+                ylabel('x(t)');
+                title('Solution Component x(t) over Time');
+                grid on;
+                
+                subplot(2,1,2);
+                plot(self.tode, self.yode(:,2), 'r+', 'LineWidth', 1.5);
+                xlabel('Time');
+                ylabel('y(t)');
+                title('Solution Component y(t) over Time');
+                grid on;
+                legend('y(t)');
+            else
+                % Overlay plots on the same figure
+                figure;
+                plot(self.tode, self.yode(:,1), 'k-', 'LineWidth', 1.5);
+                hold on;
+                plot(self.tode, self.yode(:,2), 'r+', 'LineWidth', 1.5);
+                xlabel('Time');
+                ylabel('Solution Components');
+                title('Solution Components over Time');
+                legend('x(t)', 'y(t)');
+                grid on;
+                hold off;
+            end
         end
         
         % PLOT ALL
         function plotAll(self)
-            % PLOTALL Executes all plotting methods
-            self.plotSlopeField();
+            % PLOTALL Executes plotting trajectory and solution over time using subplots
+            %
+            % Displays:
+            %   - Left subplot: Phase portrait with trajectory
+            %   - Right subplot: Solution components over time
+            
             if isempty(self.yode)
                 self.solveODE();
             end
-            self.plotTrajectory();
-            self.plotSolutionOverTime();
+            
+            % Create a new figure
+            figure;
+            
+            % Create subplots
+            subplot(1,2,1);
+            % Plot slope field
+            quiver(self.xx, self.yy, self.dxx, self.dyy, 'r');
+            hold on;
+            % Plot trajectory
+            plot(self.yode(:,1), self.yode(:,2), 'b-', 'LineWidth', 2);
+            % Plot initial condition
+            plot(self.x0, self.y0, 'ko', 'MarkerFaceColor', 'g');
+            xlabel('x');
+            ylabel('y');
+            title('Phase Portrait with Trajectory');
+            axis equal;
+            grid on;
+            legend('Slope Field', 'Trajectory', 'Initial Condition');
+            hold off;
+            
+            subplot(1,2,2);
+            % Plot solution components over time
+            plot(self.tode, self.yode(:,1), 'k-', 'LineWidth', 1.5);
+            hold on;
+            plot(self.tode, self.yode(:,2), 'r+', 'LineWidth', 1.5);
+            xlabel('Time');
+            ylabel('Solution Components');
+            title('Solution Components over Time');
+            legend('x(t)', 'y(t)');
+            grid on;
+            hold off;
         end
     end
 end
