@@ -1,26 +1,58 @@
-% Define symbolic variables
-syms x y
+% pplane_demo.m
+% Demonstration of the PPlane2d class with a specific ODE system:
+% dμ/dt + r(μ - v) = f
+% dv/dt + s(v - μ) = g
+%
+% Where:
+%   r > 0 and s > 0 are positive constants
+%   f and g are constants
+%
+% The system is rewritten in standard form as:
+%   dμ/dt = -r(μ - v) + f
+%   dv/dt = -s(v - μ) + g
 
-% Define the ODEs symbolically
-f = -x + y;    % Example: dx/dt = -x + y
-g = -2*y;      % Example: dy/dt = -2y
+% Clear workspace and command window, define symbolic variables
+clear; 
+syms mu v
 
-% Initial conditions and end time
-x0 = 1;
-y0 = 2;
-Tend = 10;
+% USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Define constants
+r = 1;      % Positive constant for μ equation
+s = 1.5;    % Positive constant for v equation
+f = 1;      % Constant term in μ equation
+g = 1;      % Constant term in v equation
 
-% Create an instance of PPlane2d
-pplane = PPlane2d(x0, y0, Tend, f, g);
+% Initial conditions
+mu0 = 1;    % Initial condition for μ
+v0 = 1;     % Initial condition for v
 
+% End time for ODE solver
+Tend = 10;  % You can adjust this as needed
+
+
+% BLACK BOX %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Define the ODEs in standard form
+dmu_dt = -r*(mu - v) + f;
+dv_dt = -s*(v - mu) + g;
+
+% Create an instance of PPlane2d with the defined parameters
+pplane = PPlane2d(mu0, v0, Tend, dmu_dt, dv_dt);
+
+%{
 % Solve the ODE
 pplane.solveODE();
-fprintf('hi\n');
 
-% Plot the slope field
+
+% POST-PROCESSING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Plotting functions
 %pplane.plotSlopeField();
 %pplane.plotTrajectory();
-pplane.plotSolutionOverTime(1);
+%pplane.plotSolutionOverTime();
+%pplane.plotSolutionOverTime(true);
+%pplane.plotAll();
 
-% Alternatively, plot everything at once
-pplane.plotAll();
+% Animations
+%pplane.animateTrajectory();
+%pplane.animateSolutionOverTime();
+pplane.animateAll();
+%}
