@@ -1,4 +1,4 @@
-% pplane_demo.m
+% pplane_demo1.m
 % Demonstration of the PPlane2d class with a specific ODE system:
 % dμ/dt + r(μ - v) = f
 % dv/dt + s(v - μ) = g
@@ -13,18 +13,18 @@
 
 % Clear workspace and command window, define symbolic variables
 clear; 
-syms mu v
+syms u v
 
 % USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Define constants
 r = 1;      % Positive constant for μ equation
-s = 1.5;    % Positive constant for v equation
+s = 10;    % Positive constant for v equation
 f = 1;      % Constant term in μ equation
 g = 1;      % Constant term in v equation
 
 % Initial conditions
-mu0 = 1;    % Initial condition for μ
-v0 = 1;     % Initial condition for v
+u0 = 0;    % Initial condition for μ
+v0 = 2;    % Initial condition for v
 
 % End time for ODE solver
 Tend = 10;  % You can adjust this as needed
@@ -32,15 +32,12 @@ Tend = 10;  % You can adjust this as needed
 
 % BLACK BOX %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Define the ODEs in standard form
-dmu_dt = -r*(mu - v) + f;
-dv_dt = -s*(v - mu) + g;
+du_dt = -r*(u - v) + f;
+du_dt = 0 * v + f;
+dv_dt = -s*(v - u) + g;
 
 % Create an instance of PPlane2d with the defined parameters
-pplane = PPlane2d(mu0, v0, Tend, dmu_dt, dv_dt);
-
-%{
-% Solve the ODE
-pplane.solveODE();
+pplane = PPlane2d(u0, v0, Tend, du_dt, dv_dt);
 
 
 % POST-PROCESSING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,10 +46,9 @@ pplane.solveODE();
 %pplane.plotTrajectory();
 %pplane.plotSolutionOverTime();
 %pplane.plotSolutionOverTime(true);
-%pplane.plotAll();
+pplane.plotAll();
 
 % Animations
 %pplane.animateTrajectory();
 %pplane.animateSolutionOverTime();
-pplane.animateAll();
-%}
+%pplane.animateAll();

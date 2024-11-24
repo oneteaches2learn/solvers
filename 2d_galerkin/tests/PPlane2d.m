@@ -1,119 +1,116 @@
 classdef PPlane2d
-    % PPPLANE2D
-    % 
+    % PPLANE2D
+    %
     % A class to plot phase portraits and trajectories for a system of
-    % two-dimensional ordinary differential equations (ODEs).
+    % two-dimensional ordinary differential equations (ODEs) using variables u and v.
     %
-    % Example:
-    %   syms x y
-    %   f = -x + y;
-    %   g = -2*y;
-    %   pplane = PPlane2d(1, 2, 10, f, g);
-    %   pplane = pplane.solveODE();
-    %   pplane.plotSlopeField();
-    %   pplane.plotTrajectory();
-    %   pplane.plotSolutionOverTime();
+    % The class accepts either symbolic expressions or function handles for du_dt and dv_dt.
     %
-    %   % Plot everything using subplots
+    % Examples:
+    %   % Using symbolic expressions
+    %   syms u v
+    %   du_dt = -u + v;
+    %   dv_dt = -2*v;
+    %   pplane = PPlane2d(1, 2, 10, du_dt, dv_dt);
     %   pplane.plotAll();
     %
-    %   % Animate the trajectory
-    %   pplane.animateTrajectory();
-    %
-    %   % Animate the solution over time
-    %   pplane.animateSolutionOverTime();
-    %
-    %   % Animate all plots together
-    %   pplane.animateAll();
+    %   % Using function handles
+    %   du_dt = @(u, v) -u + v;
+    %   dv_dt = @(u, v) -2*v;
+    %   pplane = PPlane2d(1, 2, 10, du_dt, dv_dt);
+    %   pplane.plotAll();
 
     properties
-        x0          % Initial condition for x
-        y0          % Initial condition for y
+        u0          % Initial condition for u
+        v0          % Initial condition for v
         Tend        % End time for ODE solver
-        dx_sym      % Symbolic expression for dx/dt
-        dy_sym      % Symbolic expression for dy/dt
+        du_func     % Function handle for du/dt
+        dv_func     % Function handle for dv/dt
+        du_sym      % Symbolic expression for du/dt (if provided)
+        dv_sym      % Symbolic expression for dv/dt (if provided)
     end
-    
+
     properties (Hidden)
-        dx_func     % Function handle for dx/dt
-        dy_func     % Function handle for dy/dt
-        xx          % Grid points for x
-        yy          % Grid points for y
-        dxx         % Slope field values for dx/dt
-        dyy         % Slope field values for dy/dt
+        uu          % Grid points for u
+        vv          % Grid points for v
+        duu         % Slope field values for du/dt
+        dvv         % Slope field values for dv/dt
         tode        % Time vector from ODE solver
         yode        % Solution matrix from ODE solver
     end
-    
+
     methods
         % CONSTRUCTOR
-        function self = PPlane2d(x0, y0, Tend, dx_sym, dy_sym)
-            % PPPLANE2D Constructor method
+        function self = PPlane2d(u0, v0, Tend, du_dt, dv_dt)
+            % PPLANE2D Constructor method
             %
             % Inputs:
-            %   x0     - Initial condition for x
-            %   y0     - Initial condition for y
+            %   u0     - Initial condition for u
+            %   v0     - Initial condition for v
             %   Tend   - End time for ODE solver
-            %   dx_sym - Symbolic expression for dx/dt
-            %   dy_sym - Symbolic expression for dy/dt
-            
+            %   du_dt  - Symbolic expression or function handle for du/dt
+            %   dv_dt  - Symbolic expression or function handle for dv/dt
+
             if nargin ~= 5
-                error('PPlane2d requires five input arguments: x0, y0, Tend, dx_sym, dy_sym');
+                error('PPlane2d requires five input arguments: u0, v0, Tend, du_dt, dv_dt');
             end
-            
-            self.x0 = x0;
-            self.y0 = y0;
+
+            self.u0 = u0;
+            self.v0 = v0;
             self.Tend = Tend;
-            self.dx_sym = dx_sym;
-            self.dy_sym = dy_sym;
-            
-            % Convert symbolic expressions to function handles
-            try
-                self.dx_func = matlabFunction(self.dx_sym, 'Vars', {'x', 'y'});
-                self.dy_func = matlabFunction(self.dy_sym, 'Vars', {'x', 'y'});
-            catch ME
-                error('Error converting symbolic expressions to function handles: %s', ME.message);
+
+            if isa(du_dt, 'function_handle') && isa(dv_dt, 'function_handle')
+                % Inputs are function handles
+                self.du_func = du_dt;
+                self.dv_func = dv_dt;
+            elseif isa(du_dt, 'sym') && isa(dv_dt, 'sym')
+                % Inputs are symbolic expressions
+                self.du_sym = du_dt;
+                self.dv_sym = dv_dt;
+                % Convert symbolic expressions to function handles
+                try
+                    self.du_func = matlabFunction(self.du_sym, 'Vars', {'u', 'v'});
+                    self.dv_func = matlabFunction(self.dv_sym, 'Vars', {'u', 'v'});
+                catch ME
+                    error('Error converting symbolic expressions to function handles: %s', ME.message);
+                end
+            else
+                error('du_dt and dv_dt must be both function handles or both symbolic expressions');
             end
-            
+
             % Initialize grid and solve ODE
             self = self.initializeGrid();
             self = self.solveODE();
         end
-        
+
         % INITIALIZE GRID
         function self = initializeGrid(self)
             % INITIALIZEGRID Initializes the grid for the phase portrait
-            %
-            % Outputs:
-            %   self - Updated object with grid and slope fields
-            
+
             % Define grid range and density
-            self.xx = -5:0.5:5;
-            self.yy = -5:0.5:5;
-            [self.xx, self.yy] = meshgrid(self.xx, self.yy);
-            
+            self.uu = -5:0.5:5;
+            self.vv = -5:0.5:5;
+            [self.uu, self.vv] = meshgrid(self.uu, self.vv);
+
             % Calculate slope fields on the grid
             try
-                self.dxx = self.dx_func(self.xx, self.yy);
-                self.dyy = self.dy_func(self.xx, self.yy);
+                self.duu = self.du_func(self.uu, self.vv);
+                self.dvv = self.dv_func(self.uu, self.vv);
             catch ME
                 error('Error evaluating slope fields on the grid: %s', ME.message);
             end
         end
-        
+
         % SOLVE ODE
         function self = solveODE(self)
             % SOLVEODE Solves the system of ODEs and stores the solution
-            %
-            % Outputs:
-            %   self - Updated object with ODE solution
-            
+
             % Define the ODE system as a function handle
-            ode_system = @(t, Y) [self.dx_func(Y(1), Y(2)); self.dy_func(Y(1), Y(2))];
-            
+            ode_system = @(t, Y) [self.du_func(Y(1), Y(2)); self.dv_func(Y(1), Y(2))];
+
             % Initial conditions
-            Y0 = [self.x0; self.y0];
-            
+            Y0 = [self.u0; self.v0];
+
             % Solve the ODE using ode45
             try
                 [self.tode, self.yode] = ode45(ode_system, [0, self.Tend], Y0);
@@ -121,15 +118,15 @@ classdef PPlane2d
                 error('Error solving ODEs: %s', ME.message);
             end
         end
-        
+
         % PLOT SLOPE FIELD
         function plotSlopeField(self)
             % PLOTSLOPEFIELD Plots the slope field using quiver
             figure;
-            quiver(self.xx, self.yy, self.dxx, self.dyy, 'r');
+            quiver(self.uu, self.vv, self.duu, self.dvv, 'r');
             hold on;
-            xlabel('x');
-            ylabel('y');
+            xlabel('u');
+            ylabel('v');
             title('Phase Portrait');
             axis equal;
             grid on;
@@ -143,7 +140,7 @@ classdef PPlane2d
             end
             
             plot(self.yode(:,1), self.yode(:,2), 'b-', 'LineWidth', 2);
-            plot(self.x0, self.y0, 'ko', 'MarkerFaceColor', 'g');  % Initial condition
+            plot(self.u0, self.v0, 'ko', 'MarkerFaceColor', 'g');  % Initial condition
             legend('Slope Field', 'Trajectory', 'Initial Condition');
             hold off;
         end
@@ -171,27 +168,27 @@ classdef PPlane2d
                 subplot(2,1,1);
                 plot(self.tode, self.yode(:,1), 'ko-', 'LineWidth', 1.5, 'MarkerSize', 5);
                 xlabel('Time');
-                ylabel('x(t)');
-                title('Solution Component x(t) over Time');
+                ylabel('u(t)');
+                title('Solution Component u(t) over Time');
                 grid on;
                 
                 subplot(2,1,2);
                 plot(self.tode, self.yode(:,2), 'r+-', 'LineWidth', 1.5, 'MarkerSize', 5);
                 xlabel('Time');
-                ylabel('y(t)');
-                title('Solution Component y(t) over Time');
+                ylabel('v(t)');
+                title('Solution Component v(t) over Time');
                 grid on;
-                legend('y(t)');
+                legend('v(t)');
             else
                 % Overlay plots on the same figure with lines and markers
                 figure;
-                plot(self.tode, self.yode(:,1), 'ko-', 'LineWidth', 1.5, 'MarkerSize', 5);  % x(t) with circles
+                plot(self.tode, self.yode(:,1), 'ko-', 'LineWidth', 1.5, 'MarkerSize', 5);  % u(t) with circles
                 hold on;
-                plot(self.tode, self.yode(:,2), 'r+-', 'LineWidth', 1.5, 'MarkerSize', 5);  % y(t) with pluses
+                plot(self.tode, self.yode(:,2), 'r+-', 'LineWidth', 1.5, 'MarkerSize', 5);  % v(t) with pluses
                 xlabel('Time');
                 ylabel('Solution Components');
                 title('Solution Components over Time');
-                legend('x(t)', 'y(t)');
+                legend('u(t)', 'v(t)');
                 grid on;
                 hold off;
             end
@@ -215,10 +212,10 @@ classdef PPlane2d
             
             % Create figure for animation
             figure;
-            quiver(self.xx, self.yy, self.dxx, self.dyy, 'r');
+            quiver(self.uu, self.vv, self.duu, self.dvv, 'r');
             hold on;
-            xlabel('x');
-            ylabel('y');
+            xlabel('u');
+            ylabel('v');
             title('Animated Phase Portrait with Evolving Trajectory');
             axis equal;
             grid on;
@@ -226,7 +223,7 @@ classdef PPlane2d
             % Initialize trajectory plot
             trajPlot = plot(NaN, NaN, 'b-', 'LineWidth', 2);
             % Plot initial condition
-            initPlot = plot(self.x0, self.y0, 'ko', 'MarkerFaceColor', 'g');
+            initPlot = plot(self.u0, self.v0, 'ko', 'MarkerFaceColor', 'g');
             legend('Slope Field', 'Trajectory', 'Initial Condition');
             
             % Animate trajectory
@@ -240,7 +237,7 @@ classdef PPlane2d
         
         % ANIMATE SOLUTION OVER TIME
         function animateSolutionOverTime(self)
-            % ANIMATESOLUTIONOVERTIME Animates how the solutions x(t) and y(t) change over time
+            % ANIMATESOLUTIONOVERTIME Animates how the solutions u(t) and v(t) change over time
             %
             % Usage:
             %   animateSolutionOverTime()
@@ -254,41 +251,41 @@ classdef PPlane2d
             numSteps = length(self.tode);
             pauseTime = totalTime / numSteps;
             
-            % Determine fixed axes limits based on the first time step
-            xLimits = [min(self.yode(:,1)), max(self.yode(:,1))];
-            yLimits = [min(self.yode(:,2)), max(self.yode(:,2))];
+            % Determine fixed axes limits based on all data
+            uLimits = [min(self.yode(:,1)), max(self.yode(:,1))];
+            vLimits = [min(self.yode(:,2)), max(self.yode(:,2))];
             
             % Create figure for animation
             figure;
             subplot(2,1,1);
             xlabel('Time');
-            ylabel('x(t)');
-            title('Animated Evolution of x(t)');
+            ylabel('u(t)');
+            title('Animated Evolution of u(t)');
             grid on;
             hold on;
             xlim([self.tode(1), self.tode(end)]);
-            ylim(xLimits);
-            plotX = plot(NaN, NaN, 'ko-', 'LineWidth', 1.5, 'MarkerSize', 5);
+            ylim(uLimits);
+            plotU = plot(NaN, NaN, 'ko-', 'LineWidth', 1.5, 'MarkerSize', 5);
             
             subplot(2,1,2);
             xlabel('Time');
-            ylabel('y(t)');
-            title('Animated Evolution of y(t)');
+            ylabel('v(t)');
+            title('Animated Evolution of v(t)');
             grid on;
             hold on;
             xlim([self.tode(1), self.tode(end)]);
-            ylim(yLimits);
-            plotY = plot(NaN, NaN, 'r+-', 'LineWidth', 1.5, 'MarkerSize', 5);
+            ylim(vLimits);
+            plotV = plot(NaN, NaN, 'r+-', 'LineWidth', 1.5, 'MarkerSize', 5);
             
-            % Animate x(t)
+            % Animate u(t) and v(t)
             for k = 1:numSteps
                 subplot(2,1,1);
-                set(plotX, 'XData', self.tode(1:k), 'YData', self.yode(1:k,1));
+                set(plotU, 'XData', self.tode(1:k), 'YData', self.yode(1:k,1));
                 drawnow;
                 pause(pauseTime);
                 
                 subplot(2,1,2);
-                set(plotY, 'XData', self.tode(1:k), 'YData', self.yode(1:k,2));
+                set(plotV, 'XData', self.tode(1:k), 'YData', self.yode(1:k,2));
                 drawnow;
                 pause(pauseTime);
             end
@@ -316,10 +313,10 @@ classdef PPlane2d
             
             % Left subplot: Phase portrait with animation
             subplot(1,2,1);
-            quiver(self.xx, self.yy, self.dxx, self.dyy, 'r');
+            quiver(self.uu, self.vv, self.duu, self.dvv, 'r');
             hold on;
-            xlabel('x');
-            ylabel('y');
+            xlabel('u');
+            ylabel('v');
             title('Phase Portrait with Trajectory');
             axis equal;
             grid on;
@@ -327,7 +324,8 @@ classdef PPlane2d
             % Initialize trajectory plot
             trajPlot = plot(NaN, NaN, 'b-', 'LineWidth', 2);
             % Plot initial condition
-            initPlot = plot(self.x0, self.y0, 'ko', 'MarkerFaceColor', 'g');
+            initPlot = plot(self.u0, self.v0, 'ko', 'MarkerFaceColor', 'g');
+
             legend('Slope Field', 'Trajectory', 'Initial Condition');
             
             % Right subplot: Solution components over time with animation
@@ -338,16 +336,16 @@ classdef PPlane2d
             grid on;
             hold on;
             
-            % Determine fixed axes limits based on the first time step
-            xLimits = [min(self.yode(:,1)), max(self.yode(:,1))];
-            yLimits = [min(self.yode(:,2)), max(self.yode(:,2))];
+            % Determine fixed axes limits based on all data
+            uLimits = [min(self.yode(:,1)), max(self.yode(:,1))];
+            vLimits = [min(self.yode(:,2)), max(self.yode(:,2))];
             
             xlim([self.tode(1), self.tode(end)]);
-            ylim([min([xLimits, yLimits]), max([xLimits, yLimits])]);  % Unified limits
+            ylim([min([uLimits, vLimits]), max([uLimits, vLimits])]);  % Unified limits
             
-            plotX = plot(NaN, NaN, 'ko-', 'LineWidth', 1.5, 'MarkerSize', 5);
-            plotY = plot(NaN, NaN, 'r+-', 'LineWidth', 1.5, 'MarkerSize', 5);
-            legend('x(t)', 'y(t)');
+            plotU = plot(NaN, NaN, 'ko-', 'LineWidth', 1.5, 'MarkerSize', 5);
+            plotV = plot(NaN, NaN, 'r+-', 'LineWidth', 1.5, 'MarkerSize', 5);
+            legend('u(t)', 'v(t)');
             
             % Animate both subplots
             for k = 1:numSteps
@@ -358,8 +356,8 @@ classdef PPlane2d
                 
                 % Update solution components over time
                 subplot(1,2,2);
-                set(plotX, 'XData', self.tode(1:k), 'YData', self.yode(1:k,1));
-                set(plotY, 'XData', self.tode(1:k), 'YData', self.yode(1:k,2));
+                set(plotU, 'XData', self.tode(1:k), 'YData', self.yode(1:k,1));
+                set(plotV, 'XData', self.tode(1:k), 'YData', self.yode(1:k,2));
                 drawnow;
                 
                 pause(pauseTime);
@@ -385,14 +383,14 @@ classdef PPlane2d
             % Left subplot: Phase portrait with trajectory
             subplot(1,2,1);
             % Plot slope field
-            quiver(self.xx, self.yy, self.dxx, self.dyy, 'r');
+            quiver(self.uu, self.vv, self.duu, self.dvv, 'r');
             hold on;
             % Plot trajectory
             plot(self.yode(:,1), self.yode(:,2), 'b-', 'LineWidth', 2);
             % Plot initial condition
-            plot(self.x0, self.y0, 'ko', 'MarkerFaceColor', 'g');
-            xlabel('x');
-            ylabel('y');
+            plot(self.u0, self.v0, 'ko', 'MarkerFaceColor', 'g');
+            xlabel('u');
+            ylabel('v');
             title('Phase Portrait with Trajectory');
             axis equal;
             grid on;
@@ -402,13 +400,13 @@ classdef PPlane2d
             % Right subplot: Solution components over time
             subplot(1,2,2);
             % Plot solution components with lines and markers
-            plot(self.tode, self.yode(:,1), 'ko-', 'LineWidth', 1.5, 'MarkerSize', 5);  % x(t) with circles
+            plot(self.tode, self.yode(:,1), 'ko-', 'LineWidth', 1.5, 'MarkerSize', 5);  % u(t) with circles
             hold on;
-            plot(self.tode, self.yode(:,2), 'r+-', 'LineWidth', 1.5, 'MarkerSize', 5);  % y(t) with pluses
+            plot(self.tode, self.yode(:,2), 'r+-', 'LineWidth', 1.5, 'MarkerSize', 5);  % v(t) with pluses
             xlabel('Time');
             ylabel('Solution Components');
             title('Solution Components over Time');
-            legend('x(t)', 'y(t)');
+            legend('u(t)', 'v(t)');
             grid on;
             hold off;
         end
