@@ -16,9 +16,10 @@ u_true_sym(x) = sin(pi * x);  % User can modify this as desired
 
 % Physical Parameters
 k = 1;  % Diffusion coefficient (k > 0)
+r = 1; % Reaction coefficient (r > 0)
 
-% (2) Compute the Source Term f(x) = -k * d²u_true/dx² using Symbolic Differentiation
-f_sym = -k * diff(u_true_sym, x, 2);
+% (2) Compute the Source Term f(x) = -k * d²u_true/dx² + r * u_true using Symbolic Differentiation
+f_sym = -k * diff(u_true_sym, x, 2) + r * u_true_sym;
 
 % (3) Convert u_true and f_sym to MATLAB Function Handles
 uTrue_func = matlabFunction(u_true_sym, 'Vars', x);
@@ -26,6 +27,7 @@ f_func = matlabFunction(f_sym, 'Vars', x);
 
 % Store in Structures as per Existing Code
 cofs.k = k;                 % Diffusion coefficient
+cofs.r = r;                 % Reaction coefficient
 cofs.f = @(x) f_func(x);    % Source term f(x)
 
 % Display the Source Function for Verification

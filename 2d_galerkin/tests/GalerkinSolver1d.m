@@ -29,6 +29,7 @@ classdef GalerkinSolver1d
             %   - coefficients: Structure with fields:
             %       k: Diffusion coefficient
             %       f: Function handle for source term f(x)
+            %       r: Reaction coefficient
             
             if nargin == 2
                 self.domain = domain;
@@ -39,6 +40,7 @@ classdef GalerkinSolver1d
             
             % Assemble Stiffness Matrix and Load Vector
             self = self.assembleStiffnessMatrix();
+            self = self.assembleMassMatrix(self.coefficients.r);
             self = self.assembleLoadVector();
             
             % Apply Boundary Conditions
@@ -46,8 +48,6 @@ classdef GalerkinSolver1d
             
             % Solve the Linear System
             self = self.solveSystem();
-            
-            % Removed postProcess call
         end
         
         %% ASSEMBLE STIFFNESS MATRIX
@@ -89,6 +89,46 @@ classdef GalerkinSolver1d
             
             % Store the assembled stiffness matrix
             self.tensors.K = K;
+        end
+        
+        %% ASSEMBLE MASS MATRIX
+        function self = assembleMassMatrix(self, c)
+            % Assembles the global mass matrix R scaled by coefficient c
+            
+            M = self.domain.M;
+            N = self.domain.N;
+            h = self.domain.h;
+            
+            % Initialize global mass matrix
+            R = sparse(N, N);
+            
+            % Local mass matrix for each element
+            R_local = c * (h / 6) * [2, 1; 1, 2];
+            
+            % Assemble global mass matrix
+            for e = 1:M
+                % Nodes associated with the current element
+                n1 = e;
+                n2 = e + 1;
+                
+                % Map local nodes to global unknowns
+                global_nodes = [n1, n2];
+                global_unknowns = global_nodes - 1;  % Interior nodes
+                
+                % Assemble the mass matrix
+                for i = 1:2
+                    for j = 1:2
+                        if (global_unknowns(i) >= 1) && (global_unknowns(i) <= N) && ...
+                           (global_unknowns(j) >= 1) && (global_unknowns(j) <= N)
+                            R(global_unknowns(i), global_unknowns(j)) = ...
+                                R(global_unknowns(i), global_unknowns(j)) + R_local(i, j);
+                        end
+                    end
+                end
+            end
+            
+            % Store the assembled mass matrix
+            self.tensors.R = R;
         end
         
         %% ASSEMBLE LOAD VECTOR
@@ -137,13 +177,17 @@ classdef GalerkinSolver1d
         
         %% SOLVE THE LINEAR SYSTEM
         function self = solveSystem(self)
-            % Solves the linear system K * u_interior = F
+            % Solves the linear system (K + R) * u_interior = F
             
             K = self.tensors.K;
+            R = self.tensors.R;
             F = self.vectors.F;
             
+            % Combine stiffness and mass matrices
+            K_total = K + R;
+            
             % Solve for interior node values
-            u_interior = K \ F;
+            u_interior = K_total \ F;
             
             % Construct the full solution including boundary nodes
             self.solution = [0; u_interior; 0];
