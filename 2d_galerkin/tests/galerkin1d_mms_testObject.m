@@ -100,14 +100,17 @@ end
 
 %% 5. Display Convergence Rates
 
+%{
 fprintf('\nConvergence Rates:\n');
 for i = 1:num_tests-1
     fprintf('From M = %d to M = %d: Rate ≈ %.2f\n', ...
         MMS.Ms(i), MMS.Ms(i+1), MMS.convergence_rate(i));
 end
+%}
 
 %% 6. Plotting the Errors vs. Mesh Size
 
+%{
 figure;
 loglog(MMS.h, MMS.errors, 'bo-', 'LineWidth', 1.5, 'MarkerFaceColor', 'b');
 xlabel('Mesh Size h');
@@ -121,22 +124,22 @@ hold on;
 loglog(MMS.h, exp(p(2)) * MMS.h.^p(1), 'r--', 'LineWidth', 2);
 legend('Numerical Errors', sprintf('Fit: Slope = %.2f', p(1)));
 hold off;
+%}
 
 %% 7. Summary of Results
 
-% Create a Table for Easy Viewing
-Convergence_Table = table(MMS.Ms', MMS.h', MMS.errors, ...
-    'VariableNames', {'Number_of_Elements_M', 'Mesh_Size_h', 'L2_Error'});
+% Create a Combined Table for Easy Viewing
+Convergence_Rate = [NaN; MMS.convergence_rate];
 
-% Create a Table for Convergence Rates
-Rates_Table = table((1:num_tests-1)', MMS.convergence_rate, ...
-    'VariableNames', {'Test_Pair', 'Convergence_Rate'});
+% Construct the Combined Convergence Table
+Convergence_Table = table(MMS.Ms', MMS.h, MMS.errors, Convergence_Rate, ...
+    'VariableNames', {'M', 'h', 'L2_Error', 'Convergence_Rate'});
 
+% Display the Combined Convergence Table
+disp(' ');
 disp('--- MMS Test Results ---');
 disp(Convergence_Table);
 
-disp('--- Convergence Rates ---');
-disp(Rates_Table);
 
 %% 8. (Optional) Plot Numerical vs. True Solutions for Each Test
 

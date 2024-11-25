@@ -1,7 +1,5 @@
 % GalerkinSolver1d.m
 % A MATLAB class for performing 1D Galerkin Finite Element Analysis
-% Author: [Your Name]
-% Date: [Date]
 
 classdef GalerkinSolver1d
     
@@ -134,12 +132,7 @@ classdef GalerkinSolver1d
         %% APPLY BOUNDARY CONDITIONS
         function self = applyBoundaryConditions(self)
             % Applies homogeneous Dirichlet boundary conditions
-            %
-            % For homogeneous Dirichlet BCs, and since boundary nodes are excluded
-            % from the unknowns, no modifications to K and F are necessary.
-            % If non-homogeneous BCs are required, modify F accordingly.
-            
-            % Placeholder for future extensions (e.g., non-homogeneous BCs)
+            % Placeholder for future extensions
         end
         
         %% SOLVE THE LINEAR SYSTEM
@@ -156,23 +149,78 @@ classdef GalerkinSolver1d
             self.solution = [0; u_interior; 0];
         end
         
+        %% EVALUATE FUNCTION ON GRID
+        function uTrue_vector = evaluateFunction(self, uTrue)
+            % Evaluates the input function on the grid in the domain.
+            % Input can be a vector, function_handle, or symbolic function.
+            %
+            % Inputs:
+            %   - uTrue: vector, function_handle, or symbolic function
+            %
+            % Outputs:
+            %   - uTrue_vector: vector evaluated on the grid
+            
+            if isvector(uTrue) && isnumeric(uTrue)
+                if length(uTrue) == length(self.domain.x)
+                    uTrue_vector = uTrue(:); % Ensure column vector
+                else
+                    error('The length of the input vector does not match the number of nodes in the domain.');
+                end
+
+            elseif isa(uTrue, 'function_handle')
+                uTrue_vector = uTrue(self.domain.x);
+                if ~isvector(uTrue_vector) || length(uTrue_vector) ~= length(self.domain.x)
+                    error('The function_handle provided does not return a vector matching the number of nodes in the domain.');
+                end
+                uTrue_vector = uTrue_vector(:); % Ensure column vector
+
+            elseif isa(uTrue, 'sym') || isa(uTrue,'symfun')
+                % Convert symbolic function to matlab function
+                try
+                    syms x
+                    uTrue_func = matlabFunction(uTrue, 'Vars', x);
+                    uTrue_vector = uTrue_func(self.domain.x);
+                    if ~isvector(uTrue_vector) || length(uTrue_vector) ~= length(self.domain.x)
+                        error('The symbolic function provided does not evaluate to a vector matching the number of nodes in the domain.');
+                    end
+                    uTrue_vector = uTrue_vector(:); % Ensure column vector
+                catch
+                    error('Failed to convert symbolic function to a MATLAB function handle.');
+                end
+
+            else
+                error('uTrue must be a vector, function_handle, or symbolic function.');
+            end
+        end
+        
         %% PLOT NUMERICAL AND ANALYTICAL SOLUTION
         function plot(self, uTrue)
             % Plots the numerical FEM solution.
             % If uTrue is provided, plots both numerical and true solutions.
-            %
-            % Inputs:
-            %   - uTrue (optional): Vector containing the true solution.
             
             x = self.domain.x;
             u_numeric = self.solution;
             
             figure;
-            plot(x, u_numeric, 'bo-', 'LineWidth', 1.5, 'MarkerFaceColor', 'b');
             hold on;
             
+            % Determine Marker Indices
+            num_nodes = length(x);
+            if num_nodes > 40
+                num_markers = 21;
+                indices = round(linspace(1, num_nodes, num_markers));
+            else
+                indices = 1:num_nodes;
+            end
+            
+            % Plot Numerical Solution with Markers
+            plot(x, u_numeric, 'b-', 'LineWidth', 1.5, 'Marker', 'o', ...
+                 'MarkerIndices', indices, 'MarkerFaceColor', 'b');
+            
             if nargin > 1 && ~isempty(uTrue)
-                plot(x, uTrue, 'r--', 'LineWidth', 2);
+                uTrue_vector = self.evaluateFunction(uTrue);
+                plot(x, uTrue_vector, 'r--', 'LineWidth', 1.5, 'Marker', 'o', ...
+                     'MarkerIndices', indices, 'MarkerFaceColor', 'r');
                 legend('Numerical FEM Solution', 'True Solution');
             else
                 legend('Numerical FEM Solution');
@@ -188,48 +236,50 @@ classdef GalerkinSolver1d
         %% PLOT ABSOLUTE ERROR
         function plotError(self, uTrue)
             % Plots the absolute error between numerical and true solutions.
-            %
-            % Inputs:
-            %   - uTrue: Vector containing the true solution.
-            %
-            % Usage:
-            %   fem_solver.plotError(uTrue);
             
             if nargin < 2 || isempty(uTrue)
                 error('plotError requires uTrue as an input.');
             end
             
+            uTrue_vector = self.evaluateFunction(uTrue);
             x = self.domain.x;
             u_numeric = self.solution;
-            error = abs(u_numeric - uTrue);
+            error = abs(u_numeric - uTrue_vector);
             
             figure;
-            plot(x, error, 'k-o', 'LineWidth', 1.5, 'MarkerFaceColor', 'k');
+            hold on;
+            
+            % Determine Marker Indices
+            num_nodes = length(x);
+            if num_nodes > 40
+                num_markers = 21;
+                indices = round(linspace(1, num_nodes, num_markers));
+            else
+                indices = 1:num_nodes;
+            end
+            
+            % Plot Absolute Error with Markers
+            plot(x, error, 'k-', 'LineWidth', 1.5, 'Marker', 'o', ...
+                 'MarkerIndices', indices, 'MarkerFaceColor', 'k');
+            
             xlabel('Spatial Coordinate x');
             ylabel('|u_{numerical} - u_{True}|');
             title('Absolute Error Between Numerical and True Solutions');
             grid on;
+            hold off;
         end
         
         %% COMPUTE L2 ERROR
         function L2_error = L2error(self, uTrue)
             % Computes the L2 norm of the error between numerical and true solutions.
-            %
-            % Inputs:
-            %   - uTrue: Vector containing the true solution.
-            %
-            % Outputs:
-            %   - L2_error: Scalar value representing the L2 norm of the error.
-            %
-            % Usage:
-            %   L2_error = fem_solver.L2error(uTrue);
             
             if nargin < 2 || isempty(uTrue)
                 error('L2error requires uTrue as an input.');
             end
             
+            uTrue_vector = self.evaluateFunction(uTrue);
             u_numeric = self.solution;
-            error_vector = u_numeric - uTrue;
+            error_vector = u_numeric - uTrue_vector;
             h = self.domain.h;
             L2_error = sqrt(sum(error_vector.^2) * h);
         end
