@@ -1,5 +1,10 @@
-classdef GalerkinSolver1d
+% GalerkinSolver1d.m
+% A MATLAB class for performing 1D Galerkin Finite Element Analysis
+% Author: [Your Name]
+% Date: [Date]
 
+classdef GalerkinSolver1d
+    
     properties
         domain          % Structure containing domain parameters
         coefficients    % Structure containing physical coefficients
@@ -44,8 +49,7 @@ classdef GalerkinSolver1d
             % Solve the Linear System
             self = self.solveSystem();
             
-            % Post-Processing
-            %self = self.postProcess();
+            % Removed postProcess call
         end
         
         %% ASSEMBLE STIFFNESS MATRIX
@@ -91,7 +95,7 @@ classdef GalerkinSolver1d
         
         %% ASSEMBLE LOAD VECTOR
         function self = assembleLoadVector(self)
-            % Assembles the global load vector F
+            % Assembles the global load vector F using the Trapezoidal Rule
             
             M = self.domain.M;
             N = self.domain.N;
@@ -152,53 +156,82 @@ classdef GalerkinSolver1d
             self.solution = [0; u_interior; 0];
         end
         
-        %% POST-PROCESSING
-        function self = postProcess(self)
-            % Performs post-processing tasks:
-            % - Computes analytical solution
-            % - Calculates L2 error
-            % - Generates plots
+        %% PLOT NUMERICAL AND ANALYTICAL SOLUTION
+        function plot(self, uTrue)
+            % Plots the numerical FEM solution.
+            % If uTrue is provided, plots both numerical and true solutions.
+            %
+            % Inputs:
+            %   - uTrue (optional): Vector containing the true solution.
             
             x = self.domain.x;
             u_numeric = self.solution;
             
-            % Analytical solution (modify if using MMS)
-            u_exact = (1 / pi^2) * sin(pi * x);
-            
-            % Store analytical solution
-            self.post.u_exact = u_exact;
-            
-            % Calculate Absolute Error
-            error = abs(u_numeric - u_exact);
-            self.post.error = error;
-            
-            % Calculate L2 Error
-            h = self.domain.h;
-            L2_error = sqrt(sum(error.^2) * h);
-            self.post.L2_error = L2_error;
-            
-            % Display L2 Error
-            fprintf('L2 Error: %.5e\n', L2_error);
-            
-            % Plot Numerical and Analytical Solutions
             figure;
             plot(x, u_numeric, 'bo-', 'LineWidth', 1.5, 'MarkerFaceColor', 'b');
             hold on;
-            plot(x, u_exact, 'r--', 'LineWidth', 2);
+            
+            if nargin > 1 && ~isempty(uTrue)
+                plot(x, uTrue, 'r--', 'LineWidth', 2);
+                legend('Numerical FEM Solution', 'True Solution');
+            else
+                legend('Numerical FEM Solution');
+            end
+            
             xlabel('Spatial Coordinate x');
             ylabel('Solution u(x)');
-            title('Finite Element Solution vs. Analytical Solution');
-            legend('Numerical FEM Solution', 'Analytical Solution');
+            title('Finite Element Solution');
             grid on;
             hold off;
+        end
+        
+        %% PLOT ABSOLUTE ERROR
+        function plotError(self, uTrue)
+            % Plots the absolute error between numerical and true solutions.
+            %
+            % Inputs:
+            %   - uTrue: Vector containing the true solution.
+            %
+            % Usage:
+            %   fem_solver.plotError(uTrue);
             
-            % Plot Absolute Error
+            if nargin < 2 || isempty(uTrue)
+                error('plotError requires uTrue as an input.');
+            end
+            
+            x = self.domain.x;
+            u_numeric = self.solution;
+            error = abs(u_numeric - uTrue);
+            
             figure;
             plot(x, error, 'k-o', 'LineWidth', 1.5, 'MarkerFaceColor', 'k');
             xlabel('Spatial Coordinate x');
-            ylabel('|u_{numerical} - u_{exact}|');
-            title('Absolute Error Between Numerical and Analytical Solutions');
+            ylabel('|u_{numerical} - u_{True}|');
+            title('Absolute Error Between Numerical and True Solutions');
             grid on;
+        end
+        
+        %% COMPUTE L2 ERROR
+        function L2_error = L2error(self, uTrue)
+            % Computes the L2 norm of the error between numerical and true solutions.
+            %
+            % Inputs:
+            %   - uTrue: Vector containing the true solution.
+            %
+            % Outputs:
+            %   - L2_error: Scalar value representing the L2 norm of the error.
+            %
+            % Usage:
+            %   L2_error = fem_solver.L2error(uTrue);
+            
+            if nargin < 2 || isempty(uTrue)
+                error('L2error requires uTrue as an input.');
+            end
+            
+            u_numeric = self.solution;
+            error_vector = u_numeric - uTrue;
+            h = self.domain.h;
+            L2_error = sqrt(sum(error_vector.^2) * h);
         end
     end
 end
