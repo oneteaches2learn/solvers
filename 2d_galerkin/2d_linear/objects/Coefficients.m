@@ -28,14 +28,14 @@ classdef Coefficients
 		% double, sym, or symfun, then f is first converted to a function
 		% handle.
 
-			if ~isNonlinear(f) && ~isTimeVarying(f)
+			if ~Coefficients.isNonlinear(f) && ~Coefficients.isTimeVarying(f)
 				f = @(x1,x2,t,u)(f(x1,x2));
 				t = 0;
 				u = 0;
-			elseif ~isNonlinear(f) && isTimeVarying(f)
+			elseif ~Coefficients.isNonlinear(f) && Coefficients.isTimeVarying(f)
 				f = @(x1,x2,t,u)(f(x1,x2,t));
 				u = 0;
-			elseif isNonlinear(f) && ~isTimeVarying(f)
+			elseif Coefficients.isNonlinear(f) && ~Coefficients.isTimeVarying(f)
 				f = @(x1,x2,t,u)(f(x1,x2,u));
 				t = 0;
 			end
@@ -85,6 +85,7 @@ classdef Coefficients
 			end
 			
 			if isa(f,'sym') || isa(f,'symfun')
+				x = sym('x',[1 2]);
 				f = matlabFunction(f,x);
 			end
 

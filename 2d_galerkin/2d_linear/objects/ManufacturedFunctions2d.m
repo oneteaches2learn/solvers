@@ -1,4 +1,4 @@
-classdef ManufacturedFunctions2d
+classdef ManufacturedFunctions2d < Coefficients
 % ManufacturedFunctions2d(p,k,utrue) manufactures the source for a parabolic MMS test.
 %
 % The simplest parabolic problem is of the form
