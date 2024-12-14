@@ -30,7 +30,7 @@ k = 1;
 
 % specify desired result
 uTrue = sin(2 * pi * x(1)) * sin(2 * pi * x(2)) * (t + 1) + (t + 1);
-uTrue = t;
+%uTrue = t;
 
 
 % MMS TEST %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,10 +38,6 @@ fprintf('MMS Test Begun\n')
 
 % assemble inputs
 auxfun    = ManufacturedFunctions2d_heat(c,k,uTrue);
-auxfun
-
-
-return
 mmsparams = MMSParams(base,demo=demo,timeOffset=3,timeFactor=2,pmin=3,pmax=6, ...
 				meshInclusions='on',effectiveRegion='Omega_eps');
 
