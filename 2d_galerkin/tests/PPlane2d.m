@@ -139,7 +139,7 @@ classdef PPlane2d
                 error('ODE not solved yet. Call solveODE() before plotting trajectory.');
             end
             
-            plot(self.yode(:,1), self.yode(:,2), 'b-', 'LineWidth', 2);
+            plot(self.yode(:,1), self.yode(:,2), 'b-', 'LineWidth', 3);
             plot(self.u0, self.v0, 'ko', 'MarkerFaceColor', 'g');  % Initial condition
             legend('Slope Field', 'Trajectory', 'Initial Condition');
             hold off;
@@ -166,14 +166,14 @@ classdef PPlane2d
                 figure;
                 
                 subplot(2,1,1);
-                plot(self.tode, self.yode(:,1), 'ko-', 'LineWidth', 1.5, 'MarkerSize', 5);
+                plot(self.tode, self.yode(:,1), 'ko-', 'LineWidth', 2.5, 'MarkerSize', 8);
                 xlabel('Time');
                 ylabel('u(t)');
                 title('Solution Component u(t) over Time');
                 grid on;
                 
                 subplot(2,1,2);
-                plot(self.tode, self.yode(:,2), 'r+-', 'LineWidth', 1.5, 'MarkerSize', 5);
+                plot(self.tode, self.yode(:,2), 'r+-', 'LineWidth', 2.5, 'MarkerSize', 8);
                 xlabel('Time');
                 ylabel('v(t)');
                 title('Solution Component v(t) over Time');
@@ -182,9 +182,9 @@ classdef PPlane2d
             else
                 % Overlay plots on the same figure with lines and markers
                 figure;
-                plot(self.tode, self.yode(:,1), 'ko-', 'LineWidth', 1.5, 'MarkerSize', 5);  % u(t) with circles
+                plot(self.tode, self.yode(:,1), 'ko-', 'LineWidth', 2.5, 'MarkerSize', 8);  % u(t) with circles
                 hold on;
-                plot(self.tode, self.yode(:,2), 'r+-', 'LineWidth', 1.5, 'MarkerSize', 5);  % v(t) with pluses
+                plot(self.tode, self.yode(:,2), 'r+-', 'LineWidth', 2.5, 'MarkerSize', 8);  % v(t) with pluses
                 xlabel('Time');
                 ylabel('Solution Components');
                 title('Solution Components over Time');
@@ -386,9 +386,9 @@ classdef PPlane2d
             quiver(self.uu, self.vv, self.duu, self.dvv, 'r');
             hold on;
             % Plot trajectory
-            plot(self.yode(:,1), self.yode(:,2), 'b-', 'LineWidth', 2);
+            plot(self.yode(:,1), self.yode(:,2), 'b-', 'LineWidth', 3);
             % Plot initial condition
-            plot(self.u0, self.v0, 'ko', 'MarkerFaceColor', 'g');
+            plot(self.u0, self.v0, 'ko', 'MarkerFaceColor', 'g','MarkerSize', 8);
             xlabel('u');
             ylabel('v');
             title('Phase Portrait with Trajectory');
@@ -400,9 +400,9 @@ classdef PPlane2d
             % Right subplot: Solution components over time
             subplot(1,2,2);
             % Plot solution components with lines and markers
-            plot(self.tode, self.yode(:,1), 'ko-', 'LineWidth', 1.5, 'MarkerSize', 5);  % u(t) with circles
+            plot(self.tode, self.yode(:,1), 'ko-', 'LineWidth', 2.5, 'MarkerSize', 8);  % u(t) with circles
             hold on;
-            plot(self.tode, self.yode(:,2), 'r+-', 'LineWidth', 1.5, 'MarkerSize', 5);  % v(t) with pluses
+            plot(self.tode, self.yode(:,2), 'r+-', 'LineWidth', 2.5, 'MarkerSize', 10);  % v(t) with pluses
             xlabel('Time');
             ylabel('Solution Components');
             title('Solution Components over Time');

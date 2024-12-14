@@ -54,7 +54,6 @@ R = elliptic.tensors.R;
 F = elliptic.vectors.F;
 odefun = @(t, U) F - (K + R) * U;
 
-size(K)
 %% SOLVE ODE USING ode45 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Time span
 tspan = [0, T_end];

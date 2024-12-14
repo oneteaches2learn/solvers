@@ -44,8 +44,8 @@ alpha_R = 1;
 %uTrue = cos(2 * pi * x(1)) * cos(2* pi * x(2));
 %uTrue = exp(x(1) * x(2));
 %uTrue = sin(pi * x(1)) * sin(pi * x(2)) * t;
-uTrue = sin(pi / 2 * x(1)) * sin(pi / 2 * x(2)) * t + t;
-%uTrue = t;
+%uTrue = sin(pi / 2 * x(1)) * sin(pi / 2 * x(2)) * t + t;
+uTrue = t;
 
 
 % MMS TEST %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

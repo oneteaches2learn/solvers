@@ -38,6 +38,10 @@ fprintf('MMS Test Begun\n')
 
 % assemble inputs
 auxfun    = ManufacturedFunctions2d_heat(c,k,uTrue);
+auxfun
+
+
+return
 mmsparams = MMSParams(base,demo=demo,timeOffset=3,timeFactor=2,pmin=3,pmax=6, ...
 				meshInclusions='on',effectiveRegion='Omega_eps');
 

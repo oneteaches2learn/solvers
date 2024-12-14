@@ -17,10 +17,10 @@ g = 1;      % Constant term in v equation
 
 % Initial conditions
 u0 = 1;     % Initial condition for u
-v0 = 1;     % Initial condition for v
+v0 = 0;     % Initial condition for v
 
 % Boundary Condition
-u_L = 0;
+u_L = 1;
 
 % End time for ODE solver
 Tend = 10;  % Adjust as needed

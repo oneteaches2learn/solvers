@@ -11,7 +11,7 @@ clc;
 
 % Define constants
 k = 1;      % Diffusion constant
-s = 1.5;    % Positive constant for v equation
+s = 1;    % Positive constant for v equation
 f = 0;      % Constant term in u equation
 g = 1;      % Constant term in v equation
 
