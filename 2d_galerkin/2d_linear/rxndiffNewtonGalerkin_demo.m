@@ -1,5 +1,5 @@
 % rxndiffSolve_demo 
-clear all; x = sym('x',[1 2],'real'); syms t;
+clear all; x = sym('x',[1 2],'real'); syms t; syms u;
 % USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % domain bounds
 xLim_dom = [0 1];
@@ -20,10 +20,10 @@ base = 2;
 % specify coefficients
 c = 1;
 k = 1;
-r = 1;
+r = u^2;
 
 % specify source
-f = 1;
+f = 10;
 
 % specify BCs
 bTypes = 'DDDD';
@@ -72,6 +72,7 @@ fprintf(' %f s\n',executionTime)
 
 % RUN TRIAL
 fprintf(' Generating Solution:'), tic
-	prob = GalerkinSolver2d_rxndiff(dom,auxfun);
+	prob = NewtonGalerkinSolver2d_rxndiff(dom,auxfun);
+%	prob = GalerkinSolver2d_rxndiff(dom,auxfun);
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)

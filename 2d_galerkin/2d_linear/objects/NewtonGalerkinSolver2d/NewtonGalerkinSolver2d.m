@@ -53,6 +53,9 @@ classdef NewtonGalerkinSolver2d
 
 		function E = computeNonlinearRobinContribution(self)
 
+			E = 0;
+			% TEMPORARY: TURN OFF NONLINEAR ROBIN BCs
+			%{
 			% unpack variables
 			dom    = self.domain;
 			nNodes = self.domain.mesh.nNodes;
@@ -94,6 +97,7 @@ classdef NewtonGalerkinSolver2d
 					end
 				end
 			end
+			%}
 		end
 
     end

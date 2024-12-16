@@ -59,6 +59,8 @@ classdef ManufacturedFunctions2d < Coefficients
 		u_N
 		alpha_R
 		u_R
+		ODE
+		bcConds
 	end
 
 	methods
@@ -118,6 +120,182 @@ classdef ManufacturedFunctions2d < Coefficients
 			funcs.f = matlabFunction(symfun(self.f,x));
 
 		end
+
+		function self = manufactureBCs(self,dom,bcTypes,auxfun,varargin);
+
+			% unpack coefficients
+			uTrue = self.uTrue;
+			%if isa(self,'GalerkinMMS2d_parabolic')
+			if 1 == 1
+				u_t = self.u_t;
+			end
+			q = self.q;
+			nEdges = dom.boundary.nEdges;
+
+			% set symbolic variables
+			%if isa(self,'GalerkinMMS2d_parabolic')
+			if 1 == 1
+				x = sym('x',[1 2]); syms t;
+				vars = [x t];
+			else
+				x = sym('x',[1 2]);
+				vars = x;
+			end
+
+			% set edge normal vectors
+			dom = self.setEdgeNormalVectors_outerBoundary(dom);
+			if isa(dom,'Domain2d_punctured')
+				dom = self.setEdgeNormalVectors_inclusions(dom);
+			end
+
+			% extend bcTypes
+			bcTypes_interior = bcTypes(1:4);
+			bcTypes_exterior = bcTypes(5:end);
+			if length(bcTypes_exterior) == 1
+				bcTypes_exterior = repmat(bcTypes_exterior,1,nEdges-4);
+			end
+			bcTypes = [bcTypes_interior, bcTypes_exterior];
+
+			% Manufacture Dirichlet BC
+			u_d = uTrue;
+			%u_d = matlabFunction(u_d);
+
+			% assign boundary functions
+			for i = 1:nEdges
+
+				% assign Dirichlet BC
+				if strcmp(bcTypes(i),'D')
+					bcConds{i} = u_d;
+
+				%{
+				% assign Neumann BC
+				elseif dom.boundary.edges(i).boundaryType == 'N'
+					n_i = symfun(dom.boundary.edges(i).outwardNormal,vars);
+					g_i = symfun(sum(q.*n_i),vars);
+					g_i = matlabFunction(g_i);
+					dom.boundary.edges(i).boundaryCondition = g_i;
+
+				% assign Robin BC
+				elseif dom.boundary.edges(i).boundaryType == 'R'
+					alpha_i = symfun(1.0,vars);
+					n_i = symfun(dom.boundary.edges(i).outwardNormal,vars);
+					g_i = symfun(uTrue - sum(q .* n_i) / alpha_i,vars);
+					alpha_i = matlabFunction(alpha_i);
+					g_i = matlabFunction(g_i);
+					dom.boundary.edges(i).boundaryCondition = {alpha_i,g_i};
+
+				% assign dynamic BC
+				elseif dom.boundary.edges(i).boundaryType == 'T'
+					alpha_i = symfun(1.0,vars);
+					beta_i  = symfun(1.0,vars);
+					gamma_i = symfun(1.0,vars);
+					n_i = symfun(dom.boundary.edges(i).outwardNormal,vars);
+					g_i = symfun((alpha_i * uTrue + beta_i * u_t - sum(q .* n_i)) / gamma_i,vars);
+					alpha_i = matlabFunction(alpha_i);
+					beta_i  = matlabFunction(beta_i);
+					gamma_i = matlabFunction(gamma_i);
+					g_i = matlabFunction(g_i);
+					dom.boundary.edges(i).boundaryCondition = {alpha_i,beta_i,gamma_i,g_i};
+				%}
+				end
+			end
+
+			self.bcConds = bcConds;
+
+		end
+
+		function dom = setEdgeNormalVectors_outerBoundary(self,dom)
+
+			% store variables
+			dl = dom.boundary.dl.mat;
+
+			% get normal vectors
+			n_lower = [0; -1];
+			n_right = [1; 0];
+			n_upper = [0; 1];
+			n_left  = [-1; 0];
+
+			n_vectors = [n_lower, n_right, n_upper, n_left];
+
+			% loop over columns of decomposed geometry description matrix
+			for j = 1:4;
+
+				% for now, it is assumed the outer boundary is rectangular
+				if dl(1,j) == 2
+
+					n = n_vectors(:,mod(j-1,4)+1);
+
+				end
+				
+				% store normal vector
+				dom.boundary.edges(j).outwardNormal = n;
+
+			end
+		end
+
+		function dom = setEdgeNormalVectors_inclusions(self,dom)
+
+			% store variables
+			dl = dom.boundary.dl;
+			edgeIDs = dl.segEdgeDict;
+			scale_eps = 1 / dom.epsilon;
+
+			% setup symbolic functions for circle edges
+			x = sym('x',[1 2],'real');
+
+			% if unit vectors to circle are needed, store in advance
+			if sum(find(dl.mat(1,:) == 1)) > 0
+				n_lower = dom.inclusion.Q.unitNormal_lower;
+				n_upper = dom.inclusion.Q.unitNormal_upper;
+			end
+
+			for i = 1:length(dl.edgeSegDict_inclusions)
+
+				% get first segment of edge
+				seg = dl.edgeSegDict_inclusions{i}(1);
+
+				%if segment is of type: circle
+				if dl.segType(seg) == 1
+
+					% set x-translation
+					temp = dl.circleCenter(seg);
+					x_translate = temp(1);
+					x_transformed = scale_eps * (x(1) - x_translate);
+
+					% if lower edge of circle
+					if dl.isLowerCircle(i)
+
+						n = symfun(n_lower(x_transformed,x(2)),x);
+
+					% else upper edge of circle
+					else
+
+						n = symfun(n_upper(x_transformed,x(2)),x);
+
+					end
+
+				% if segment is of type: line
+				elseif dl.segType(seg) == 2
+
+					% for now, presume there are four outer edges
+					edgeNum = i + 4;
+					orientation = dl.squareEdgeOrientation(edgeNum);
+					n = dom.inclusion.Q.unitNormal(:,orientation);
+					
+				end
+				
+				% store normal vector
+				% for now, presume there are four outer edges
+				dom.boundary.edges(i + 4).outwardNormal = n;
+
+			end
+
+		end
+
+		function self = set.ODE(self,ode)
+			self.ODE = ode;
+		end
+
 	end
 
 end

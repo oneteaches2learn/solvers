@@ -1,4 +1,4 @@
-classdef CoupledNewtonMMS2d_rxndiff < NewtonGalerkinMMS2d_parabolic
+classdef CoupledNewtonMMS2d_rxndiff < CoupledNewtonMMS2d_parabolic
 % DOCUMENTATION NEEDED! In the meantime, see the documentation for
 % poissonFD1d_finegrid, which is a very similar object. 
 %
@@ -12,24 +12,23 @@ classdef CoupledNewtonMMS2d_rxndiff < NewtonGalerkinMMS2d_parabolic
 	end
 
 	methods
-		function self = CoupledNewtonMMS2d_rxndiff(dom,auxfun,ode,mmsparams,NameValueArgs)
+		function self = CoupledNewtonMMS2d_rxndiff(dom,auxfun,mmsparams,NameValueArgs)
 
 			arguments
 				dom 		Domain2d
 				auxfun  	ManufacturedFunctions2d_rxndiff
-				ode 		ODE
 				mmsparams 	MMSParams
 				NameValueArgs.errType = "Linfty(L2)"
 			end
 
 			% call superclass constructor
-			self@NewtonGalerkinMMS2d_parabolic(dom,auxfun,mmsparams,NameValueArgs)
+			self@CoupledNewtonMMS2d_parabolic(dom,auxfun,mmsparams,NameValueArgs)
 
 		end
 
 		function prob = solve(self,dom,cofs)
 
-			prob = NewtonGalerkinSolver2d_rxndiff(dom,cofs);
+			prob = CoupledNewtonSolver2d_rxndiff(dom,cofs);
 
 		end
 

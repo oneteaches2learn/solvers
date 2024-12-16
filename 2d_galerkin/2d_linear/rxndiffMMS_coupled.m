@@ -55,12 +55,11 @@ uTrue = cos(2 * pi * x(1)) * cos(2* pi * x(2)) * t + t;
 fprintf('MMS Test Begun\n')
 
 % assemble inputs
-auxfun    = ManufacturedFunctions2d_rxndiff(c,k,r,uTrue,u_N=u_N,alpha_R=alpha_R,u_R=u_R);
-mmsparams = MMSParams(base,demo=demo,timeOffset=4,timeFactor=2,pmin=4,pmax=6, ...
+auxfun     = ManufacturedFunctions2d_rxndiff(c,k,r,uTrue,u_N=u_N,alpha_R=alpha_R,u_R=u_R);
+auxfun.ODE = ODE();
+mmsparams  = MMSParams(base,demo=demo,timeOffset=4,timeFactor=2,pmin=4,pmax=6, ...
 				meshInclusions=meshInclusions,effectiveRegion=effRegion);
 
-% create ode
-ode = ODE();
 
 % build dom_eps_epsain
 fprintf('Initialization\n')
@@ -77,7 +76,7 @@ fprintf(' %f s\n',executionTime)
 
 % run mms test
 if demo == 0
-	mms = CoupledNewtonMMS2d_rxndiff(dom,auxfun,ode,mmsparams,errType="L2")
+	mms = CoupledNewtonMMS2d_rxndiff(dom,auxfun,mmsparams,errType="L2")
 
 % run demo test
 else

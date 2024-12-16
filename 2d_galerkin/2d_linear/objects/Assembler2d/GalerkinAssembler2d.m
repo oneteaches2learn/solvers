@@ -234,9 +234,10 @@ classdef GalerkinAssembler2d
 			end
 
 			% set mesh on domain
-			dom = dom.setMesh(p,base, ...
-					effectiveRegion = NameValuePairs.effectiveRegion, ...
-					meshInclusions = NameValuePairs.meshInclusions);
+			%dom = dom.setMesh(p,base, ...
+			%		effectiveRegion = NameValuePairs.effectiveRegion, ...
+			%		meshInclusions = NameValuePairs.meshInclusions);
+			dom = dom.setMesh(p,base);
 			dom = dom.setBoundaryNodes;
 
 		end
@@ -259,7 +260,7 @@ classdef GalerkinAssembler2d
 		% time varying. 
 		
 			% check function variables
-			x = sym('x',[1 2],'real');
+			x = sym('x',[1 2],'real'); u = sym('u','real');
 			k = symfun(k,x);
 			r = symfun(r,x);
 			f = symfun(f,x);
@@ -267,6 +268,7 @@ classdef GalerkinAssembler2d
 			% store diffusivity and reaction coefficients	
 			auxfun.cofs.k = matlabFunction(k);
 			auxfun.cofs.r = matlabFunction(r);
+			auxfun.cofs.dr_du = matlabFunction(diff(r,u));
 
 			% store source term
 			auxfun.f = matlabFunction(f);

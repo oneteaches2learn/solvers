@@ -25,6 +25,7 @@ classdef NewtonGalerkinMMS2d_parabolic < NewtonGalerkinMMS2d
 			% call superclass constructor
 			self@NewtonGalerkinMMS2d(dom,auxfun,mmsparams,NameValueArgs);
 
+
 		end
 
 	end

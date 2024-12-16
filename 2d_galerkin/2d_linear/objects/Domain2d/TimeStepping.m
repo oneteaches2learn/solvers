@@ -25,7 +25,8 @@ classdef TimeStepping
 			self.T = T;
 
 			self.dt  = dt;
-			self.M_t = int32(T / dt);
+			%self.M_t = int32(T / dt);
+			self.M_t = T / dt;
 			self.N_t = self.M_t + 1;
 
 			if nargin == 3
