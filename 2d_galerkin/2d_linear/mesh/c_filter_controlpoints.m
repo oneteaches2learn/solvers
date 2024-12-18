@@ -47,6 +47,11 @@ end
 % Remove the marked points
 filteredData = data(~toRemove, :);
 
+% Normalize filtered data
+normedData = norm(filteredData,2);
+factor = max(normedData);
+filteredData = filteredData/factor;
+
 % Display the filtered data
 disp('Filtered Data:');
 disp(filteredData);
