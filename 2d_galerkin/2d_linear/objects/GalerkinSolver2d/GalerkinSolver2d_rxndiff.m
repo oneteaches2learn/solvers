@@ -9,6 +9,9 @@ classdef GalerkinSolver2d_rxndiff < GalerkinSolver2d_parabolic
 			% call superclass constructor
 			self@GalerkinSolver2d_parabolic(dom,auxfun);
 
+			% solve
+			self = self.solve();
+
 		end
 
 		function self = initializeTensors(self,t)

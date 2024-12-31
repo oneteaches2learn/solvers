@@ -36,6 +36,7 @@ classdef Boundary2d
 		dl
 		bcTypes
 		bcConds
+		gmshBoundary % true or false
 	end
 
 	methods
@@ -53,6 +54,12 @@ classdef Boundary2d
 
 		% GETTERS 
 		function val = get.nEdges(self)
+
+			% TEMPORARY: Special treatment for gmsh boundaries
+			if self.gmshBoundary == 1
+				val = length(self.edges);
+				return
+			end
 
 			val = self.nEdges_outer + self.nEdges_inclusions;
 
@@ -113,6 +120,14 @@ classdef Boundary2d
 
 		function self = setBCTypes(self,bcTypes)
 
+			% TEMPORARY: Special treatment for gmsh boundaries
+			if self.gmshBoundary == 1
+				for i = 1:length(self.edges)
+					self.edges(i).boundaryType = bcTypes(i);
+				end
+				return
+			end
+
 			% store bcTypes as hidden property
 			self = self.storeBCTypes(bcTypes);
 			bcTypes = self.bcTypes;
@@ -151,6 +166,15 @@ classdef Boundary2d
 
 		function self = setBCConds(self,bcConds)
 
+			
+			% TEMPORARY: Special treatment for gmsh boundaries
+			if self.gmshBoundary == 1
+				for i = 1:length(self.edges)
+					self.edges(i).boundaryCondition = bcConds{i};
+				end
+				return
+			end
+
 			% store bcConds as hidden property
 			self = self.storeBCConds(bcConds);
 			bcConds = self.bcConds;
@@ -166,7 +190,8 @@ classdef Boundary2d
 
 				% set bcConds on inclusion edges
 				for i = 1:self.nEdges_inclusions
-					self.edges(i+self.nEdges_outer).boundaryCondition = bcConds(end);
+					%self.edges(i+self.nEdges_outer).boundaryCondition = bcConds(end);
+					self.edges(i+self.nEdges_outer).boundaryCondition = bcConds{end};
 				end
 
 			% else, set bcConds on all appropriate
@@ -198,6 +223,13 @@ classdef Boundary2d
 
 		function self = setBoundaryNodeLists(self,mesh)
 
+			% TEMORARY: Special treatment for gmsh boundaries
+			if self.gmshBoundary == 1
+				nEdges = length(self.edges);
+			else
+				nEdges = self.nEdges;
+			end
+
 			% initialize boundary node lists
 			D = [];
 			N = [];
@@ -205,7 +237,10 @@ classdef Boundary2d
 			P = [];
 
 			% compile boundary node lists
-			for i = 1:self.nEdges
+			%nEdges = self.nEdges; 	% note: normally not commented out, but
+									%special treatment for gmsh boundaries
+									%requires it commented out for now.
+			for i = 1:nEdges
 				if strcmp(self.edges(i).boundaryType,'D')
 					D = [D self.edges(i).nodes];
 				elseif strcmp(self.edges(i).boundaryType,'N')
@@ -297,7 +332,7 @@ classdef Boundary2d
 			self.freeNodes = setdiff(mesh.effectiveNodes,boundNodes);
 
 		end
-
+		
 
 		% Y-LINE
 		function self = add_yline(self,varargin)

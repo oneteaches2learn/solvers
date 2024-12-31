@@ -8,8 +8,11 @@ classdef CoupledNewtonSolver2d_parabolic < NewtonGalerkinSolver2d_parabolic
     methods
         function self = CoupledNewtonSolver2d_parabolic(dom, auxfun)
 
+            
+			fprintf('\n\nCoupledNewtonSolver2d_parabolic called\n')
             % Call superclass constructor
-            self@NewtonGalerkinSolver2d_parabolic(dom, auxfun);
+            %self@NewtonGalerkinSolver2d_parabolic(dom, auxfun);
+            self@NewtonGalerkinSolver2d_parabolic();
 
         end
 

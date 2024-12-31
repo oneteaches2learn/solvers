@@ -234,6 +234,7 @@ classdef GalerkinMMS2d
 					g_i = symfun(uTrue - sum(q .* n_i) / alpha_i,vars);
 					alpha_i = matlabFunction(alpha_i);
 					g_i = matlabFunction(g_i);
+					%g_i = Coefficients.wrap2d(g_i);
 					dom.boundary.edges(i).boundaryCondition = {alpha_i,g_i};
 
 				% assign dynamic BC

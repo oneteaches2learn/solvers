@@ -24,7 +24,19 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 				self.uInit = auxfun.uInit;
 				
 				% calculate solution
-				self = self.solve;
+				% ... self = self.solve; 
+				% Note: The call to solve has previously been done at the level
+				% of the GalerkinSolver2d_parabolic class. But now that I am
+				% trying to couple the PDE to an ODE, this is causing me
+				% problems. Therefore, I think I need to remove the call from
+				% this constructor and instead call to solve within the
+				% constructor of each individual (i.e. non-abstract) subclass.
+				% This will give me the opportunity to store additional data,
+				% i.e. that relating to the ODE for the coupled problem, before
+				% calling to solve. Or, for those problems that do not need
+				% additional data, still the call to solve can come from their
+				% individual constructors. Long story short: I'm leaving the
+				% code in place for now, but commenting it out.  
 			end
 
 		end

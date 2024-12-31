@@ -23,5 +23,9 @@ classdef BoundaryEdge2d
 
 		end
 
+		function val = get.nNodes(self)
+			val = length(self.nodes);
+		end
+
 	end
 end

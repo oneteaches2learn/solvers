@@ -14,21 +14,21 @@ classdef TimeStepping
 
 	methods
 		function self = TimeStepping(T,dt,eq)
-			%{
-			arguments
-				T 		double
-				dt 		double
-				eq
+
+			% set total time
+			if nargin >= 1
+				self.T = T;
 			end
-			%}
 
-			self.T = T;
+			% set dt and calculate M_t and N_t
+			if nargin >= 2
+				self.dt  = dt;
+				%self.M_t = int32(T / dt);
+				self.M_t = T / dt;
+				self.N_t = self.M_t + 1;
+			end
 
-			self.dt  = dt;
-			%self.M_t = int32(T / dt);
-			self.M_t = T / dt;
-			self.N_t = self.M_t + 1;
-
+			% set equilibrium status
 			if nargin == 3
 				self.equilibrium = eq;
 			else

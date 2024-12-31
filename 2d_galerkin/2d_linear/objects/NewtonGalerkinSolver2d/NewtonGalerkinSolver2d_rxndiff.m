@@ -24,7 +24,7 @@ classdef NewtonGalerkinSolver2d_rxndiff < NewtonGalerkinSolver2d_parabolic
 		function self = assembleTensors(self) 
 
 			% call superclass method
-			self = self.assembleTensors@NewtonGalerkinSolver2d_parabolic;
+			self = self.assembleTensors@NewtonGalerkinSolver2d_parabolic();
 
 			% assemble additional tensors
 			self.tensors.M_dr = self.assembleMassMatrix(self.coefficients.dr_du);
@@ -49,6 +49,7 @@ classdef NewtonGalerkinSolver2d_rxndiff < NewtonGalerkinSolver2d_parabolic
 
 			% assemble J
             J = S * self.U + b_nonlinear - b;
+
                 
 			% assemble DJ
 			DJ = tensors.M_p + self.domain.time.dt * (tensors.A + tensors.M_dr + tensors.M_dneu - tensors.M_drob);

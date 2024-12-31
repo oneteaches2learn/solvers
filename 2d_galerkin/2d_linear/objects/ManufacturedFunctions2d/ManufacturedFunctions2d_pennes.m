@@ -17,11 +17,22 @@ classdef ManufacturedFunctions2d_pennes < ManufacturedFunctions2d_parabolic
 	end
 
 	methods
-		function self = ManufacturedFunctions2d_pennes(p,k,r,uStar,uTrue)
+		function self = ManufacturedFunctions2d_pennes(p,k,r,uStar,uTrue,NameValueArgs)
 		% ManufacturedFunctions2d_pennes(p,k,r,uStar,uTrue) inputs are symfun objects
 			
+			arguments
+				p
+				k
+				r
+				uStar
+				uTrue
+				NameValueArgs.u_N = 0;
+				NameValueArgs.alpha_R = 0;
+				NameValueArgs.u_R = 0;
+			end
+
 			% call superclass constructor
-			self@ManufacturedFunctions2d_parabolic(p,k,uTrue)
+			self@ManufacturedFunctions2d_parabolic(p,k,uTrue,NameValueArgs);
 
 			% store additional coefficients
 			self.r = r;

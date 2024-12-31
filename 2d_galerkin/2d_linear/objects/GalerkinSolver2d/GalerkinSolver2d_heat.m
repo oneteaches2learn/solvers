@@ -6,6 +6,9 @@ classdef GalerkinSolver2d_heat < GalerkinSolver2d_parabolic
 			% call superclass constructor
 			self@GalerkinSolver2d_parabolic(dom,auxfun);
 
+			% solve
+			self = self.solve();
+
 		end
 
 		function [S,b] = finalAssembly(self)

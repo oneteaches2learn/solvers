@@ -167,23 +167,20 @@ classdef ManufacturedFunctions2d < Coefficients
 				if strcmp(bcTypes(i),'D')
 					bcConds{i} = u_d;
 
-				%{
 				% assign Neumann BC
-				elseif dom.boundary.edges(i).boundaryType == 'N'
+				elseif strcmp(bcTypes(i),'N')
 					n_i = symfun(dom.boundary.edges(i).outwardNormal,vars);
 					g_i = symfun(sum(q.*n_i),vars);
-					g_i = matlabFunction(g_i);
-					dom.boundary.edges(i).boundaryCondition = g_i;
+					bcConds{i} = g_i;
 
 				% assign Robin BC
-				elseif dom.boundary.edges(i).boundaryType == 'R'
+				elseif strcmp(bcTypes(i),'R')
 					alpha_i = symfun(1.0,vars);
 					n_i = symfun(dom.boundary.edges(i).outwardNormal,vars);
 					g_i = symfun(uTrue - sum(q .* n_i) / alpha_i,vars);
-					alpha_i = matlabFunction(alpha_i);
-					g_i = matlabFunction(g_i);
-					dom.boundary.edges(i).boundaryCondition = {alpha_i,g_i};
+					bcConds{i} = {alpha_i,g_i};
 
+				%{
 				% assign dynamic BC
 				elseif dom.boundary.edges(i).boundaryType == 'T'
 					alpha_i = symfun(1.0,vars);

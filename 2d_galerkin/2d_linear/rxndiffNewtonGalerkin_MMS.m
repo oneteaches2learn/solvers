@@ -15,21 +15,21 @@ incRatio = pi/2; % <~~~ incRatio = |delta Q| / |Y|
 
 % domain parameters
 base = 2;
-p_start = 3;
-p_end = 5;
+p_start = 2;
+p_end = 4;
 T = 1;
 
 % specify coefficients
 c = 1;
 k = 1;
-r = u^2 - u;
+r = 0;
 
 % specify boundary conditions
 bcTypes_interior = 'DDDD';
 bcTypes_exterior = 'D';
 
 % desired solution
-uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2)) * t + t^2;
+uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2)) * t; 
 
 % BLACK BOX %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SETUP TRIAL
@@ -65,7 +65,7 @@ for p = p_start:p_end
 	i = (p - p_start) + 1;
 	dt = T / base^(2*(p-p_start));
 
-	fprintf(' Problem 1:\n')
+	fprintf(' Problem %d:\n',i)
 	fprintf('  Assembly:'), tic
 		dom = GalerkinAssembler2d_rxndiff.assembleBoundary(dom_geo,bcTypes,BCs); 
 		dom = GalerkinAssembler2d_rxndiff.assembleMesh(dom,p,base);
