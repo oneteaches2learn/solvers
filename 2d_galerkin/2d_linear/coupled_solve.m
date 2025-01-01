@@ -17,7 +17,7 @@ incRatio = pi/2; % <~~~ incRatio = |delta Q| / |Y|
 
 % domain parameters
 base = 2;
-p  = 3;
+p  = 5;
 
 % time stepping
 T  = 3;
@@ -27,34 +27,36 @@ dt = 0.05;
 % specify coefficients
 c = 1;
 k = 1;
-r = u - v;
-r = 0;
-f = 1;
+r = (u - v);
+%r = 0;
+f = 0;
 
 % manufacture solution for testing
 %uTrue = sin(pi / 2 * x(1)) * sin(pi / 2 * x(2)) * (1 - exp(-10 * t));
 %uTrue = sin(pi / 2 * x(1)) * sin(pi / 2 * x(2));
-%uTrue = t;
+%uTrue = 1 + t;
 %uTrue_t = diff(uTrue,t);
 %uTrue_laplacian = divergence(gradient(uTrue,x),x);
-%f = uTrue_t - uTrue_laplacian + (uTrue - v);
+%f = uTrue_t - uTrue_laplacian;
 
 % specify boundary conditions
-bcTypes_exterior = 'DDDD';
+bcTypes_exterior = 'NNNN';
 bcTypes_interior = 'R';
 %bc1 = sin(pi / 2 * x(1)) * sin(pi / 2 * 0);
 %bc2 = sin(pi / 2 * 1) * sin(pi / 2 * x(2));
 %bc3 = sin(pi / 2 * x(1)) * sin(pi / 2 * 1);
 %bc4 = sin(pi / 2 * 0) * sin(pi / 2 * x(2));
-bc1 = 1;
-bc2 = 1;
-bc3 = 1;
-bc4 = 1;
-%bc1 = t;
-%bc2 = t;
-%bc3 = t;
-%bc4 = t;
-BCs = {bc1,bc2,bc3,bc4,{10,1}};
+%bc1 = 1;
+%bc2 = 1;
+%bc3 = 1;
+%bc4 = 1;
+%bc1 = 1 + t;
+%bc2 = 1 + t;
+%bc3 = 1 + t;
+%bc4 = 1 + t;
+%BCs = {bc1,bc2,bc3,bc4,{10,1}};
+bc = 0;
+BCs = {bc,bc,bc,bc,{0,0}};
 
 % specify initial condition
 %u_o = sin(pi / 2 * x(1)) * sin(pi / 2 * x(2));
@@ -64,7 +66,7 @@ u_o = 1;
 % ODE INFORMATION
 g = 0;
 v_o = 0;
-s = 0;
+s = 1;
 order = 1;
 
 

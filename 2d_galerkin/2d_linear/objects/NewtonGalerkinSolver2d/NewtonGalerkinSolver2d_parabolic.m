@@ -62,6 +62,9 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic & NewtonG
                 U_tilde = U_tilde - W;
 
                 % add back dirichlet values to get current solution
+				% note: I suspect this is necessary as the current solution will
+				% be used to compute other tensors. But perhaps it is not
+				% necessary, or even causes problems. Take a look.
                 self.U = U_tilde + self.vectors.U_D;
 
                 % check convegence

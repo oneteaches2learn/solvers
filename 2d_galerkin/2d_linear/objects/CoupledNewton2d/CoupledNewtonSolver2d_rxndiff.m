@@ -21,15 +21,16 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
 
 		end
 
+
 		function self = solve(self)
 
 			% initialize problem
-			FreeNodes = self.domain.boundary.freeNodes;
 			self = self.initializeProblem;
 
 			% initialize ODE (should be added to initializeTimestep eventually)
 			self.V_prev = self.ODE.vInit;
 			self.V = self.V_prev;
+			self.ODE.solution = zeros(1,self.domain.time.N_t);
 			self.ODE.solution(1) = self.V;
 
 			for timestep = 1:self.domain.time.M_t
@@ -41,14 +42,8 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
 				% initialize ODE (should be added to initializeTimestep eventually)
 				self.V_prev = self.V;
 
-				% assemble problem
-				self  = self.assembleTensors;
-				self  = self.assembleVectors;
-				self  = self.assembleBCs;
-				[S,b] = self.finalAssembly;
-
 				% solve and store solution
-				self = self.solveTimestep(S,b,FreeNodes);
+				self = self.solveTimestep();
 
 				% break at equilibrium
 				if self.equilibrium == 1, break; end
@@ -62,9 +57,14 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
 
         function self = solveTimestep(self,S,b,FreeNodes)
 
-			dirichlet = self.domain.boundary.D_nodes;
-			self.U = self.U - self.vectors.U_D;
-   
+            % store dirichlet nodes and free nodes
+			FreeNodes = self.domain.boundary.freeNodes;
+			dirichlet = unique(self.domain.boundary.D_nodes);
+
+            % construct U_tilde
+            U_tilde = self.U;
+            U_tilde(dirichlet) = 0;
+            
             % Newton-Galerkin loop
             for iter = 1:10
 
@@ -72,18 +72,22 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
                 self = self.assembleTensors;
                 self = self.assembleVectors;
                 self = self.assembleBCs;
-                [DJ, J] = self.finalAssembly(self.U);
+                [DJ, J] = self.finalAssembly(U_tilde);
 
-                % Dirichlet conditions
-                
                 % Solving one Newton step
                 W = zeros(self.domain.mesh.nNodes,1);
                 W(FreeNodes) = DJ(FreeNodes,FreeNodes) \ J(FreeNodes);
-                self.U(FreeNodes) = self.U(FreeNodes) - W(FreeNodes);
+                U_tilde = U_tilde - W;
+
+                % add back dirichlet values to get current solution
+				% note: I suspect this is necessary as the current solution will
+				% be used to compute other tensors. But perhaps it is not
+				% necessary, or even causes problems. Take a look.
+				self.U = U_tilde + self.vectors.U_D;
 
 				%{
-				% note: If you were not timelagging the V value, you would update it here
 				% UPDATE ODE
+				% note: If you were not timelagging the V value, you would update it here
 				% store variables
 				dt = self.ODE.dt;
 				s  = self.ODE.s;
@@ -104,6 +108,7 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
             end
 
 			% UPDATE ODE
+			% Note: If you are time lagging the solutions, you would update the ODE here
 			% store variables
 			dt = self.ODE.dt;
 			s  = self.ODE.s;
@@ -114,9 +119,7 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
 			% solve current iteration
 			self.V = R * (dt * g + dt * s * SU + self.V_prev); 
 
-            % store result
-            %self.solution(:,self.timestep) = self.U + self.vectors.U_D;
-			self.U = self.U + self.vectors.U_D;
+            % store resolved solution
             self.solution(:,self.timestep) = self.U;
 			self.ODE.solution(self.timestep) = self.V;
         end
@@ -236,9 +239,7 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
 					U = self.U;
 					%V = self.V;		% <~~~ use if V is not time-lagged
 					V = self.V_prev;    % <~~~ use if V is time-lagged
-
 			end
-
 		end
 
 
@@ -259,8 +260,8 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
 			title(sprintf('u, t = %d',self.domain.time.tGrid(timestep)));
 
 			% set zlim
-			zMin = min(self.solution(:));
-			zMax = max(self.solution(:));
+			zMin = min(min(self.solution(:)),min(self.ODE.solution(:)));
+			zMax = max(max(self.solution(:)),max(self.ODE.solution(:)));
 			if zMin == zMax
 				zMax = zMin + 1;
 			end
@@ -271,14 +272,14 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
 			self.ODE.plot(timestep);
 			title('v');
 
+			% adjust figure position
 			f = gcf;
 			f.Position = [100, 100, 1000, 400];
-
 		end
 
 		function animate(self)
-			% ANIMATE Sequentially plots the PDE + ODE solutions from the first
-			% to the last timestep. The total animation duration is one second.
+		% ANIMATE Sequentially plots the PDE + ODE solutions from the first
+		% to the last timestep. The total animation duration is one second.
 			
 			% Number of timesteps
 			nT = self.domain.time.N_t;

@@ -10,7 +10,17 @@ classdef NewtonGalerkinSolver2d_rxndiff < NewtonGalerkinSolver2d_parabolic
 			self@NewtonGalerkinSolver2d_parabolic(dom,auxfun);
 
 			% solve
-			self = self.solve;
+			% NOTE: Because the coupled solver is a subclass of this class,
+			% calling solver here causes the coupled solver to attempt to solve
+			% before the ODE is initialized. Eventually, you need to figure out
+			% the class heirarchy structure that works for all solvers. Likely
+			% this means that each class ending with a specific PDE name (e.g.
+			% 'rxndiff') is a "leaf" and has no subclasses ever. An alternative
+			% would be to take the "solve" method out entirely and call the
+			% "solve" method from the outside. Or to implement an option to
+			% solve or not solve in the constructor. I think the first option is
+			% best. But I'm leaving this note for later consideration!  
+			%self = self.solve;
 
 		end
 
@@ -34,28 +44,30 @@ classdef NewtonGalerkinSolver2d_rxndiff < NewtonGalerkinSolver2d_parabolic
 
 		end
 
-		function [DJ,J] = finalAssembly(self,U)
+		function [DJ,J] = finalAssembly(self,U_tilde)
 
 			% store variables
             tensors = self.tensors;
             vectors = self.vectors;
+			dt = self.domain.time.dt;
 
 			% assemble Linear Tensor
-			S = self.domain.time.dt * (tensors.A + tensors.M_rob) + tensors.M_p;
+			S = dt * (tensors.A + tensors.M_rob) + tensors.M_p;
 
 			% assemble nonlinear contributions to J
-			b_nonlinear = self.domain.time.dt * self.vectors.M_r;
+			b_nonlinear = dt * self.vectors.M_r;
 
 			% assemble Load Vector
-			b = self.domain.time.dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob) - ... 
-					S * vectors.U_D + (tensors.M_p_prevTime) * vectors.U_prevTime;
+			b = tensors.M_p_prevTime * vectors.U_prevTime + ... 
+					dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob) - ... 
+					S * vectors.U_D;
 
 			% assemble J
-            J = S * self.U + b_nonlinear - b;
+            J = S * U_tilde + b_nonlinear - b;
 
                 
 			% assemble DJ
-			DJ = tensors.M_p + self.domain.time.dt * (tensors.A + tensors.M_dr + tensors.M_dneu - tensors.M_drob);
+			DJ = tensors.M_p + dt * (tensors.A + tensors.M_dr + tensors.M_dneu - tensors.M_drob);
 
 		end
 
