@@ -14,44 +14,26 @@ classdef NewtonGalerkinSolver2d_heat < NewtonGalerkinSolver2d_parabolic
 
 		end
 
-		function [DJ,J,S] = finalAssembly(self,U)
+		function [DJ,J,S] = finalAssembly(self,U_tilde)
 
 			% store variables
             tensors = self.tensors;
             vectors = self.vectors;
 			dt = self.domain.time.dt;
-			dirichlet = unique(self.domain.boundary.D_nodes);
 
-			% temporary vectors
-			U_tilde = self.U;
-			U_tilde(dirichlet) = 0;
-			U_tilde_prevTime = self.vectors.U_prevTime;
-			U_tilde_prevTime(dirichlet) = 0;
-
-			% assemble J (temporary)
-			S = dt * tensors.A + tensors.M_p;
-			b = tensors.M_p * U_tilde_prevTime + dt * vectors.b_vol - dt * S * vectors.U_D;
-			J = S * U_tilde - b;
-
-			% assemble DJ (temporary)
-			DJ = tensors.M_p + self.domain.time.dt * (tensors.A + tensors.M_dneu - tensors.M_drob);
-
-			%{
-			% assemble Tensor
+			% assemble J (temporary 3) 
 			S = dt * (tensors.A + tensors.M_rob) + tensors.M_p;
 
 			% assemble Load Vector
-			b = dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob) - ... 
-					dt * S * vectors.U_D + (tensors.M_p_prevTime) * vectors.U_prevTime;
-			%b = self.domain.time.dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob)  ... 
-			%		+ (tensors.M_p_prevTime) * vectors.U_prevTime;
+			b = tensors.M_p_prevTime * vectors.U_prevTime + ... 
+					dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob) - ... 
+					S * vectors.U_D;
 
 			% assemble J
-            J = S * self.U - b;
-                
+			J = S * U_tilde - b;
+
 			% assemble DJ
 			DJ = tensors.M_p + self.domain.time.dt * (tensors.A + tensors.M_dneu - tensors.M_drob);
-			%}
 
 		end
 

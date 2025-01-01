@@ -28,6 +28,9 @@ classdef NewtonGalerkinSolver2d_elliptic < GalerkinSolver2d_elliptic & NewtonGal
 			self = self.assembleBCs;
 			self.U(unique(dirichlet)) = self.vectors.U_D(unique(dirichlet));
 
+			% temporary
+			%self.U(unique(dirichlet)) = 0;
+
 			% Newton-Galerkin iteration
 			for i = 1:100
 			

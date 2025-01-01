@@ -14,53 +14,67 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic & NewtonG
 
         end
 
-        function self = solveTimestep(self,S,b,FreeNodes)
+		function self = solve(self)
 
+			% initialize problem
+			self = self.initializeProblem;
+
+			for timestep = 1:self.domain.time.M_t
+
+				% initialize timestep
+				self.timestep = timestep;
+				self = self.initializeTimestep;
+
+				% solve and store solution
+				self = self.solveTimestep();
+
+				% break at equilibrium
+				if self.equilibrium == 1, break; end
+
+			end
+
+			self = self.cleanup;
+
+		end
+
+        function self = solveTimestep(self)
+
+            % store dirichlet nodes and free nodes
+			FreeNodes = self.domain.boundary.freeNodes;
 			dirichlet = unique(self.domain.boundary.D_nodes);
 
-            % define U_tilde (temporary)
+            % construct U_tilde
             U_tilde = self.U;
             U_tilde(dirichlet) = 0;
-
+            
             % Newton-Galerkin loop
-            for iter = 1:100
+            for iter = 1:10
 
                 % Assembly
                 self = self.assembleTensors;
                 self = self.assembleVectors;
                 self = self.assembleBCs;
-                [DJ, J, S] = self.finalAssembly(self.U);
+                [DJ, J] = self.finalAssembly(U_tilde);
 
-                %{
                 % Solving one Newton step
                 W = zeros(self.domain.mesh.nNodes,1);
-                %W(unique(dirichlet)) = self.vectors.U_D(unique(dirichlet));
                 W(FreeNodes) = DJ(FreeNodes,FreeNodes) \ J(FreeNodes);
-                %W = DJ \ J;
-                self.U(FreeNodes) = self.U(FreeNodes) - W(FreeNodes);
-                %}
-
-                % Solving one Newton step (temporary)
-                W = zeros(self.domain.mesh.nNodes,1);
-                W(FreeNodes) = DJ(FreeNodes,FreeNodes) \ J(FreeNodes);
-                %W = DJ \ J;
                 U_tilde = U_tilde - W;
+
+                % add back dirichlet values to get current solution
+                self.U = U_tilde + self.vectors.U_D;
 
                 % check convegence
                 if norm(W) < 10^(-10)
-                    %fprintf(' %d iterations,',iter)
+                    %fprintf(' timestep: %d, converged in %d iterations,\n',self.timestep,iter)
                     self.iterHistory(self.timestep) = iter;
                     break
                 end
             end
 
-            self.U = U_tilde + self.vectors.U_D;
+            % store resolved solution
             self.solution(:,self.timestep) = self.U;
 
-            % store result
-            %self.U = self.U + self.vectors.U_D;
-            %self.solution(:,self.timestep) = self.U;
-            %self.solution(:,self.timestep) = self.U + self.vectors.U_D;
         end
 
         function self = initializeProblem(self)

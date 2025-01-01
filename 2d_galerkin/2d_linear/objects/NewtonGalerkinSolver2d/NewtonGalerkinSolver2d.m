@@ -10,7 +10,7 @@ classdef NewtonGalerkinSolver2d
 
         function E = computeNonlinearNeumannContribution(self)
 
-			E = 0;
+			E = sparse(self.domain.mesh.nNodes,self.domain.mesh.nNodes);
 			% TEMPORARY: TURN OFF NONLINEAR ROBIN BCs
 			%{
 			% unpack variables
@@ -57,7 +57,7 @@ classdef NewtonGalerkinSolver2d
 
 		function E = computeNonlinearRobinContribution(self)
 
-			E = 0;
+			E = sparse(self.domain.mesh.nNodes,self.domain.mesh.nNodes);
 			% TEMPORARY: TURN OFF NONLINEAR ROBIN BCs
 			%{
 			% unpack variables
