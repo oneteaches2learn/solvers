@@ -96,6 +96,33 @@ classdef NewtonGalerkinMMS2d < GalerkinMMS2d
 					dom.boundary.edges(i).boundaryCondition = g_i;
 					dom.boundary.edges(i).boundaryCondition_ddu = dg_i;
 
+				% (temporary) assign Robin BC (linear, copy/pasted from linear solver)
+				% assign Robin BC
+				elseif dom.boundary.edges(i).boundaryType == 'R'
+
+					% store coefficients
+					uTrue = symfun(uTrue,[x t]);
+					alpha_i = symfun(auxfun.alpha_R,vars);
+					n_i = symfun(dom.boundary.edges(i).outwardNormal,vars);
+
+					% assume alpha_i is 1
+					alpha_i = symfun(1.0,vars);
+
+					% compute g_i from data
+					temp = sum(q .* n_i) / alpha_i;
+					g_i = symfun(uTrue(x(1),x(2),t) - temp(x(1),x(2),t,uTrue(x(1),x(2),t)),vars);
+
+					% convert results to function handles
+					alpha_i = matlabFunction(alpha_i);
+					g_i = matlabFunction(g_i);
+					%g_i = Coefficients.wrap2d(g_i);
+					dom.boundary.edges(i).boundaryCondition = {alpha_i,g_i};
+
+
+				%{
+				% NOTE: Code below is the nonlinear Robin condition that USED TO
+				% WORK, but now isn't. It is muted while I try the "old" linear
+				% version.  
 				% assign Robin BC
 				elseif dom.boundary.edges(i).boundaryType == 'R'
 
@@ -120,6 +147,7 @@ classdef NewtonGalerkinMMS2d < GalerkinMMS2d
 					% store result
 					dom.boundary.edges(i).boundaryCondition = {alpha_i,g_i};
 					dom.boundary.edges(i).boundaryCondition_ddu = dg_i;
+				%}
 
 				% assign dynamic BC
 				elseif dom.boundary.edges(i).boundaryType == 'T'

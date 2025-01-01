@@ -48,7 +48,7 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic & NewtonG
             U_tilde(dirichlet) = 0;
             
             % Newton-Galerkin loop
-            for iter = 1:10
+            for iter = 1:100
 
                 % Assembly
                 self = self.assembleTensors;

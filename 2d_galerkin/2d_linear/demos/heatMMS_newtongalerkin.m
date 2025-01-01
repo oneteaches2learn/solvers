@@ -23,7 +23,7 @@ base = 2;
 demo = 0;
 
 % specify BCs
-bTypes_outer = 'DDDD';
+bTypes_outer = 'RRRR';
 bTypes_inner = 'D';
 
 % specify coefficients
@@ -32,12 +32,13 @@ k = 1;
 
 % specify nonlinear boundary conditions
 %u_N = sin(u); 
+%u_N = u;
 u_N = 0;
 %u_R = u^3;
 %u_R = u^2;
 %alpha_R = 2 + x(1) * x(2);
-u_R = 1;
-alpha_R = 1;
+u_R = [];
+alpha_R = [];
 
 % specify desired result
 %uTrue = 1 + sin(pi / 2* x(1)) * sin(pi / 2 * x(2));
@@ -45,7 +46,8 @@ alpha_R = 1;
 %uTrue = exp(x(1) * x(2));
 %uTrue = sin(pi * x(1)) * sin(pi * x(2)) * t + t + 1;
 %uTrue = sin(pi / 2 * x(1)) * sin(pi / 2 * x(2)) * t + t;
-uTrue = 1;
+uTrue = 1 + t;
+%uTrue = 1;
 
 
 % MMS TEST %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,8 +55,14 @@ fprintf('MMS Test Begun\n')
 
 % assemble inputs
 auxfun    = ManufacturedFunctions2d_heat(c,k,uTrue,u_N=u_N,alpha_R=alpha_R,u_R=u_R);
-mmsparams = MMSParams(base,demo=demo,timeOffset=2,timeFactor=2,pmin=2,pmax=6, ...
-				meshInclusions=meshInclusions,effectiveRegion=effRegion);
+mmsparams = MMSParams(base, ...
+						demo=demo, ...
+						timeOffset=2, ...
+						timeFactor=2, ...
+						pmin=2, ...
+						pmax=4, ...
+						meshInclusions=meshInclusions, ...
+						effectiveRegion=effRegion);
 
 % build dom_eps_epsain
 fprintf('Initialization\n')

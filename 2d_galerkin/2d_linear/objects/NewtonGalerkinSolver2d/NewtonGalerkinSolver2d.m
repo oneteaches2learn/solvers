@@ -10,9 +10,6 @@ classdef NewtonGalerkinSolver2d
 
         function E = computeNonlinearNeumannContribution(self)
 
-			E = sparse(self.domain.mesh.nNodes,self.domain.mesh.nNodes);
-			% TEMPORARY: TURN OFF NONLINEAR ROBIN BCs
-			%{
 			% unpack variables
 			dom    = self.domain;
 			nNodes = self.domain.mesh.nNodes;
@@ -48,17 +45,13 @@ classdef NewtonGalerkinSolver2d
 							1/2 * edgeLength * bCond(coords(edge(1),1),coords(edge(1),2),t,U(edge(1)));
 						E(edge(2),edge(2)) = E(edge(2),edge(2)) + ...
 							1/2 * edgeLength * bCond(coords(edge(2),1),coords(edge(2),2),t,U(edge(2)));
-
 					end
 				end
 			end
-			%}
 		end
 
 		function E = computeNonlinearRobinContribution(self)
 
-			E = sparse(self.domain.mesh.nNodes,self.domain.mesh.nNodes);
-			% TEMPORARY: TURN OFF NONLINEAR ROBIN BCs
 			%{
 			% unpack variables
 			dom    = self.domain;
@@ -102,6 +95,9 @@ classdef NewtonGalerkinSolver2d
 				end
 			end
 			%}
+			nNodes = self.domain.mesh.nNodes;
+			E = sparse(zeros(nNodes,nNodes));
+			%full(max(max(E)))
 		end
 
     end

@@ -64,6 +64,9 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
             % construct U_tilde
             U_tilde = self.U;
             U_tilde(dirichlet) = 0;
+
+			% temporary
+			self.U = U_tilde;
             
             % Newton-Galerkin loop
             for iter = 1:10
@@ -78,12 +81,15 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
                 W = zeros(self.domain.mesh.nNodes,1);
                 W(FreeNodes) = DJ(FreeNodes,FreeNodes) \ J(FreeNodes);
                 U_tilde = U_tilde - W;
+				U_tilde(1)
+
+				self.U = U_tilde;
 
                 % add back dirichlet values to get current solution
 				% note: I suspect this is necessary as the current solution will
 				% be used to compute other tensors. But perhaps it is not
 				% necessary, or even causes problems. Take a look.
-				self.U = U_tilde + self.vectors.U_D;
+				% self.U = U_tilde + self.vectors.U_D;
 
 				%{
 				% UPDATE ODE
@@ -106,6 +112,9 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
                     break
                 end
             end
+
+			% (temporary) add back dirichlet values to get current solution
+			self.U = U_tilde + self.vectors.U_D;
 
 			% UPDATE ODE
 			% Note: If you are time lagging the solutions, you would update the ODE here
