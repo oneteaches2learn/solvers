@@ -23,29 +23,29 @@ base = 2;
 demo = 0;
 
 % specify BCs
-bTypes_outer = 'RDDD';
-bTypes_inner = 'R';
+bTypes_outer = 'DDDD';
+bTypes_inner = 'D';
 
 % specify coefficients
 c = 1;
 k = 1;
 
 % specify nonlinear boundary conditions
-u_N = sin(u); 
-%u_N = 0;
+%u_N = sin(u); 
+u_N = 0;
 %u_R = u^3;
-u_R = u^2;
+%u_R = u^2;
 %alpha_R = 2 + x(1) * x(2);
-%u_R = 0;
+u_R = 0;
 alpha_R = 1;
 
 % specify desired result
-%uTrue = 1 + sin(pi / 2* x(1)) * sin(pi / 2 * x(2));
+uTrue = 1 + sin(pi / 2* x(1)) * sin(pi / 2 * x(2));
 %uTrue = cos(2 * pi * x(1)) * cos(2* pi * x(2));
 %uTrue = exp(x(1) * x(2));
 %uTrue = sin(pi * x(1)) * sin(pi * x(2)) * t;
 %uTrue = sin(pi / 2 * x(1)) * sin(pi / 2 * x(2)) * t + t;
-uTrue = t;
+%uTrue = t;
 
 
 % MMS TEST %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -63,7 +63,7 @@ fprintf(' Contructing Domain:'), tic
 	inc = Inclusion2d_circle(xLim_Y,yLim_Y,incRatio);
 	%inc = Inclusion2d_square(xLim_Y,yLim_Y,incRatio);
 	dom = Domain2d_punctured(xLim_dom,yLim_dom,inc,Eps);
-	dom = dom.add_yline;
+	%dom = dom.add_yline;
 	dom = dom.setBCTypes([bTypes_outer,bTypes_inner]);
 	dom.time = TimeStepping(T,1);
 executionTime = toc; 

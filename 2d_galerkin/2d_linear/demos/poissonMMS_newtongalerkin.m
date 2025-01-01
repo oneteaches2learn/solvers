@@ -20,7 +20,7 @@ base = 2;
 demo = 0;
 
 % specify BCs
-bTypes_outer = 'NDND';
+bTypes_outer = 'DDDD';
 bTypes_inner = 'N';
 
 % specify coefficients
@@ -34,8 +34,8 @@ r = u^3 - 4 * u;
 %u_N = x(1); 
 %u_N = u^3; 
 %u_N = u^2; 
-u_N = sin(u); 
-%u_N = 0;
+%u_N = sin(u); 
+u_N = 0;
 %u_R = u^3;
 %u_R = u^2;
 %alpha_R = 2 + x(1) * x(2);
@@ -55,7 +55,7 @@ fprintf('MMS Test Begun\n')
 
 % assemble inputs
 auxfun    = ManufacturedFunctions2d_poisson(k,r,uTrue,u_N=u_N,alpha_R=alpha_R,u_R=u_R);
-mmsparams = MMSParams(base,demo=demo,timeOffset=4,timeFactor=2,pmin=4,pmax=7, ...
+mmsparams = MMSParams(base,demo=demo,timeOffset=4,timeFactor=2,pmin=4,pmax=6, ...
 				meshInclusions=meshInclusions,effectiveRegion=effRegion);
 
 % build dom_eps_epsain

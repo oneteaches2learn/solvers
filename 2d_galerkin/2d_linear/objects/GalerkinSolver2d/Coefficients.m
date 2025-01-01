@@ -121,6 +121,36 @@ classdef Coefficients
 			result = Coefficients.hasVariable(f,'u');
 		end
 
+		function result = isCoupled(f)
+		% isNonlinear(f) returns true if the function handle f is a function of
+		% the ODE variable v.
+		%
+		% INPUTS
+		%	f - double, sym or symfun, or function handle
+		%
+		% OUTPUTS
+		%	result - logical, true if f is a function of v, false otherwise
+		%
+		% isNonlinear checks if input f is a function of variable v. To do so,
+		% isNonlinear must be converted into an anonymous function handle. If f
+		% is a double, then f represents a constant function and is not a
+		% function of v. In this case, f is converted to a symfun in the spatial
+		% variable x.  If f is a sym or symfun, then f is converted to a
+		% function handle. The function handle is then checked for the presence
+		% of the variable v.
+		
+			if isa(f,'double')
+				x = sym('x',[1 2]);
+				f = symfun(f,x);
+			end
+
+			if isa(f,'sym') || isa(f,'symfun')
+				f = matlabFunction(f);
+			end
+			
+			result = Coefficients.hasVariable(f,'v');
+		end
+
 		function result = hasVariable(f,checkVar)
 		% hasVariable(f,checkVar) returns true if the function handle f is a
 		% function of the variable checkVar.

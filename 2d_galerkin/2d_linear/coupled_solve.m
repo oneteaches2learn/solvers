@@ -1,5 +1,5 @@
 % rxndiffSolve_demo 
-clear all; x = sym('x',[1 2],'real'); syms t; syms u;
+clear all; x = sym('x',[1 2],'real'); syms t; syms u; syms v;
 % USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % DOMAIN INFORMATION
@@ -17,33 +17,55 @@ incRatio = pi/2; % <~~~ incRatio = |delta Q| / |Y|
 
 % domain parameters
 base = 2;
-p  = 5;
+p  = 3;
 
 % time stepping
-T  = .1;
-dt = 0.001;
+T  = 3;
+dt = 0.05;
 
 % PDE INFORMATION
 % specify coefficients
 c = 1;
 k = 1;
-r = 100*u;
-f = 100;
+r = u - v;
+r = 0;
+f = 1;
+
+% manufacture solution for testing
+%uTrue = sin(pi / 2 * x(1)) * sin(pi / 2 * x(2)) * (1 - exp(-10 * t));
+%uTrue = sin(pi / 2 * x(1)) * sin(pi / 2 * x(2));
+%uTrue = t;
+%uTrue_t = diff(uTrue,t);
+%uTrue_laplacian = divergence(gradient(uTrue,x),x);
+%f = uTrue_t - uTrue_laplacian + (uTrue - v);
 
 % specify boundary conditions
-bcTypes_interior = 'DDDD';
-bcTypes_exterior = 'R';
-BCs = {0,0,0,0,{10,1}};
+bcTypes_exterior = 'DDDD';
+bcTypes_interior = 'R';
+%bc1 = sin(pi / 2 * x(1)) * sin(pi / 2 * 0);
+%bc2 = sin(pi / 2 * 1) * sin(pi / 2 * x(2));
+%bc3 = sin(pi / 2 * x(1)) * sin(pi / 2 * 1);
+%bc4 = sin(pi / 2 * 0) * sin(pi / 2 * x(2));
+bc1 = 1;
+bc2 = 1;
+bc3 = 1;
+bc4 = 1;
+%bc1 = t;
+%bc2 = t;
+%bc3 = t;
+%bc4 = t;
+BCs = {bc1,bc2,bc3,bc4,{10,1}};
 
 % specify initial condition
-u_o = 0;
+%u_o = sin(pi / 2 * x(1)) * sin(pi / 2 * x(2));
+u_o = 1;
+
 
 % ODE INFORMATION
-f = 1;
+g = 0;
 v_o = 0;
-s = 10;
+s = 0;
 order = 1;
-
 
 
 % BLACK BOX %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -61,7 +83,7 @@ fprintf(' %f s\n',executionTime)
 
 % Assemble PDE Data
 fprintf(' Assembling PDE Data:'), tic
-	bcTypes = [bcTypes_interior, bcTypes_exterior];
+	bcTypes = [bcTypes_exterior, bcTypes_interior];
 	dom = GalerkinAssembler2d_rxndiff.assembleBoundary(dom_geo,bcTypes,BCs); 
 	dom = GalerkinAssembler2d_rxndiff.assembleMesh(dom,p,base);
 	dom = GalerkinAssembler2d_rxndiff.assembleTimeStepping(dom,T,dt);
@@ -71,7 +93,7 @@ fprintf(' %f s\n',executionTime)
 
 % Assemble ODE Data
 fprintf(' Assembling ODE Data:'), tic
-	data.f = f;
+	data.g = g;
 	data.vInit = v_o;
 	data.cofs.s = s;
 	data.time.T = T;
@@ -90,4 +112,3 @@ fprintf(' Solving:'), tic
 	%prob = NewtonGalerkinSolver2d_heat(dom,auxfun);
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
-

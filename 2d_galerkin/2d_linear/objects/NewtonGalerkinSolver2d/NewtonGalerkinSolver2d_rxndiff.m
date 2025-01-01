@@ -9,6 +9,9 @@ classdef NewtonGalerkinSolver2d_rxndiff < NewtonGalerkinSolver2d_parabolic
 			% call superclass constructor
 			self@NewtonGalerkinSolver2d_parabolic(dom,auxfun);
 
+			% solve
+			self = self.solve;
+
 		end
 
         function self = assembleVectors(self) 

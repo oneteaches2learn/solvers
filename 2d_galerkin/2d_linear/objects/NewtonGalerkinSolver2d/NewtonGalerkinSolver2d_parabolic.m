@@ -16,8 +16,12 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic & NewtonG
 
         function self = solveTimestep(self,S,b,FreeNodes)
 
-			dirichlet = self.domain.boundary.D_nodes;
-   
+			dirichlet = unique(self.domain.boundary.D_nodes);
+
+            % define U_tilde (temporary)
+            U_tilde = self.U;
+            U_tilde(dirichlet) = 0;
+
             % Newton-Galerkin loop
             for iter = 1:100
 
@@ -25,15 +29,22 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic & NewtonG
                 self = self.assembleTensors;
                 self = self.assembleVectors;
                 self = self.assembleBCs;
-                [DJ, J] = self.finalAssembly(self.U);
+                [DJ, J, S] = self.finalAssembly(self.U);
 
-                % Dirichlet conditions
-                W = zeros(self.domain.mesh.nNodes,1);
-                W(unique(dirichlet)) = 0;
-                
+                %{
                 % Solving one Newton step
+                W = zeros(self.domain.mesh.nNodes,1);
+                %W(unique(dirichlet)) = self.vectors.U_D(unique(dirichlet));
                 W(FreeNodes) = DJ(FreeNodes,FreeNodes) \ J(FreeNodes);
-                self.U = self.U - W;
+                %W = DJ \ J;
+                self.U(FreeNodes) = self.U(FreeNodes) - W(FreeNodes);
+                %}
+
+                % Solving one Newton step (temporary)
+                W = zeros(self.domain.mesh.nNodes,1);
+                W(FreeNodes) = DJ(FreeNodes,FreeNodes) \ J(FreeNodes);
+                %W = DJ \ J;
+                U_tilde = U_tilde - W;
 
                 % check convegence
                 if norm(W) < 10^(-10)
@@ -43,8 +54,13 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic & NewtonG
                 end
             end
 
+            self.U = U_tilde + self.vectors.U_D;
+            self.solution(:,self.timestep) = self.U;
+
             % store result
-            self.solution(:,self.timestep) = self.U + self.vectors.U_D;
+            %self.U = self.U + self.vectors.U_D;
+            %self.solution(:,self.timestep) = self.U;
+            %self.solution(:,self.timestep) = self.U + self.vectors.U_D;
         end
 
         function self = initializeProblem(self)

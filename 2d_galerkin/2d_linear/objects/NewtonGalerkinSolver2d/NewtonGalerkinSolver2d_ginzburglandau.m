@@ -9,6 +9,9 @@ classdef NewtonGalerkinSolver2d_ginzburglandau < NewtonRaphsonSolver2d_elliptic
 			% call superclass constructor
 			self@NewtonGalerkinSolver2d_elliptic(dom,auxfun);
 
+			% solve
+			self = self.solve;
+
 		end
 
 		function self = solve(self)
