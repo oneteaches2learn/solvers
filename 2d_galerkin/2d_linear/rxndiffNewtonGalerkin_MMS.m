@@ -112,4 +112,5 @@ end
 executionTime = toc;
 fprintf('%f s\n',executionTime) 
 
+errors
 orders

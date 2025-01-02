@@ -21,15 +21,19 @@ base = 2;
 demo = 0;
 
 % specify BCs
-bTypes_outer = 'NNNN';
+bTypes_outer = 'RRRR';
 bTypes_inner = 'N';
 
 % specify coefficients
-c = 2 + sin(x(1) + x(2)) * t + t^2; 
-k = 2 + sin(x(1) + x(2)) * t + t^2; 
+%c = 2 + sin(x(1) + x(2)) * t + t^2; 
+%k = 2 + sin(x(1) + x(2)) * t + t^2; 
+c = 1;
+k = 1;
+
 
 % specify desired result
-uTrue = sin(2 * pi * x(1)) * sin(2 * pi * x(2)) * (t + 1) + (t + 1);
+%uTrue = sin(2 * pi * x(1)) * sin(2 * pi * x(2)) * (t + 1) + (t + 1);
+uTrue = cos(2 * pi * x(1)) * cos(2* pi * x(2));
 
 
 % MMS TEST %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -37,7 +41,7 @@ fprintf('MMS Test Begun\n')
 
 % assemble inputs
 auxfun    = ManufacturedFunctions2d_heat(c,k,uTrue);
-mmsparams = MMSParams(base,demo=demo,timeOffset=3,timeFactor=2,pmin=3,pmax=6, ...
+mmsparams = MMSParams(base,demo=demo,timeOffset=2,timeFactor=2,pmin=2,pmax=4, ...
 				meshInclusions='on',effectiveRegion='Omega_eps');
 
 % build domain

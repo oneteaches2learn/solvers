@@ -52,7 +52,6 @@ classdef NewtonGalerkinSolver2d
 
 		function E = computeNonlinearRobinContribution(self)
 
-			%{
 			% unpack variables
 			dom    = self.domain;
 			nNodes = self.domain.mesh.nNodes;
@@ -94,10 +93,6 @@ classdef NewtonGalerkinSolver2d
 					end
 				end
 			end
-			%}
-			nNodes = self.domain.mesh.nNodes;
-			E = sparse(zeros(nNodes,nNodes));
-			%full(max(max(E)))
 		end
 
     end

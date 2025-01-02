@@ -69,7 +69,7 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic & NewtonG
 
                 % check convegence
                 if norm(W) < 10^(-10)
-                    %fprintf(' timestep: %d, converged in %d iterations,\n',self.timestep,iter)
+                    fprintf(' timestep: %d, converged in %d iterations,\n',self.timestep,iter)
                     self.iterHistory(self.timestep) = iter;
                     break
                 end

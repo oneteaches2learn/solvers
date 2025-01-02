@@ -21,6 +21,23 @@ classdef NewtonGalerkinSolver2d_heat < NewtonGalerkinSolver2d_parabolic
             vectors = self.vectors;
 			dt = self.domain.time.dt;
 
+			%{
+			% (temporary) assemble linear tensor
+			S = dt * (tensors.A + tensors.M_rob) + tensors.M_p;
+
+			% (temporary) assemble load vector
+			b = tensors.M_p_prevTime * vectors.U_prevTime + ... 
+					dt * (vectors.b_vol + vectors.b_rob); 
+					
+
+			% (temporary) assemble J
+			J = S * U_tilde - b;
+
+			% (temporary) assemble DJ
+			DJ = tensors.M_p + dt * (tensors.A + tensors.M_rob);
+			%}
+
+
 			% assemble linear tensor
 			S = dt * (tensors.A + tensors.M_rob) + tensors.M_p;
 
@@ -33,7 +50,8 @@ classdef NewtonGalerkinSolver2d_heat < NewtonGalerkinSolver2d_parabolic
 			J = S * U_tilde - b;
 
 			% assemble DJ
-			DJ = tensors.M_p + dt * (tensors.A + tensors.M_dneu - tensors.M_drob);
+			DJ = tensors.M_p + ...
+					dt * (tensors.A + tensors.M_rob + tensors.M_dneu - tensors.M_drob);
 
 		end
 
