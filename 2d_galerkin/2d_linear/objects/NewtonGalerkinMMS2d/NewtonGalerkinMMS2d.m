@@ -121,9 +121,6 @@ classdef NewtonGalerkinMMS2d < GalerkinMMS2d
 				%}
 
 
-				% NOTE: Code below is the nonlinear Robin condition that USED TO
-				% WORK, but now isn't. It is muted while I try the "old" linear
-				% version.  
 				% assign Robin BC
 				elseif dom.boundary.edges(i).boundaryType == 'R'
 

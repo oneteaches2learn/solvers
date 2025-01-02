@@ -66,6 +66,7 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic & NewtonG
 				% be used to compute other tensors. But perhaps it is not
 				% necessary, or even causes problems. Take a look.
                 self.U = U_tilde + self.vectors.U_D;
+                %self.U = U_tilde;
 
                 % check convegence
                 if norm(W) < 10^(-10)
@@ -75,6 +76,7 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic & NewtonG
                 end
             end
 
+            %self.U = U_tilde + self.vectors.U_D;
             % store resolved solution
             self.solution(:,self.timestep) = self.U;
 

@@ -20,7 +20,7 @@ classdef NewtonGalerkinSolver2d_rxndiff < NewtonGalerkinSolver2d_parabolic
 			% "solve" method from the outside. Or to implement an option to
 			% solve or not solve in the constructor. I think the first option is
 			% best. But I'm leaving this note for later consideration!  
-			%self = self.solve;
+			self = self.solve;
 
 		end
 
@@ -64,10 +64,10 @@ classdef NewtonGalerkinSolver2d_rxndiff < NewtonGalerkinSolver2d_parabolic
 
 			% assemble J
             J = S * U_tilde + b_nonlinear - b;
-
                 
 			% assemble DJ
-			DJ = tensors.M_p + dt * (tensors.A + tensors.M_dr + tensors.M_dneu - tensors.M_drob);
+			DJ = tensors.M_p + ...
+					dt * (tensors.A + tensors.M_rob + tensors.M_dr + tensors.M_dneu - tensors.M_drob);
 
 		end
 

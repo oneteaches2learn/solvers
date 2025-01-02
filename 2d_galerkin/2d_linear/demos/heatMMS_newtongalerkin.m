@@ -27,8 +27,8 @@ bTypes_outer = 'DDDD';
 bTypes_inner = 'R';
 
 % specify coefficients
-c = 1;
-k = 1;
+c = 1 + x(1)^2 + x(2)^2;
+k = 1 + x(1)^2 + x(2)^2 + t;
 
 % specify nonlinear boundary conditions
 %u_N = sin(u); 
@@ -41,10 +41,10 @@ u_R = -u^2;
 alpha_R = 1 + x(1) + x(2);
 
 % specify desired result
-uTrue = sin(pi / 2* x(1)) * sin(pi / 2 * x(2)) + 1;
+%uTrue = sin(pi / 2* x(1)) * sin(pi / 2 * x(2)) + 1;
 %uTrue = cos(2 * pi * x(1)) * cos(2* pi * x(2));
 %uTrue = exp(x(1) * x(2));
-%uTrue = sin(pi * x(1)) * sin(pi * x(2)) * t + t + 1;
+uTrue = sin(pi * x(1)) * sin(pi * x(2)) * t + t + 1;
 %uTrue = sin(pi / 2 * x(1)) * sin(pi / 2 * x(2)) * t + t + 1;
 %uTrue = 1 + t;
 %uTrue = 1;
@@ -57,10 +57,10 @@ fprintf('MMS Test Begun\n')
 auxfun    = ManufacturedFunctions2d_heat(c,k,uTrue,u_N=u_N,alpha_R=alpha_R,u_R=u_R);
 mmsparams = MMSParams(base, ...
 						demo=demo, ...
-						timeOffset=2, ...
+						timeOffset=3, ...
 						timeFactor=2, ...
-						pmin=2, ...
-						pmax=4, ...
+						pmin=3, ...
+						pmax=6, ...
 						meshInclusions=meshInclusions, ...
 						effectiveRegion=effRegion);
 
