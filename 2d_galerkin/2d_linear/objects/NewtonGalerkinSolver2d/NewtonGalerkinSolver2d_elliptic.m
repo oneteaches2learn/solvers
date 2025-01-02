@@ -28,6 +28,9 @@ classdef NewtonGalerkinSolver2d_elliptic < GalerkinSolver2d_elliptic & NewtonGal
 			self = self.assembleBCs;
 			self.U(unique(dirichlet)) = self.vectors.U_D(unique(dirichlet));
 
+            % construct U_tilde
+            U_tilde = self.U;
+            U_tilde(dirichlet) = 0;
 			% temporary
 			%self.U(unique(dirichlet)) = 0;
 
@@ -38,15 +41,18 @@ classdef NewtonGalerkinSolver2d_elliptic < GalerkinSolver2d_elliptic & NewtonGal
 				self = self.assembleTensors;
 				self = self.assembleVectors;
 				self = self.assembleBCs;
-				[DJ,J] = self.finalAssembly(self.U);
+				[DJ,J] = self.finalAssembly(U_tilde);
 							
-				% Dirichlet conditions
-				W = zeros(self.domain.mesh.nNodes,1);
-				W(unique(dirichlet)) = 0;
-				
 				% Solving one Newton step
+				W = zeros(self.domain.mesh.nNodes,1);
 				W(FreeNodes) = DJ(FreeNodes,FreeNodes) \ J(FreeNodes);
-				self.U = self.U - W;
+                U_tilde = U_tilde - W;
+
+                % add back dirichlet values to get current solution
+				% note: I suspect this is necessary as the current solution will
+				% be used to compute other tensors. Testing shows this gives the
+				% best result in terms of convergence rate and accuracy.
+				self.U = U_tilde + self.vectors.U_D;
 
 				% check convegence
 				if norm(W) < 10^(-10)

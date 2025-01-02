@@ -20,14 +20,14 @@ base = 2;
 demo = 0;
 
 % specify BCs
-bTypes_outer = 'DDDD';
+bTypes_outer = 'NNNN';
 bTypes_inner = 'N';
 
 % specify coefficients
-k = 1 + x(1) + x(2);
-r = u^3 - 4 * u;
-%r = u * (u - 1);
-%r = u;
+k = 1;
+%r = u^3 - 4 * u;
+r = 100 * u * (u - 1);
+%r = 5 * u;
 %r = 0;
 
 % specify nonlinear boundary conditions
@@ -35,16 +35,17 @@ r = u^3 - 4 * u;
 %u_N = u^3; 
 %u_N = u^2; 
 %u_N = sin(u); 
-u_N = 0;
+u_N = 1 * (u + u^2); 
+%u_N = u^2;
 %u_R = u^3;
 %u_R = u^2;
 %alpha_R = 2 + x(1) * x(2);
-u_R = 0;
+u_R = -u^2;
 alpha_R = 1;
 
 % specify desired result
-uTrue = 1 + sin(pi / 2* x(1)) * sin(pi / 2 * x(2));
-%uTrue = cos(2 * pi * x(1)) * cos(2* pi * x(2));
+%uTrue = 1 + sin(pi / 2* x(1)) * sin(pi / 2 * x(2));
+uTrue = cos(2 * pi * x(1)) * cos(2* pi * x(2));
 %uTrue = exp(x(1) * x(2));
 %uTrue = sin(pi * x(1)) * sin(pi * x(2)) + 1/2;
 %uTrue = 1;

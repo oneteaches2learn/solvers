@@ -63,10 +63,9 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic & NewtonG
 
                 % add back dirichlet values to get current solution
 				% note: I suspect this is necessary as the current solution will
-				% be used to compute other tensors. But perhaps it is not
-				% necessary, or even causes problems. Take a look.
-                self.U = U_tilde + self.vectors.U_D;
-                %self.U = U_tilde;
+				% be used to compute other tensors. Testing shows this gives the
+				% best result in terms of convergence rate and accuracy.
+				self.U = U_tilde + self.vectors.U_D;
 
                 % check convegence
                 if norm(W) < 10^(-10)
@@ -76,7 +75,6 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic & NewtonG
                 end
             end
 
-            %self.U = U_tilde + self.vectors.U_D;
             % store resolved solution
             self.solution(:,self.timestep) = self.U;
 
