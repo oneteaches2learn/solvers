@@ -1085,6 +1085,8 @@ classdef Domain2d
 			dom = Domain2d();
 			dom.mesh = mesh;
 			dom.boundary = bdry;
+			dom.domainArea = sum(dom.mesh.areas);
+
 		
 		end
 

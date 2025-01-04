@@ -110,6 +110,51 @@ classdef GalerkinAssembler2d
 
 		end
 
+		function dom = assembleNonlinearBoundary(dom,bcTypes,BCs)
+		% assembleNonlinearBoundary adds d/du(BC) to the boundary conditions
+		%
+		% INPUTS
+		%	dom: Domain2d object
+		% 	bcTypes: char array with entries 'D', 'N', 'R', 'T', one for each
+		% 		boundary edge
+		%   BCs: cell array with symfun entries representing the boundary
+		%   	conditions, one for each boundary edge
+		%
+		% The derivative of each boundary condition will be taken using symbolic
+		% differentiation, so the inputs must be symbolic functions. For
+		% dirichlet conditions, pass a 0 as the corresponding symbolic function.
+		% Robin conditions are of the form:
+		%
+		%	du / dn = -alpha_R * (u - u_R).
+		%
+		% Entries of BCs corresponding to R condtion should be passed as a
+		% nested cell array in the form {alpha_R,u_R}.
+		
+			% create necessary symbolic variables
+			x = sym('x',[1 2],'real'); syms u; syms t;
+
+			% converge doubles to symbolic functions
+			for i = 1:length(BCs)
+
+				% if R condition, extract u_R
+				if bcTypes(i) == 'R'
+					BCs{i} = BCs{i}{2};
+				end
+				
+				% check if BC is a double
+				if isnumeric(BCs{i})
+					BCs{i} = symfun(BCs{i},x);
+				end
+
+				% take derivative of BC
+				BCs{i} = symfun(diff(BCs{i},u),x);
+
+				% assign to edge
+				dom.boundary.edges(i).boundaryCondition_ddu = matlabFunction(BCs{i});
+
+			end
+		end
+		
 		function bcTypes = check_bcTypes(dom,bcTypes)
 		% Let numEdges be the number of edges in the boundary of the domain.
 		% Output bcTypes is a char array with length(bcTypes) = numEdges, each

@@ -40,7 +40,7 @@ f = 0;
 %f = uTrue_t - uTrue_laplacian;
 
 % specify boundary conditions
-bcTypes_exterior = 'NNNN';
+bcTypes_exterior = 'RRRR';
 bcTypes_interior = 'R';
 %bc1 = sin(pi / 2 * x(1)) * sin(pi / 2 * 0);
 %bc2 = sin(pi / 2 * 1) * sin(pi / 2 * x(2));
@@ -55,7 +55,8 @@ bcTypes_interior = 'R';
 %bc3 = 1 + t;
 %bc4 = 1 + t;
 %BCs = {bc1,bc2,bc3,bc4,{10,1}};
-bc = 0;
+%bc = 1 * (u - v);
+bc = {1,v};
 BCs = {bc,bc,bc,bc,{0,0}};
 
 % specify initial condition
@@ -64,7 +65,7 @@ u_o = 1;
 
 
 % ODE INFORMATION
-g = 0;
+g = 1;
 v_o = 0;
 s = 1;
 order = 1;
@@ -87,11 +88,13 @@ fprintf(' %f s\n',executionTime)
 fprintf(' Assembling PDE Data:'), tic
 	bcTypes = [bcTypes_exterior, bcTypes_interior];
 	dom = GalerkinAssembler2d_rxndiff.assembleBoundary(dom_geo,bcTypes,BCs); 
+	dom = GalerkinAssembler2d_rxndiff.assembleNonlinearBoundary(dom,bcTypes,BCs);
 	dom = GalerkinAssembler2d_rxndiff.assembleMesh(dom,p,base);
 	dom = GalerkinAssembler2d_rxndiff.assembleTimeStepping(dom,T,dt);
 	auxfun = GalerkinAssembler2d_rxndiff.assembleCoefficients(c,k,r,f,u_o);
 executionTime = toc;
 fprintf(' %f s\n',executionTime)
+
 
 % Assemble ODE Data
 fprintf(' Assembling ODE Data:'), tic

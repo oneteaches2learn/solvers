@@ -65,9 +65,6 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
             U_tilde = self.U;
             U_tilde(dirichlet) = 0;
 
-			% temporary
-			self.U = U_tilde;
-            
             % Newton-Galerkin loop
             for iter = 1:10
 
@@ -81,15 +78,12 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
                 W = zeros(self.domain.mesh.nNodes,1);
                 W(FreeNodes) = DJ(FreeNodes,FreeNodes) \ J(FreeNodes);
                 U_tilde = U_tilde - W;
-				U_tilde(1)
-
-				self.U = U_tilde;
 
                 % add back dirichlet values to get current solution
 				% note: I suspect this is necessary as the current solution will
 				% be used to compute other tensors. But perhaps it is not
 				% necessary, or even causes problems. Take a look.
-				% self.U = U_tilde + self.vectors.U_D;
+				self.U = U_tilde + self.vectors.U_D;
 
 				%{
 				% UPDATE ODE
@@ -107,14 +101,11 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
 
                 % check convegence
                 if norm(W) < 10^(-10)
-                    fprintf(' %d iterations,\n',iter)
+                    fprintf(' timestep: %d, converged in %d iterations\n',self.timestep,iter)
                     self.iterHistory(self.timestep) = iter;
                     break
                 end
             end
-
-			% (temporary) add back dirichlet values to get current solution
-			self.U = U_tilde + self.vectors.U_D;
 
 			% UPDATE ODE
 			% Note: If you are time lagging the solutions, you would update the ODE here
@@ -251,6 +242,186 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
 			end
 		end
 
+		function b_neu = computeNeumannBCs(self)
+
+			% unpack variables
+			dom    = self.domain;
+			nNodes = self.domain.mesh.nNodes;
+			coords = self.domain.mesh.nodes;
+
+			% initialize storage
+			b_neu = sparse(nNodes,1);
+
+			% compute boundary conditions
+			for i = 1:self.domain.boundary.nEdges
+				
+				% compute Neumann condition
+				if dom.boundary.edges(i).boundaryType == 'N'
+
+					% store nodes on i-th edge of domain
+					bNodes_i = dom.boundary.edges(i).nodes;
+					bCond = dom.boundary.edges(i).boundaryCondition;
+
+					% check boundary condition variables
+					[bCond,t,U,V] = checkVariables(self,bCond);
+
+					% loop over segments of i-th edge
+					for j = 1:length(bNodes_i)-1
+						edge = [bNodes_i(j) bNodes_i(j+1)];
+						edgeMidPt = sum(coords(edge,:)/2);
+						edgeLength = norm(coords(edge(1),:) - coords(edge(2),:));
+						b_neu(edge) = b_neu(edge) + ...
+							edgeLength * bCond(edgeMidPt(1),edgeMidPt(2),t,sum(U(edge))/2,V) / 2;
+					end
+				end
+			end
+		end
+
+		function [E,b] = computeRobinBCs(self)
+
+			% unpack variables
+			dom    = self.domain;
+			nNodes = self.domain.mesh.nNodes;
+			coords = self.domain.mesh.nodes;
+
+			% initialize storage
+			b = sparse(nNodes,1);
+			E = sparse(nNodes,nNodes);
+
+			% compute boundary conditions
+			for i = 1:self.domain.boundary.nEdges
+				
+				% compute Dirichlet condition
+				if dom.boundary.edges(i).boundaryType == 'R'
+					
+					bCond = dom.boundary.edges(i).boundaryCondition;
+
+					% unpack functions
+					alpha = bCond{1};
+					u_BC  = bCond{2};
+
+					% NEW: check boundary condition variables
+					[alpha,t,U,V] = checkVariables(self,alpha);
+					[u_BC,t,U,V] = checkVariables(self,u_BC);
+
+					% store nodes on i-th edge of domain
+					bNodes_i = dom.boundary.edges(i).nodes;
+
+					% loop over segments of i-th edge
+					for j = 1:length(bNodes_i)-1
+
+						% get edge data
+						edge = [bNodes_i(j) bNodes_i(j+1)];
+						edgeMidPt = sum(coords(edge,:)/2);
+						edgeLength = norm(coords(edge(1),:) - coords(edge(2),:));
+
+						% compute RHS vector
+						b(edge) = b(edge) + ...
+							edgeLength * alpha(edgeMidPt(1),edgeMidPt(2),t,sum(U(edge))/2,V) * ...
+							u_BC(edgeMidPt(1),edgeMidPt(2),t,sum(U(edge))/2,V) / 2;
+
+						% compute E matrix
+						E(edge(1),edge(1)) = E(edge(1),edge(1)) + ...
+							1/2 * edgeLength * alpha(coords(edge(1),1),coords(edge(1),2),t,sum(U(edge))/2,V);
+						E(edge(2),edge(2)) = E(edge(2),edge(2)) + ...
+							1/2 * edgeLength * alpha(coords(edge(2),1),coords(edge(2),2),t,sum(U(edge))/2,V);
+
+					end
+				end
+			end
+		end
+
+        function E = computeNonlinearNeumannContribution(self)
+
+			% unpack variables
+			dom    = self.domain;
+			nNodes = self.domain.mesh.nNodes;
+			coords = self.domain.mesh.nodes;
+
+			% initialize storage
+			E = sparse(nNodes,nNodes);
+
+			% compute boundary conditions
+			for i = 1:self.domain.boundary.nEdges
+				
+				% compute Dirichlet condition
+				if dom.boundary.edges(i).boundaryType == 'N'
+					
+					bCond = dom.boundary.edges(i).boundaryCondition_ddu;
+
+                    % check if alpha is time-varying
+					[bCond,t,U,V] = self.checkVariables(bCond);
+                    
+					% store nodes on i-th edge of domain
+					bNodes_i = dom.boundary.edges(i).nodes;
+
+					% loop over segments of i-th edge
+					for j = 1:length(bNodes_i)-1
+
+						% get edge data
+						edge = [bNodes_i(j) bNodes_i(j+1)];
+						edgeMidPt = sum(coords(edge,:)/2);
+						edgeLength = norm(coords(edge(1),:) - coords(edge(2),:));
+
+						% compute E matrix
+						E(edge(1),edge(1)) = E(edge(1),edge(1)) + ...
+							1/2 * edgeLength * bCond(coords(edge(1),1),coords(edge(1),2),t,U(edge(1)),V);
+						E(edge(2),edge(2)) = E(edge(2),edge(2)) + ...
+							1/2 * edgeLength * bCond(coords(edge(2),1),coords(edge(2),2),t,U(edge(2)),V);
+					end
+				end
+			end
+		end
+
+		function E = computeNonlinearRobinContribution(self)
+
+			% unpack variables
+			dom    = self.domain;
+			nNodes = self.domain.mesh.nNodes;
+			coords = self.domain.mesh.nodes;
+
+			% initialize storage
+			E = sparse(nNodes,nNodes);
+
+			% compute boundary conditions
+			for i = 1:self.domain.boundary.nEdges
+				
+				% compute Dirichlet condition
+				if dom.boundary.edges(i).boundaryType == 'R'
+					
+					alpha = dom.boundary.edges(i).boundaryCondition{1};
+					bCond = dom.boundary.edges(i).boundaryCondition_ddu;
+
+                    % check if alpha is time-varying
+					alpha = self.checkVariables(alpha);
+					[bCond,t,U,V] = self.checkVariables(bCond);
+                    
+					% store nodes on i-th edge of domain
+					bNodes_i = dom.boundary.edges(i).nodes;
+
+					% loop over segments of i-th edge
+					for j = 1:length(bNodes_i)-1
+
+						% get edge data
+						edge = [bNodes_i(j) bNodes_i(j+1)];
+						edgeMidPt = sum(coords(edge,:)/2);
+						edgeLength = norm(coords(edge(1),:) - coords(edge(2),:));
+
+						% compute E matrix
+						E(edge(1),edge(1)) = E(edge(1),edge(1)) + ...
+							1/2 * edgeLength * bCond(coords(edge(1),1),coords(edge(1),2),t,sum(U(edge))/2,V);
+						E(edge(2),edge(2)) = E(edge(2),edge(2)) + ...
+							1/2 * edgeLength * bCond(coords(edge(2),1),coords(edge(2),2),t,sum(U(edge))/2,V);
+
+
+						% NOTE: I think bCond should also be multiplied by
+						% alpha? I'm not currently using alpha. For now, just
+						% set alpha = 1.
+						end
+				end
+			end
+		end
+
 
 		% PLOTTING FUNCTIONS
 		function plot(self,timestep)
@@ -267,6 +438,7 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
 			subplot(1, 2, 1);
 			plot@GalerkinSolver2d(self,timestep);
 			title(sprintf('u, t = %d',self.domain.time.tGrid(timestep)));
+			view(2);
 
 			% set zlim
 			zMin = min(min(self.solution(:)),min(self.ODE.solution(:)));
@@ -275,6 +447,10 @@ classdef CoupledNewtonSolver2d_rxndiff < NewtonGalerkinSolver2d_rxndiff
 				zMax = zMin + 1;
 			end
 			zlim([zMin, zMax]);
+
+			% set colorbar
+			colorbar;
+			clim([zMin, zMax]);
 
 			% Right panel: Use the ODE's plot method to plot the ODE solution
 			subplot(1, 2, 2);
