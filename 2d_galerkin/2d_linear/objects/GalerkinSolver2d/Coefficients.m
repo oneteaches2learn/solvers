@@ -5,6 +5,159 @@ classdef Coefficients
 		end
 	end
 
+
+	% COEFFICIENT BANK
+	methods (Static)
+		function val = physiological_coefficient1(u,v,cofs)
+
+			arguments
+				u
+				v
+				cofs.v_min= 0;
+				cofs.v_max = 1;
+				cofs.u_min = 0;
+				cofs.u_max = 1;
+			end
+			
+			% define individual ramps
+			ramp_v = @(v) Coefficients.ramp(v,lowerBound=cofs.v_min,upperBound=cofs.v_max);
+			ramp_u = @(u) Coefficients.ramp(u,lowerBound=cofs.u_min,upperBound=cofs.u_max);
+
+			% combine maps
+			gamma = 2;
+			cof = @(u,v) (ramp_v(v) * ramp_u(u).^gamma);
+			val = cof(u,v);
+
+		end	
+
+		function val = physiological_coefficient1_du(u,v,cofs)
+
+			arguments
+				u
+				v
+				cofs.v_min = 0;
+				cofs.v_max = 1;
+				cofs.u_min = 0;
+				cofs.u_max = 1;
+			end
+			
+			% define individual functions
+			ramp_v = @(v) Coefficients.ramp(v,lowerBound=cofs.v_min,upperBound=cofs.v_max);
+			ramp_u_du = @(u) Coefficients.ramp_du(u,lowerBound=cofs.u_min,upperBound=cofs.u_max);
+
+			% combine maps
+			gamma = 2;
+			cof = @(u,v) gamma * ramp_v(v) * ramp_u_du(u).^(gamma-1);
+			val = cof(u,v);
+
+		end	
+
+	end
+
+
+	% BUILDING BLOCKS
+	methods (Static)
+		function val = rLU(u)
+		% rLU(u) returns val = u for u >= 0, or val = 0 otherwise.
+		%
+		% NOTE: rLU = rectified linear unit
+
+			val = max(u,0);
+
+		end
+
+		function val = ramp(u,cofs)
+		% ramp(u) returns val = u / (upperBound - lowerBound) for lowerBound <= u
+		% 	<= upperBound, or val = 0 for u < lowerBound, or val = 1 for u >
+		% 	upperBound.
+		% 
+		% lowerBound and upperBound are passed as name-value pairs and have
+		% default values lowerBound = 0 and upperBound = 1.  
+		% 
+		% syntax:
+		% 	y = ramp_function(u)
+		% 	y = ramp_function(u,lowerBound=-1)
+		% 	y = ramp_function(u,upperBound=6)
+		% 	y = ramp_function(u,lowerBound=-1,upperBound=6)
+
+			arguments
+				u
+				cofs.lowerBound = 0;
+				cofs.upperBound = 1;
+			end
+
+			rampLow  = @(u) Coefficients.rLU(u - cofs.lowerBound);
+			rampHigh = @(u) Coefficients.rLU(u - cofs.upperBound);
+			ramp = @(u) (rampLow(u) - rampHigh(u)) / (cofs.upperBound - cofs.lowerBound);
+
+			val = ramp(u);
+
+		end
+
+		function val = ramp_du(u,cofs)
+		% d_ramp(u) returns val = 1 / (upperBound - lowerBound) for lowerBound <= u
+		% 	<= upperBound, and val = 0 otherwise. It is the derivative of ramp(u).
+		%
+		% lowerBound and upperBound are passed as name-value pairs and have
+		% default values lowerBound = 0 and upperBound = 1.
+
+			arguments
+				u
+				cofs.lowerBound = 0;
+				cofs.upperBound = 1;
+			end
+			
+			val = double(u >= cofs.lowerBound & u <= cofs.upperBound) / (cofs.upperBound - cofs.lowerBound);
+
+		end
+
+		function val = box(u,cofs)
+		% box(x) returns val = 1 for lowerBound <= u <= upperBound, and val = 0 else.
+		%
+		% lowerBound and upperBound are passed as name-value pairs and have
+		% default values lowerBound = 0 and upperBound = Inf.
+
+			arguments
+				u
+				cofs.lowerBound = 0;
+				cofs.upperBound = Inf;
+			end
+
+			val = double(u >= coefs.lowerBound & u <= coefs.upperBound);
+
+		end
+
+		function val = heaviside(u)
+		% heaviside(u) returns val = 1 for u >= 0 and val = 0 otherwise.
+
+			val = double(u >= 0);
+
+		end
+		
+		function val = logistic(u,cofs)
+		% logistic(u,cofs) returns val = L/(1 + exp(-k * (u - u_0)).
+		%
+		% Coefficients L, k, and u_0 are passed as name-value pairs and have
+		% default values L = 1, k = 1, u_0 = 0.
+		%
+		% syntax:
+		% 	y = logistic_function(u)
+		% 	y = logistic_function(u,u_0=2)
+		% 	y = logistic_function(u,L=2,k=2,u_0=2)
+
+			arguments
+				u
+				cofs.L = 1;
+				cofs.k = 1;
+				cofs.u_0 = 0;
+			end
+		
+			val = L ./ (1 + exp(-k * (u - u_0)));
+
+		end
+	end
+
+	% VARIABLE CHECKING / SETTING METHODS
 	methods (Static)
 		function [f,t,u] = checkVariables(f)
 		% checkVariables(f) converts f to an anonymous function handle in the
@@ -208,7 +361,6 @@ classdef Coefficients
 
 			end
 		end
-
 	end
 
 end
