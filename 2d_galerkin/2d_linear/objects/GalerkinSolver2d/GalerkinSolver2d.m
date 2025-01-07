@@ -58,10 +58,10 @@ classdef GalerkinSolver2d
 			nElems    = size(elements3,1);
 
 			% check coefficient variables
-			[k,t,U] = self.checkVariables(k);
+			[k,t,U,V] = self.checkVariables(k);
 
 			% compute k on centroids
-			K = k(centroids(:,1),centroids(:,2),t,U);
+			K = k(centroids(:,1),centroids(:,2),t,U,V);
 			if length(K) == 1
 				K = K * ones(nElems,1);
 			end
@@ -103,13 +103,13 @@ classdef GalerkinSolver2d
     		elements3 = self.domain.mesh.elements(self.domain.mesh.effectiveElems, :);
 
 			% check coefficient variables
-			[c,t,U] = self.checkVariables(c);
+			[c,t,U,V] = self.checkVariables(c);
 
 			% interpolate U on centroids
 			U_centroids = mean(U(elements3), 2);
 
 			% compute c on centroids
-			C = c(centroids(:,1),centroids(:,2),t,U_centroids);
+			C = c(centroids(:,1),centroids(:,2),t,U_centroids,V);
 			if length(C) == 1
 				C = C * ones(nElems,1);
 			end
@@ -168,7 +168,7 @@ classdef GalerkinSolver2d
 			end
 
 			% check coefficient variables
-			[f1,t,U] = self.checkVariables(f1);
+			[f1,t,U,V] = self.checkVariables(f1);
 			f2 = self.checkVariables(f2);
 
 			% initialize storage
@@ -183,8 +183,8 @@ classdef GalerkinSolver2d
 
 			% compute volume forces
 			areas = self.domain.mesh.areas(self.domain.mesh.effectiveElems);
-			f1_vals = f1(centroidsX, centroidsY, t, centroidsU);
-			f2_vals = f2(centroidsX, centroidsY, t, centroidsU);
+			f1_vals = f1(centroidsX, centroidsY, t, centroidsU, V);
+			f2_vals = f2(centroidsX, centroidsY, t, centroidsU, V);
 			forces = f1_vals .* f2_vals / 3;
 			volumeForces = areas .* forces;
 
@@ -260,7 +260,7 @@ classdef GalerkinSolver2d
 					bCond = dom.boundary.edges(i).boundaryCondition;
 
 					% check boundary condition variables
-					[bCond,t,U] = checkVariables(self,bCond);
+					[bCond,t,U,V] = checkVariables(self,bCond);
 
 					% loop over segments of i-th edge
 					for j = 1:length(bNodes_i)-1
@@ -268,7 +268,7 @@ classdef GalerkinSolver2d
 						edgeMidPt = sum(coords(edge,:)/2);
 						edgeLength = norm(coords(edge(1),:) - coords(edge(2),:));
 						b_neu(edge) = b_neu(edge) + ...
-							edgeLength * bCond(edgeMidPt(1),edgeMidPt(2),t,sum(U(edge))/2) / 2;
+							edgeLength * bCond(edgeMidPt(1),edgeMidPt(2),t,sum(U(edge))/2, V) / 2;
 					end
 				end
 			end
@@ -298,8 +298,8 @@ classdef GalerkinSolver2d
 					u_BC  = bCond{2};
 
 					% NEW: check boundary condition variables
-					[alpha,t,U] = checkVariables(self,alpha);
-					[u_BC,t,U] = checkVariables(self,u_BC);
+					[alpha,t,U,V] = checkVariables(self,alpha);
+					[u_BC,t,U,V] = checkVariables(self,u_BC);
 
 					% store nodes on i-th edge of domain
 					bNodes_i = dom.boundary.edges(i).nodes;
@@ -314,8 +314,8 @@ classdef GalerkinSolver2d
 
 						% compute RHS vector
 						b(edge) = b(edge) + ...
-							edgeLength * alpha(edgeMidPt(1),edgeMidPt(2),t,sum(U(edge))/2) * ...
-							u_BC(edgeMidPt(1),edgeMidPt(2),t,sum(U(edge))/2) / 2;
+							edgeLength * alpha(edgeMidPt(1),edgeMidPt(2),t,sum(U(edge))/2,V) * ...
+							u_BC(edgeMidPt(1),edgeMidPt(2),t,sum(U(edge))/2,V) / 2;
 
 						% compute E matrix
 						E(edge(1),edge(1)) = E(edge(1),edge(1)) + ...
@@ -519,27 +519,79 @@ classdef GalerkinSolver2d
 
 		end
 
-		function [f,t,U] = checkVariables(self,f)
+		function [f,t,U,V] = checkVariables(self,f)
 
 			% unpack variables
 			nNodes    = self.domain.mesh.nNodes;
 
-			% check coefficient variables
-			if ~Coefficients.isNonlinear(f) && ~Coefficients.isTimeVarying(f)
-				f = @(x1,x2,t,u)(f(x1,x2));
-				t = 0;
-				U = zeros(nNodes,1);
-			elseif ~Coefficients.isNonlinear(f) && Coefficients.isTimeVarying(f)
-				f = @(x1,x2,t,u)(f(x1,x2,t));
-				t = self.t;
-				U = zeros(nNodes,1);
-			elseif Coefficients.isNonlinear(f) && ~Coefficients.isTimeVarying(f)
-				f = @(x1,x2,t,u)(f(x1,x2,u));
-				t = 0;
-				U = self.U;
-			else
-				t = self.t;
-				U = self.U;
+			% store function type data
+			isCoupled     = num2str(Coefficients.isCoupled(f));
+			isNonlinear   = num2str(Coefficients.isNonlinear(f));
+			isTimeVarying = num2str(Coefficients.isTimeVarying(f));
+			code = strcat(isCoupled,isNonlinear,isTimeVarying);
+			code = str2num(code);
+
+			% Update function signature and store variables and/or set dummy variables
+			switch code
+				% Spatially varying only
+				case 000
+					f = @(x1,x2,t,u,v)(f(x1,x2));
+					t = 0;
+					U = zeros(nNodes,1);
+					V = 0;
+
+				% Time varying
+				case 001
+					f = @(x1,x2,t,u,v)(f(x1,x2,t));
+					t = self.t;
+					U = zeros(nNodes,1);
+					V = 0;
+				
+				% Nonlinear
+				case 010
+					f = @(x1,x2,t,u,v)(f(x1,x2,u));
+					t = 0;
+					U = self.U;
+					V = 0;
+				
+				% Time varying and nonlinear
+				case 011
+					f = @(x1,x2,t,u,v)(f(x1,x2,t,u));
+					t = self.t;
+					U = self.U;
+					V = 0;
+				
+				% Coupled
+				case 100
+					f = @(x1,x2,t,u,v)(f(x1,x2,v));
+					t = 0;
+					U = zeros(nNodes,1);
+					%V = self.V;		% <~~~ use if V is not time-lagged
+					V = self.V_prev;    % <~~~ use if V is time-lagged
+
+				% Coupled and time varying
+				case 101
+					f = @(x1,x2,t,u,v)(f(x1,x2,t,v));
+					t = self.t;
+					U = zeros(nNodes,1);
+					%V = self.V;		% <~~~ use if V is not time-lagged
+					V = self.V_prev;    % <~~~ use if V is time-lagged
+
+				% Coupled and nonlinear
+				case 110
+					f = @(x1,x2,t,u,v)(f(x1,x2,u,v));
+					t = 0;
+					U = self.U;
+					%V = self.V;		% <~~~ use if V is not time-lagged
+					V = self.V_prev;    % <~~~ use if V is time-lagged
+
+				% Coupled, time varying, and nonlinear
+				case 111
+					f = @(x1,x2,t,u,v)(f(x1,x2,t,u,v));
+					t = self.t;
+					U = self.U;
+					%V = self.V;		% <~~~ use if V is not time-lagged
+					V = self.V_prev;    % <~~~ use if V is time-lagged
 			end
 		end
 
