@@ -39,7 +39,7 @@ r = u^2;
 
 % specify nonlinear boundary conditions
 %u_N = sin(u); 
-u_N = 1*(u - u^3);
+u_N = 1*(u + u^3);
 %u_R = u^3;
 %u_R = u^2;
 %alpha_R = 2 + x(1) * x(2);

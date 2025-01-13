@@ -39,33 +39,15 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic & NewtonG
 
         function self = solveTimestep(self)
 
-            % store dirichlet nodes and free nodes
-			FreeNodes = self.domain.boundary.freeNodes;
+            % initialize U_tilde
 			dirichlet = unique(self.domain.boundary.D_nodes);
-
-            % construct U_tilde
             U_tilde = self.U;
             U_tilde(dirichlet) = 0;
             
             % Newton-Galerkin loop
             for iter = 1:100
 
-                % Assembly
-                self = self.assembleTensors;
-                self = self.assembleVectors;
-                self = self.assembleBCs;
-                [DJ, J] = self.finalAssembly(U_tilde);
-
-                % Solving one Newton step
-                W = zeros(self.domain.mesh.nNodes,1);
-                W(FreeNodes) = DJ(FreeNodes,FreeNodes) \ J(FreeNodes);
-                U_tilde = U_tilde - W;
-
-                % add back dirichlet values to get current solution
-				% note: I suspect this is necessary as the current solution will
-				% be used to compute other tensors. Testing shows this gives the
-				% best result in terms of convergence rate and accuracy.
-				self.U = U_tilde + self.vectors.U_D;
+                [self, U_tilde, W] = self.solveIteration(U_tilde);
 
                 % check convegence
                 if norm(W) < 10^(-10)
@@ -77,6 +59,28 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic & NewtonG
 
             % store resolved solution
             self.solution(:,self.timestep) = self.U;
+
+        end
+
+        function [self, U_tilde, W] = solveIteration(self, U_tilde)
+
+            % store dirichlet nodes and free nodes
+			FreeNodes = self.domain.boundary.freeNodes;
+			dirichlet = unique(self.domain.boundary.D_nodes);
+
+            % Assembly
+            self = self.assembleTensors;
+            self = self.assembleVectors;
+            self = self.assembleBCs;
+            [DJ, J] = self.finalAssembly(U_tilde);
+
+            % Solving one Newton step
+            W = zeros(self.domain.mesh.nNodes,1);
+            W(FreeNodes) = DJ(FreeNodes,FreeNodes) \ J(FreeNodes);
+            U_tilde = U_tilde - W;
+
+            % add back dirichlet values to get current solution
+            self.U = U_tilde + self.vectors.U_D;
 
         end
 

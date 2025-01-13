@@ -27,7 +27,7 @@ classdef NewtonGalerkinSolver2d
 					bCond = dom.boundary.edges(i).boundaryCondition_ddu;
 
                     % check if alpha is time-varying
-					[bCond,t,U] = self.checkVariables(bCond);
+					[bCond,t,U,V] = self.checkVariables(bCond);
                     
 					% store nodes on i-th edge of domain
 					bNodes_i = dom.boundary.edges(i).nodes;
@@ -42,9 +42,9 @@ classdef NewtonGalerkinSolver2d
 
 						% compute E matrix
 						E(edge(1),edge(1)) = E(edge(1),edge(1)) + ...
-							1/2 * edgeLength * bCond(coords(edge(1),1),coords(edge(1),2),t,U(edge(1)));
+							1/2 * edgeLength * bCond(coords(edge(1),1),coords(edge(1),2),t,U(edge(1)),V);
 						E(edge(2),edge(2)) = E(edge(2),edge(2)) + ...
-							1/2 * edgeLength * bCond(coords(edge(2),1),coords(edge(2),2),t,U(edge(2)));
+							1/2 * edgeLength * bCond(coords(edge(2),1),coords(edge(2),2),t,U(edge(2)),V);
 					end
 				end
 			end
@@ -70,8 +70,8 @@ classdef NewtonGalerkinSolver2d
 					bCond = dom.boundary.edges(i).boundaryCondition_ddu;
 
                     % check if alpha is time-varying
-					[bCond,t,U] = self.checkVariables(bCond);
-					[alpha,t,U] = self.checkVariables(alpha);
+					[bCond,t,U,V] = self.checkVariables(bCond);
+					[alpha,t,U,V] = self.checkVariables(alpha);
                     
 					% store nodes on i-th edge of domain
 					bNodes_i = dom.boundary.edges(i).nodes;
@@ -86,9 +86,9 @@ classdef NewtonGalerkinSolver2d
 
 						% compute E matrix
 						E(edge(1),edge(1)) = E(edge(1),edge(1)) + ...
-							1/2 * edgeLength * bCond(coords(edge(1),1),coords(edge(1),2),t,sum(U(edge))/2);
+							1/2 * edgeLength * bCond(coords(edge(1),1),coords(edge(1),2),t,sum(U(edge))/2,V);
 						E(edge(2),edge(2)) = E(edge(2),edge(2)) + ...
-							1/2 * edgeLength * bCond(coords(edge(2),1),coords(edge(2),2),t,sum(U(edge))/2);
+							1/2 * edgeLength * bCond(coords(edge(2),1),coords(edge(2),2),t,sum(U(edge))/2,V);
 
 					end
 				end

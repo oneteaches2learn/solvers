@@ -8,7 +8,7 @@ classdef Coefficients
 
 	% COEFFICIENT BANK
 	methods (Static)
-		function val = physiological_coefficient1(u,v,cofs)
+		function val = ramp_activation(u,v,cofs)
 
 			arguments
 				u
@@ -17,6 +17,7 @@ classdef Coefficients
 				cofs.v_max = 1;
 				cofs.u_min = 0;
 				cofs.u_max = 1;
+				cofs.gamma = 1;
 			end
 			
 			% define individual ramps
@@ -24,13 +25,12 @@ classdef Coefficients
 			ramp_u = @(u) Coefficients.ramp(u,lowerBound=cofs.u_min,upperBound=cofs.u_max);
 
 			% combine maps
-			gamma = 2;
-			cof = @(u,v) (ramp_v(v) * ramp_u(u).^gamma);
+			cof = @(u,v) (ramp_u(u) .* ramp_v(v).^cofs.gamma);
 			val = cof(u,v);
 
 		end	
 
-		function val = physiological_coefficient1_du(u,v,cofs)
+		function val = ramp_activation_du(u,v,cofs)
 
 			arguments
 				u
@@ -39,18 +39,66 @@ classdef Coefficients
 				cofs.v_max = 1;
 				cofs.u_min = 0;
 				cofs.u_max = 1;
+				cofs.gamma = 1;
 			end
-			
+
 			% define individual functions
 			ramp_v = @(v) Coefficients.ramp(v,lowerBound=cofs.v_min,upperBound=cofs.v_max);
 			ramp_u_du = @(u) Coefficients.ramp_du(u,lowerBound=cofs.u_min,upperBound=cofs.u_max);
 
 			% combine maps
-			gamma = 2;
-			cof = @(u,v) gamma * ramp_v(v) * ramp_u_du(u).^(gamma-1);
+			cof = @(u,v) ramp_u_du(u) .* ramp_v(v).^cofs.gamma;
 			val = cof(u,v);
 
 		end	
+
+		function val = logistic_activation(u,v,cofs)
+
+			arguments
+				u
+				v
+				cofs.u_L = 1;
+				cofs.u_k = 1;
+				cofs.u_0 = 0;
+				cofs.v_L = 1;
+				cofs.v_k = 1;
+				cofs.v_0 = 0;
+				cofs.gamma = 1;
+			end
+
+			% define individual functions
+			logistic_v = @(v) Coefficients.logistic(v,L=cofs.v_L,k=cofs.v_k,u_0=cofs.v_0);
+			logistic_u = @(u) Coefficients.logistic(u,L=cofs.u_L,k=cofs.u_k,u_0=cofs.u_0);
+
+			% combine maps
+			cof = @(u,v) logistic_u(u) .* logistic_v(v).^cofs.gamma;
+			val = cof(u,v);
+
+		end
+
+		function val = logistic_activation_du(u,v,cofs)
+			
+			arguments
+				u
+				v
+				cofs.u_L = 1; % supremum of logistic function
+				cofs.u_k = 1; % steepness of logistic function
+				cofs.u_0 = 0; % midpoint of logistic function
+				cofs.v_L = 1;
+				cofs.v_k = 1;
+				cofs.v_0 = 0;
+				cofs.gamma = 1;
+			end
+
+			% define individual functions
+			logistic_v = @(v) Coefficients.logistic(v,L=cofs.v_L,k=cofs.v_k,u_0=cofs.v_0);
+			logistic_u_du = @(u) Coefficients.logistic_du(u,L=cofs.u_L,k=cofs.u_k,u_0=cofs.u_0);
+
+			% combine maps
+			cof = @(u,v) logistic_u_du(u) .* logistic_v(v).^cofs.gamma;
+			val = cof(u,v);
+
+		end
 
 	end
 
@@ -152,13 +200,88 @@ classdef Coefficients
 				cofs.u_0 = 0;
 			end
 		
-			val = L ./ (1 + exp(-k * (u - u_0)));
+			val = cofs.L ./ (1 + exp(-cofs.k * (u - cofs.u_0)));
+
+		end
+		
+		function val = logistic_du(u,cofs)
+		% logistic_du(u,cofs) returns val = L*k*exp(-k*(u - u_0))/(1 + exp(-k*(u - u_0))^2.
+		%
+		% Coefficients L, k, and u_0 are passed as name-value pairs and have
+		% default values L = 1, k = 1, u_0 = 0.
+		%
+		% syntax:
+		% 	y = logistic_function(u)
+		% 	y = logistic_function(u,u_0=2)
+		% 	y = logistic_function(u,L=2,k=2,u_0=2)
+
+			arguments
+				u
+				cofs.L = 1;
+				cofs.k = 1;
+				cofs.u_0 = 0;
+			end
+		
+			% explicit formulation of derivative
+			%val = cofs.L * cofs.k * exp(-cofs.k * (u - cofs.u_0)) ./ (1 + exp(-cofs.k * (u - cofs.u_0)).^2);
+
+			% formulation using logistic function
+			f = @(u) Coefficients.logistic(u,L=cofs.L,k=cofs.k,u_0=cofs.u_0);
+			val = f(u) .* (1 - f(u) / cofs.L) * cofs.k;
 
 		end
 	end
 
 	% VARIABLE CHECKING / SETTING METHODS
 	methods (Static)
+
+		function [f,t,U,V] = checkVariables(f)
+
+			% store function type data
+			isCoupled     = num2str(Coefficients.isCoupled(f));
+			isNonlinear   = num2str(Coefficients.isNonlinear(f));
+			isTimeVarying = num2str(Coefficients.isTimeVarying(f));
+			code = strcat(isCoupled,isNonlinear,isTimeVarying);
+			code = str2num(code);
+
+			% Update function signature and store variables and/or set dummy variables
+			switch code
+				% Spatially varying only
+				case 000
+					f = @(x1,x2,t,u,v)(f(x1,x2));
+
+				% Time varying
+				case 001
+					f = @(x1,x2,t,u,v)(f(x1,x2,t));
+				
+				% Nonlinear
+				case 010
+					f = @(x1,x2,t,u,v)(f(x1,x2,u));
+				
+				% Time varying and nonlinear
+				case 011
+					f = @(x1,x2,t,u,v)(f(x1,x2,t,u));
+				
+				% Coupled
+				case 100
+					f = @(x1,x2,t,u,v)(f(x1,x2,v));
+
+				% Coupled and time varying
+				case 101
+					f = @(x1,x2,t,u,v)(f(x1,x2,t,v));
+
+				% Coupled and nonlinear
+				case 110
+					f = @(x1,x2,t,u,v)(f(x1,x2,u,v));
+
+				% Coupled, time varying, and nonlinear
+				case 111
+					f = @(x1,x2,t,u,v)(f(x1,x2,t,u,v));
+			end
+
+		end
+
+		%{
 		function [f,t,u] = checkVariables(f)
 		% checkVariables(f) converts f to an anonymous function handle in the
 		% variables x, t, and u.
@@ -193,6 +316,7 @@ classdef Coefficients
 				t = 0;
 			end
 		end
+		%}
 
 		function f = wrap2d(f)
 		% wrap2d(f) ensures that f returns an output of the same size as the

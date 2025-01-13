@@ -615,18 +615,41 @@ classdef GalerkinSolver2d
 			U = full(self.solution(:,timestep));
 
 			% plot data
-			trisurf(elements3,coordinates(:,1),coordinates(:,2),U', ...
-				'facecolor','interp')
-			hold on
-			trisurf(elements4,coordinates(:,1),coordinates(:,2),U', ...
-				'facecolor','interp')
-			hold off
+			h = trisurf(elements3,coordinates(:,1),coordinates(:,2),U', ...
+				'facecolor','interp');
 
 			% format plot
 			view(10,40);
-			%title('Solution of the Problem')
+			title('$u$','Interpreter','latex');
 
-			h = gcf;
+			% set zlim
+			zMin = min(self.solution(:));
+			zMax = max(self.solution(:));
+			if zMin == zMax
+				zMax = zMin + 1;
+			end
+			zlim([zMin, zMax]);
+
+			% set xlim
+			xMin = min(self.domain.mesh.nodes(:,1));
+			xMax = max(self.domain.mesh.nodes(:,1));
+			xlim([xMin, xMax]);
+
+			% set ylim
+			yMin = min(self.domain.mesh.nodes(:,2));
+			yMax = max(self.domain.mesh.nodes(:,2));
+			ylim([yMin, yMax]);
+
+			% set colorbar
+			colorbar;
+			clim([zMin, zMax]);
+
+			% adjust position 
+			f = gcf;
+			heightRatio = (yMax - yMin) / (xMax - xMin);
+			width = 500;
+			f.Position = [100, 100, width, width * heightRatio];
+
 		end
 
 		function h = plotPatch(self,timestep)

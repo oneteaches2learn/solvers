@@ -251,6 +251,23 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 
 
 		% PLOTTING FUNCTIONS
+		function plot(self,timestep)
+
+			% default to last timestep
+			if nargin == 1
+				timestep = self.domain.time.N_t;
+			end
+
+			% call superclass method
+			self.plot@GalerkinSolver2d(timestep);
+
+			% add time to title
+			title(sprintf('$u$ at $t = %.2f$',self.domain.time.tGrid(timestep)),...
+				'Interpreter','latex');
+
+		end
+
+
 		function p = plotMaxSolutionValue(self)
 
 			% store variables
@@ -273,14 +290,34 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 
 		end
 
-		function p = plotAverageSolutionValue(self)
+		function p = plotAverageSolutionValue(self,timestep)
+
+			% default to last timestep
+			if nargin == 1
+				timestep = self.domain.time.N_t;
+			end
 
 			% store variables
 			avgVal = self.getAverageSolutionValue;
 			timeGrid = self.domain.time.tGrid;
 
 			% plot result
-			p = plot(timeGrid,avgVal);
+			p = plot(timeGrid(1:timestep),avgVal(1:timestep),'LineWidth',4);
+
+            % set x and y limits
+            xMin = min(timeGrid);
+            xMax = max(timeGrid);
+            yMin = min(avgVal);
+            yMax = max(avgVal);
+            if yMin == yMax, yMax = yMin + 1; end
+            xlim([xMin, xMax]);
+			ylim([yMin - 0.1*yMin, yMax + 0.1*yMax]);
+
+			% Label the axes and set a title
+			xlabel('$t$','Interpreter','latex');
+			ylabel('Temp');
+			title('$\langle u \rangle_\Omega$','Interpreter','latex');
+			grid on;
 
 		end
 

@@ -10,17 +10,7 @@ classdef NewtonGalerkinSolver2d_rxndiff < NewtonGalerkinSolver2d_parabolic
 			self@NewtonGalerkinSolver2d_parabolic(dom,auxfun);
 
 			% solve
-			% NOTE: Because the coupled solver is a subclass of this class,
-			% calling solver here causes the coupled solver to attempt to solve
-			% before the ODE is initialized. Eventually, you need to figure out
-			% the class heirarchy structure that works for all solvers. Likely
-			% this means that each class ending with a specific PDE name (e.g.
-			% 'rxndiff') is a "leaf" and has no subclasses ever. An alternative
-			% would be to take the "solve" method out entirely and call the
-			% "solve" method from the outside. Or to implement an option to
-			% solve or not solve in the constructor. I think the first option is
-			% best. But I'm leaving this note for later consideration!  
-			%self = self.solve;
+			self = self.solve;
 
 		end
 
