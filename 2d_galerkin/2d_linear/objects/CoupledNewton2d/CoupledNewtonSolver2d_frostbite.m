@@ -50,8 +50,8 @@ classdef CoupledNewtonSolver2d_frostbite < CoupledNewtonSolver2d_rxndiff
 			% plot
 			h = trisurf(Elements,X,Y,Z);
 			view(2)
-			str = sprintf('%% Blood Supply, t = %.2f',self.domain.time.tGrid(timestep));
-			title(str);
+			str = sprintf('$\\overline{r}(x,t), t = %.2f$',self.domain.time.tGrid(timestep));
+			title(str,'Interpreter','latex','FontSize',80);
 
 			% convert U to length(U) x 3 matrix
 			%U_data = reshape(U_normalized, [length(U_normalized), 1, 1]);
@@ -75,6 +75,10 @@ classdef CoupledNewtonSolver2d_frostbite < CoupledNewtonSolver2d_rxndiff
 			yMin = min(self.domain.mesh.nodes(:,2));
 			yMax = max(self.domain.mesh.nodes(:,2));
 			ylim([yMin, yMax]);
+
+			% remove tick labels
+            set(gca,'YTickLabel',[]);
+            set(gca,'XTickLabel',[]);
 
 			% adjust figure position
 			f = gcf;
@@ -117,14 +121,14 @@ classdef CoupledNewtonSolver2d_frostbite < CoupledNewtonSolver2d_rxndiff
 			hold on 
 			h1 = trisurf(Elements,X,Y,Z);
 			h2 = trisurf(Elements,X,Y,Z);
-			title(sprintf('Frostbitten Cells, t = %.2f',self.domain.time.tGrid(timestep)));
+			title(sprintf('Frostbite, $t = %.2f$',self.domain.time.tGrid(timestep)),'Interpreter','latex','FontSize',80);
 			view(2)
 			hold off
 
 			% create legend that indicates that frostbitten cells are black
 			C1 = zeros([size(Z) 3]);	
 			h1.CData = C1;
-			legend(h1,'Frostbitten Cells','Location','northeast');
+			legend(h1,'Frostbitten Element','Location','northeast');
 			k = gcf().CurrentAxes.Legend;
 			k.AutoUpdate = 'off';
 
@@ -143,6 +147,10 @@ classdef CoupledNewtonSolver2d_frostbite < CoupledNewtonSolver2d_rxndiff
 			yMax = max(self.domain.mesh.nodes(:,2));
 			ylim([yMin, yMax]);
 
+			% remove tick labels
+            set(gca,'YTickLabel',[]);
+            set(gca,'XTickLabel',[]);
+			
 			% adjust figure position
 			f = gcf;
 			f.Position = [100, 100, 500, 600];
@@ -182,7 +190,7 @@ classdef CoupledNewtonSolver2d_frostbite < CoupledNewtonSolver2d_rxndiff
 			% plot
 			plot(t,frostbite_percent,'LineWidth',4);
 			grid on
-			title('Frostbite Area Percent','Interpreter','latex');
+			title('\% Frostbite Area','Interpreter','latex','FontSize',50);
 			xlabel('$t$','Interpreter','latex');
 			ylabel('\%','Interpreter','latex');
 
@@ -208,7 +216,7 @@ classdef CoupledNewtonSolver2d_frostbite < CoupledNewtonSolver2d_rxndiff
 			% add titles and labels
 			xlabel('$t$','Interpreter','latex');
 			ylabel('$s$','Interpreter','latex');
-			title('$s(t)$','Interpreter','latex');
+			title('$s(t)$','Interpreter','latex','FontSize',50);
 
 			% adjust figure position
 			f = gcf;

@@ -95,6 +95,14 @@ classdef CoupledNewtonSolver2d_parabolic < NewtonGalerkinSolver2d_parabolic
 			% Adjust figure
 			view(2);
 
+			% remove tick labels
+            set(gca,'YTickLabel',[]);
+            set(gca,'XTickLabel',[]);
+			
+			% adjust title
+			str = sprintf('$u(x,t), t = %.2f$',self.domain.time.tGrid(timestep));
+			title(str,'Interpreter','latex','FontSize',80);
+
 		end
 
 		function plotPDE(self,timestep)
@@ -137,7 +145,7 @@ classdef CoupledNewtonSolver2d_parabolic < NewtonGalerkinSolver2d_parabolic
 			h2.LineStyle = '--';
 
 			% set title, legend, and labels
-			title('$v$ and $\langle u \rangle_\Omega$','Interpreter','latex');
+			title('$v$ and $\langle u \rangle_\Omega$','Interpreter','latex','FontSize',50);
 			legend('v','$\langle u \rangle_\Omega$','Interpreter','latex','Location','east');
 
 			% set ylim

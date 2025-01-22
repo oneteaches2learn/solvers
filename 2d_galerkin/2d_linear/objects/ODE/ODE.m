@@ -121,7 +121,7 @@ classdef ODE
 			% Label the axes and set a title
 			xlabel('$t$','Interpreter','latex');
 			ylabel('Temp.');
-			title('$v$','Interpreter','latex');
+			title('$v(t)$','Interpreter','latex','FontSize',60);
 			grid on;
 
 		end

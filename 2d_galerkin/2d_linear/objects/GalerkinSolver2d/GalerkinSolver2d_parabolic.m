@@ -316,7 +316,7 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 			% Label the axes and set a title
 			xlabel('$t$','Interpreter','latex');
 			ylabel('Temp');
-			title('$\langle u \rangle_\Omega$','Interpreter','latex');
+			title('$\langle u(t) \rangle_\Omega$','Interpreter','latex','FontSize',50);
 			grid on;
 
 		end
