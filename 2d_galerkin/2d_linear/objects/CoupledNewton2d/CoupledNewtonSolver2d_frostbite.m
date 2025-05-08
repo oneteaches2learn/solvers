@@ -16,6 +16,15 @@ classdef CoupledNewtonSolver2d_frostbite < CoupledNewtonSolver2d_rxndiff
 
 		end
 
+		function self = cleanup(self)
+
+			% call superclass method
+			self = self.cleanup@GalerkinSolver2d_parabolic();
+
+			% output completion
+            fprintf(' complete. Max iter: %d\n',max(self.iterHistory));
+		end
+
 		% PLOTTING FUNCTIONS
 		function plotBloodSupply(self,timestep)
 
@@ -50,7 +59,7 @@ classdef CoupledNewtonSolver2d_frostbite < CoupledNewtonSolver2d_rxndiff
 			% plot
 			h = trisurf(Elements,X,Y,Z);
 			view(2)
-			str = sprintf('$\\overline{r}(x,t), t = %.2f$',self.domain.time.tGrid(timestep));
+			str = sprintf('$\\overline{r}(x,t), t = %.0f$',self.domain.time.tGrid(timestep));
 			title(str,'Interpreter','latex','FontSize',80);
 
 			% convert U to length(U) x 3 matrix
@@ -121,7 +130,7 @@ classdef CoupledNewtonSolver2d_frostbite < CoupledNewtonSolver2d_rxndiff
 			hold on 
 			h1 = trisurf(Elements,X,Y,Z);
 			h2 = trisurf(Elements,X,Y,Z);
-			title(sprintf('Frostbite, $t = %.2f$',self.domain.time.tGrid(timestep)),'Interpreter','latex','FontSize',80);
+			title(sprintf('Frostbite, $t = %.0f$',self.domain.time.tGrid(timestep)),'Interpreter','latex','FontSize',80);
 			view(2)
 			hold off
 

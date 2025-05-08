@@ -45,7 +45,7 @@ classdef CoupledNewtonSolver2d_parabolic < NewtonGalerkinSolver2d_parabolic
 
                 % check convegence
                 if norm(W) < 10^(-10)
-                    fprintf(' timestep: %d, converged in %d iterations\n',self.timestep,iter)
+                    %fprintf(' timestep: %d, converged in %d iterations\n',self.timestep,iter)
                     self.iterHistory(self.timestep) = iter;
                     break
                 end
@@ -54,6 +54,7 @@ classdef CoupledNewtonSolver2d_parabolic < NewtonGalerkinSolver2d_parabolic
             % store resolved solution
             self.solution(:,self.timestep) = self.U;
 			self.ODE.solution(self.timestep) = self.V;
+
         end
 
 		function self = initializeProblem(self)
@@ -80,7 +81,6 @@ classdef CoupledNewtonSolver2d_parabolic < NewtonGalerkinSolver2d_parabolic
 
 		end
 
-
 		% PLOTTING FUNCTIONS
 		function plot(self,timestep)
 
@@ -100,7 +100,7 @@ classdef CoupledNewtonSolver2d_parabolic < NewtonGalerkinSolver2d_parabolic
             set(gca,'XTickLabel',[]);
 			
 			% adjust title
-			str = sprintf('$u(x,t), t = %.2f$',self.domain.time.tGrid(timestep));
+			str = sprintf('$u(x,t), t = %.0f$',self.domain.time.tGrid(timestep));
 			title(str,'Interpreter','latex','FontSize',80);
 
 		end
@@ -155,11 +155,90 @@ classdef CoupledNewtonSolver2d_parabolic < NewtonGalerkinSolver2d_parabolic
 
 			f = gcf;
 			f.Position = [100, 100, 400, 400];
-			Legend = f.Children(1);
-			Legend.Location = 'best';
+			%Legend = f.Children(1);
+			%Legend.Location = 'best';
 
 		end
 
+		function plotBoth(self,timestep)
+		% ANIMATE Sequentially plots the PDE + ODE solutions from the first
+		% to the last timestep. The total animation duration is one second.
+				
+			mode.plot1 = 'PDE';
+			mode.plot2 = 'Temperatures';
+
+			% set first plot function
+			if strcmp(mode.plot1,'PDE')
+				plot1 = @(t) self.plotPDE(t);
+			elseif strcmp(mode.plot1,'Frostbite')
+				plot1 = @(t) self.plotFrostbite(t);
+			elseif strcmp(mode.plot1,'BloodSupply')
+				plot1 = @(t) self.plotBloodSupply(t);
+			end
+
+			% set second plot function
+			if strcmp(mode.plot2,'ODE')
+				plot2 = @(t) self.plotODE(t);
+			elseif strcmp(mode.plot2,'Temperatures')
+				plot2 = @(t) self.plotTemperatures(t);
+			elseif strcmp(mode.plot2,'Average')
+				plot2 = @(t) self.plotAverageSolutionValue(t);
+			end
+
+			% Number of timesteps
+			nT = self.domain.time.N_t;
+			
+			% Total animation time (in seconds)
+			totalAnimTime = 1;
+			
+			% Time between frames
+			dtFrame = totalAnimTime / max(nT - 1, 1);
+	
+			% find x limits and y limits for PDE plot
+			xMin = min(self.domain.mesh.nodes(:,1));
+			xMax = max(self.domain.mesh.nodes(:,1));
+			yMin = min(self.domain.mesh.nodes(:,2));
+			yMax = max(self.domain.mesh.nodes(:,2));
+			heightRatio = (yMax - yMin) / (xMax - xMin);
+			width = 500;
+		
+			% Create a new figure and fix its position
+			%f = figure('Position',[100, 100, 2 * width, width * heightRatio]);
+
+			% plot
+			% NOTE: on 4/24/2025, I changed the order of the plots. Feel free to change back.
+			% NOTE: on 4/24/2025, I changed this to have 3 subplots so I could manually add a frostbite plot for figures. remove this. 
+			subplot(1,3,1);
+			plot2(timestep);
+			subplot(1,3,2);
+			plot1(timestep);
+
+
+			% adjust position
+			f.Position = [100, 100, 2 * width, width * heightRatio];
+
+			%{
+			% Loop over timesteps
+			for t = timesteps:timesteps
+
+				% reset figure
+				clf;             
+
+				% plot current timestep
+				subplot(1,2,1);
+				plot1(t);
+				subplot(1,2,2);
+				plot2(t);
+
+				% fix position
+				f.Position = [100, 100, 2 * width, width * heightRatio];
+
+				% delay
+				pause(dtFrame);  
+			end
+			%}
+
+		end
 
 
 		% ANIMATION FUNCTIONS

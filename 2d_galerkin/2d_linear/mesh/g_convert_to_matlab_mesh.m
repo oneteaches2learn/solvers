@@ -2,7 +2,9 @@ clear all
 % STEP 1: run the mesh as a .m script
 %   the mesh will be automatically stored as msh
 %   msh is a structure with mesh data, but not a mesh object
-domain_dist100;
+%domain_dist100;
+%dist100_larger;
+mesh
 
 
 % STEP 2: store the elements; 

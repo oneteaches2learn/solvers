@@ -47,6 +47,7 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 			FreeNodes = self.domain.boundary.freeNodes;
 			self = self.initializeProblem;
 
+			wait = waitbar(0,'Please wait...');
 			for timestep = 1:self.domain.time.M_t
 
 				% initialize timestep
@@ -64,8 +65,13 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 
 				% break at equilibrium
 				if self.equilibrium == 1, break; end
+				
+				% update waitbar
+				waitbar(timestep/self.domain.time.M_t,wait,...
+					sprintf('Time step %d of %d',timestep,self.domain.time.M_t));
 
 			end
+			close(wait);
 
 			self = self.cleanup;
 

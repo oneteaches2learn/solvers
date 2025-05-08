@@ -4,6 +4,7 @@ classdef ODE
         g
         vInit
         s
+        c
         t0
         T
         timestep % current timestep
@@ -22,6 +23,7 @@ classdef ODE
             self.g           = data.g;
             self.vInit       = data.vInit;
             self.s           = data.cofs.s;
+            self.c           = data.cofs.c;
             self.T           = data.time.T;
             self.dt          = data.time.dt;
             self.constraints = data.constraints;
@@ -53,18 +55,19 @@ classdef ODE
         function V_out = solveIteration(self,V_in,SU)
 
 				% remaining coefficients
+                c = self.c;
 				dt = self.dt;
 				s  = self.s(SU,V_in);
 				g  = self.g;
                 V_prev = self.solution(self.timestep-1);
 
 				% solve current iteration
-				V_out = (dt * g + dt * s * SU + V_prev); 
+				V_out = (dt * g + dt * s * SU + c * V_prev); 
 
 				% apply resolvent
                 vLower = self.constraints.vLower;
 				vUpper = self.constraints.vUpper;
-				V_out  = self.resolvent(V_out, dt, s, vLower, vUpper);
+				V_out  = self.resolvent(V_out, dt, c, s, vLower, vUpper);
 
         end
 
@@ -130,10 +133,10 @@ classdef ODE
 
     methods (Static)
 
-        function v = resolvent(v_in,dt,c_B,vLower,vUpper)
+        function v = resolvent(v_in,dt,c,c_B,vLower,vUpper)
         %RESOLVENT(V_IN,DT,C_B,VLOWER,VUPPER) computes the resolvent for the ODE
         %
-        %			v' + c_b * (v - S(u)) + lambda = g
+        %			c * v' + c_b * (v - S(u)) + lambda = g
         %
         %	where lambda is a Lagrange multiplier enforcing some constraint.
         %
@@ -161,7 +164,7 @@ classdef ODE
         %	passed as arguments to other functions.
         %-----------------------------------------------------------------------------%
 
-            denom = 1 + dt * c_B;
+            denom = c + dt * c_B;
 
             % CASE 1: with upper constraint, no lower constraint
             if isnan(vLower) && ~isnan(vUpper)

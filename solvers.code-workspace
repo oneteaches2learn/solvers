@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "../third_party_packages/50_lines_fem/fem2d_nonlinear"
+		},
+		{
+			"path": "../figures"
 		}
 	],
 	"settings": {}

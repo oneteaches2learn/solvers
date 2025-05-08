@@ -11,7 +11,7 @@ if isempty(data)
 end
 
 % Define the distance threshold (set by the user)
-distanceThreshold = 100;  % Example threshold, adjust as needed
+distanceThreshold = 5;  % Example threshold, adjust as needed
 
 % Initialize a logical array to mark points for removal
 toRemove = false(size(data, 1), 1);
@@ -28,7 +28,7 @@ while i <= size(data, 1)
         % Calculate the Euclidean distance between the current and next point
         distance = sqrt((nextPoint(1) - currentPoint(1))^2 + (nextPoint(2) - currentPoint(2))^2);
         
-        if distance <= distanceThreshold
+        if distance <= distanceThreshold && j ~= size(data, 1)
             % Mark the next point for removal
             toRemove(j) = true;
         else
@@ -47,10 +47,16 @@ end
 % Remove the marked points
 filteredData = data(~toRemove, :);
 
+% temporary: rescale the data
+% 28534468085 is the factor that rescales the data from MP, PM, NS to the meter scale
+filteredData = filteredData / 2853.4468085;
+
+%{
 % Normalize filtered data
 normedData = norm(filteredData,2);
 factor = max(normedData);
 filteredData = filteredData/factor;
+%}
 
 % Display the filtered data
 disp('Filtered Data:');
