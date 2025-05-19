@@ -292,6 +292,30 @@ classdef Mesh2d
 
 		end
 
+		function h = plotSolution(self,sol)
+		% plots the solution on the mesh
+		%
+		% inputs
+		% sol - solution vector, nNodes x 1
+		%
+		% outputs
+		% h - figure handle
+		%
+			% check if solution is a column vector
+			if size(sol,2) > 1
+				error("Solution must be a column vector")
+			end
+
+			% plot solution
+			h = surf(self.nodes(1,:),self.nodes(2,:),sol);
+			%h = pdeplot(self.Mesh,'XYData',sol,'ZData',sol);
+			%title('Solution on Mesh');
+			%xlabel('X-axis');
+			%ylabel('Y-axis');
+			colorbar;
+			
+		end
+
 	end
 
 end

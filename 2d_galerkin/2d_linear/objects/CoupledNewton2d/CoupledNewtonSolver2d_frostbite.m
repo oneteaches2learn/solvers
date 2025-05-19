@@ -220,7 +220,11 @@ classdef CoupledNewtonSolver2d_frostbite < CoupledNewtonSolver2d_rxndiff
 			% adjust ylim
 			yMin = min(min(s));
 			yMax = max(max(s));
-			ylim([yMin - 0.1 * (yMax - yMin), yMax + 0.1 * (yMax - yMin)]);
+            if yMin == yMax
+                yMin = yMin - 0.1 * yMin;
+                yMax = yMax + 0.1 * yMax;
+            end
+            ylim([yMin - 0.1 * (yMax - yMin), yMax + 0.1 * (yMax - yMin)]);
 
 			% add titles and labels
 			xlabel('$t$','Interpreter','latex');

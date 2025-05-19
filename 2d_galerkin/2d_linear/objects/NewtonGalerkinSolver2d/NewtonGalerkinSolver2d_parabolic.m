@@ -19,6 +19,8 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic & NewtonG
 			% initialize problem
 			self = self.initializeProblem;
 
+            wait = waitbar(0,'Solving...');
+
 			for timestep = 1:self.domain.time.M_t
 
 				% initialize timestep
@@ -31,9 +33,13 @@ classdef NewtonGalerkinSolver2d_parabolic < GalerkinSolver2d_parabolic & NewtonG
 				% break at equilibrium
 				if self.equilibrium == 1, break; end
 
+                waitbar(timestep/self.domain.time.M_t,wait,...
+                    sprintf('Solving... %d of %d',timestep,self.domain.time.M_t));
 			end
 
 			self = self.cleanup;
+
+            close(wait);
 
 		end
 

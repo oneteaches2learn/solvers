@@ -279,10 +279,10 @@ classdef GalerkinAssembler2d
 			end
 
 			% set mesh on domain
-			%dom = dom.setMesh(p,base, ...
-			%		effectiveRegion = NameValuePairs.effectiveRegion, ...
-			%		meshInclusions = NameValuePairs.meshInclusions);
-			dom = dom.setMesh(p,base);
+			dom = dom.setMesh(p,base, ...
+					effectiveRegion = NameValuePairs.effectiveRegion, ...
+					meshInclusions = NameValuePairs.meshInclusions);
+			%dom = dom.setMesh(p,base);
 			dom = dom.setBoundaryNodes;
 
 		end
