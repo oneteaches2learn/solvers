@@ -278,12 +278,14 @@ classdef GalerkinAssembler2d
 				NameValuePairs.meshInclusions = 'off';
 			end
 
-			% set mesh on domain
+
+			% WHEN THE PROGRAM RANDOMLY FAILS, THIS IS THE PLACE WHERE THERE'S
+			% PROBABLY AN ISSUE. CAN YOU PLEASE FIX THIS PERMANENTLY?
 			dom = dom.setMesh(p,base, ...
-					effectiveRegion = NameValuePairs.effectiveRegion, ...
-					meshInclusions = NameValuePairs.meshInclusions);
-			%dom = dom.setMesh(p,base);
-			dom = dom.setBoundaryNodes;
+				effectiveRegion = NameValuePairs.effectiveRegion, ...
+				meshInclusions = NameValuePairs.meshInclusions);
+
+			dom = dom.setMesh(p,base);
 
 		end
 
@@ -334,3 +336,4 @@ classdef GalerkinAssembler2d
 		%}
 	end
 end
+

@@ -75,6 +75,8 @@ classdef MMSParams
 		effectiveRegion
 		meshInclusions
 		quadType
+		mshRoot
+		pfine_add
 	end
 
 	properties (Dependent)

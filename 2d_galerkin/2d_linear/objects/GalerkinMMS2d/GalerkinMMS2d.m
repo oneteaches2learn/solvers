@@ -89,30 +89,32 @@ classdef GalerkinMMS2d
 		% CONSTRUCTOR 
 		function self = GalerkinMMS2d(dom,auxfun,mmsparams,NameValueArgs)
 
-			% store inputs
-			self.auxFunctions = auxfun;
-			self.errType = NameValueArgs.errType;
-			self.mmsParams = mmsparams;
-			try, time = NameValueArgs.time; end
+			if nargin > 0
+				% store inputs
+				self.auxFunctions = auxfun;
+				self.errType = NameValueArgs.errType;
+				self.mmsParams = mmsparams;
+				try, time = NameValueArgs.time; end
 
-			% manufacture boundary conditions
-			fprintf(' Setting BCs:'), tic
-			self.domain = self.manufactureBoundaryConditions(dom,auxfun);
-			executionTime = toc;
-			fprintf(' %f s\n',executionTime)
+				% manufacture boundary conditions
+				fprintf(' Setting BCs:'), tic
+				self.domain = self.manufactureBoundaryConditions(dom,auxfun);
+				executionTime = toc;
+				fprintf(' %f s\n',executionTime)
 
-			% if not in demo-mode, run MMS test
-			if self.mmsParams.demo == 0
+				% if not in demo-mode, run MMS test
+				if self.mmsParams.demo == 0
 
-				% solve problems
-				self.problems = self.solveManufacturedProblems;
+					% solve problems
+					self.problems = self.solveManufacturedProblems;
 
-				% compute errors
-				[self.errors,self.ratios,self.orders] = self.computeErrors;
+					% compute errors
+					[self.errors,self.ratios,self.orders] = self.computeErrors;
 
-			% else, if in demo-mode, only run one trial
-			else
-				self.problems = self.solveManufacturedProblems;
+				% else, if in demo-mode, only run one trial
+				else
+					self.problems = self.solveManufacturedProblems;
+				end
 			end
 
 		end
@@ -167,11 +169,36 @@ classdef GalerkinMMS2d
 			region = self.mmsParams.effectiveRegion;
 			inc_onoff = self.mmsParams.meshInclusions;
 
-			dom_p = self.domain;
-			if isa(dom_p,'Domain2d_punctured')
-				dom_p = dom_p.setMesh(p,base,meshInclusions=inc_onoff,effectiveRegion=region);
-			else
-				dom_p = dom_p.setMesh(p,base);
+			% check if mesh should be loaded from file
+			try self.mmsParams.mshRoot ~= ""
+
+                % generate domain from .m file
+				root = self.mmsParams.mshRoot;
+                filename = fullfile(root, sprintf('mesh%d.m', i));
+                if ~isfile(filename)
+                    error('Mesh file does not exist: %s', filename);
+                end
+
+                % load mesh file
+                run(filename);
+                try 
+                    % try to load mesh
+                    dom_p = Domain2d.domainFromGmsh(msh);
+                catch
+                    % on error, try to reverse the orientation of triangles
+                    msh.TRIANGLES = msh.TRIANGLES(:,[1,3,2,4]);
+                    dom_p = Domain2d.domainFromGmsh(msh);
+                end
+
+			% otherwise generate mesh using MATLAB utilities
+			catch 
+				dom_p = self.domain;
+				if isa(dom_p,'Domain2d_punctured')
+					dom_p = dom_p.setMesh(p,base,meshInclusions=inc_onoff,effectiveRegion=region);
+				else
+					dom_p = dom_p.setMesh(p,base);
+				end
+
 			end
 
 			% assign boundary nodes to edges
@@ -359,6 +386,15 @@ classdef GalerkinMMS2d
 			for i = 1:self.mmsParams.nTrials
 
 				fprintf(' Trial: '); tic;
+
+				if isa(self,'GalerkinFineGrid2d_parabolic')
+
+					% find matching time steps
+					time_fine = find(ismember(prob_fine.domain.time.tGrid, prob_coarse{i}.domain.time.tGrid));
+					time_fine
+					pause()
+				end
+
 
 				% compute quadrature (on each timestep, if time-varying)
 				sol = self.problems{i}.solution;

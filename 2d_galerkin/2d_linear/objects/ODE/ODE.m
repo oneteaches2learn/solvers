@@ -52,7 +52,7 @@ classdef ODE
 
         end
 
-        function V_out = solveIteration(self,V_in,SU)
+        function V_out = solveIteration(self,V_in,SU,t)
 
 				% remaining coefficients
                 c = self.c;
@@ -60,6 +60,9 @@ classdef ODE
 				s  = self.s(SU,V_in);
 				g  = self.g;
                 V_prev = self.solution(self.timestep-1);
+
+                % temporary: plug in g(t), because I haven't made a wrapper that checks if g is a function of t
+                %g = g(t);
 
 				% solve current iteration
 				V_out = (dt * g + dt * s * SU + c * V_prev); 

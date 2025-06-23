@@ -698,6 +698,7 @@ classdef GalerkinSolver2d
 			% get yline nodes
 			segIDs1 = dl.segIDs_yLines;
 			segIDs2 = dl.segIDs_yLines_inc;
+			segIDs2
 			nodes1 = findNodes(mesh,"region","Edge",segIDs1);
 			nodes2 = findNodes(mesh,"region","Edge",segIDs2);
 			nodes = [nodes1, nodes2];

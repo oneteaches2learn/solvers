@@ -41,7 +41,7 @@ classdef CoupledNewtonSolver2d_parabolic < NewtonGalerkinSolver2d_parabolic
 
 				% solve ODE iteration
 				SU = self.domain.nodalQuadrature(self.U) / self.domain.domainArea;
-				self.V = self.ODE.solveIteration(self.V,SU);
+				self.V = self.ODE.solveIteration(self.V,SU,self.t);
 
                 % check convegence
                 if norm(W) < 10^(-10)

@@ -568,6 +568,44 @@ classdef Domain2d
 
 		end
 
+		function obj = refineMesh(self,numRefinements)
+		% refineMesh(self) uses MATLAB's inbuilt tools to refine the mesh using
+		% the 4-triangle refinement.
+
+			if self.boundary.nEdges > 4
+				error("Mesh refinement is not supported for domains with more than 4 edges.")
+			end
+		
+			if nargin == 1
+				numRefinements = 1;
+			end
+
+			% get inputs for refinement tool
+			obj = self;
+			[p,e,t] = meshToPet(obj.mesh.Mesh);
+			dl_mat = obj.boundary.dl.mat;
+
+			% sequentially refine the mesh
+			for i = 1:numRefinements
+
+				[p,e,t] = refinemesh(dl_mat,p,e,t);
+
+			end
+
+			% make dummy model and generate FEmesh
+			model = createpde();
+			geometryFromMesh(model,p,t(1:3,:));
+			FEmsh = model.Mesh;
+
+			% make Mesh2d object
+			msh = Mesh2d(FEmsh);
+
+			% update mesh
+			obj.mesh = msh;
+
+		end
+
+
 		% PLOTTERS
 		function h = plot(self,NameValueArgs)
 

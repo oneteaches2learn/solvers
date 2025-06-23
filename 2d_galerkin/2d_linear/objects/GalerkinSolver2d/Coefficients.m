@@ -100,6 +100,161 @@ classdef Coefficients
 
 		end
 
+		function [r,s] = coupling_coefficients(type,data)
+		% coupling_coefficients(type,data) returns the coupling coefficients
+		% r and s for the given type and data.
+		%
+		% INPUTS
+		%	type - string, type of coupling coefficients, e.g. 'R1', 'R2', 'R3'
+		%	data - struct, data for the coupling coefficients
+		%
+		% OUTPUTS
+		%	r - struct, coupling coefficients for the reaction term
+		%	s - struct, coupling coefficients for the source term
+		%
+		% The coupling coefficients are used to compute the coefficients for the
+		% coupling terms between the PDE and ODE. These coupling terms are of
+		% the form:
+		% 
+		% 		r(u,v) = r_const * r_activ(u,v) * (u - v)   
+		% 		s(u,v) = s_const * s_activ(u,v) * (v - u)
+		%
+		% Coefficients for the PDE are assembled by GalerkinAssembler2d, which
+		% expects double r_const and function_handles r_activ and r_activ_du
+		% (the derivative of r_active with respect to u). The ODE object expects
+		% a single function_handle combining s_const and s_activ. So,
+		% COUPLING_COEFFICIENTS assembles these objects and stores them as
+		% fields of r and s. 
+		
+
+			% STORE COEFFICIENTS
+			if strcmp(type,'R1') || strcmp(type,'R2') || strcmp(type,'R3')
+
+				% store ramp data
+    			v_min = data.v_min; 
+				v_max = data.v_max; 
+				u_min = data.u_min; 
+				u_max = data.u_max; 
+				gamma = data.gamma;
+				r_const = data.r_const;
+				s_const = data.s_const;
+
+			elseif strcmp(type,'S1') || strcmp(type,'S2') || strcmp(type,'S3')
+
+				% store logistic data
+				u_L = data.u_L; 
+				u_k = data.u_k; 
+				u_0 = data.u_0;
+				v_L = data.v_L; 
+				v_k = data.v_k; 
+				v_0 = data.v_0;
+				gamma = data.gamma; 
+				r_const = data.r_const;
+				s_const = data.s_const;
+
+			else
+				error('Unknown type of coupling coefficients: %s',type);
+
+			end
+
+			% RAMP ACTIVATION COEFFICIENTS
+			% if cof depends on v only
+			if strcmp(type,'R1')
+
+				% compute r_activ
+				r_activ = @(x1,x2,t,u,v) Coefficients.ramp(v, ...
+											lowerBound=v_min, upperBound=v_max);
+				
+				% compute r_activ_du
+				r_activ_du = @(x1,x2,t,u,v) 0;
+
+				% compute s_activ
+				s_activ = @(u,v) r_activ(0,0,0,u,v);
+
+			% if cof depends on u only
+			elseif strcmp(type,'R2')
+
+				% compute r_activ
+				r_activ = @(x1,x2,t,u,v) Coefficients.ramp(u, ...
+											lowerBound=u_min, upperBound=u_max);
+				
+				% compute r_activ_du
+				r_activ_du = @(x1,x2,t,u,v) Coefficients.ramp_du(u, ...
+                                lowerBound=u_min, upperBound=u_max);
+
+				% compute s_activ
+				s_activ = @(u,v) r_activ(0,0,0,u,v);
+
+			% if cof depends on u and v
+			elseif strcmp(type,'R3')
+
+				% compute r_activ
+				r_activ = @(x1,x2,t,u,v) Coefficients.ramp_activation(u,v, ...
+					v_min=v_min,v_max=v_max,u_min=u_min,u_max=u_max,gamma=gamma);
+
+				% compute r_activ_du
+				r_activ_du = @(x1,x2,t,u,v) Coefficients.ramp_activation_du(u,v, ...
+					v_min=v_min,v_max=v_max,u_min=u_min,u_max=u_max,gamma=gamma);
+				
+				% compute s_activ
+				s_activ = @(u,v) r_activ(0,0,0,u,v);
+
+			end
+
+
+			% LOGISTIC ACTIVATION COEFFICIENTS
+			% if cof depends on v only
+			if strcmp(type,'S1')
+
+				% compute r_activ
+				r_activ = @(x1,x2,t,u,v) Coefficients.logistic(v, ...
+											L=v_L,k=v_k,u_0=v_0);
+				
+				% compute r_activ_du
+				r_activ_du = @(x1,x2,t,u,v) 0;
+
+				% compute s_activ
+				s_activ = @(u,v) r_activ(0,0,0,u,v);
+
+			% if cof depends on u only
+			elseif strcmp(type,'S2')
+
+				% compute r_activ
+				r_activ = @(x1,x2,t,u,v) Coefficients.logistic(u, ...
+											L=u_L,k=u_k,u_0=u_0);
+				
+				% compute r_activ_du
+				r_activ_du = @(x1,x2,t,u,v) Coefficients.logistic_du(u, ...
+								L=u_L,k=u_k,u_0=u_0);
+
+				% compute s_activ
+				s_activ = @(u,v) r_activ(0,0,0,u,v);
+
+			% if cof depends on u and v
+			elseif strcmp(type,'S3')
+
+				% compute r_activ
+				r_activ = @(x1,x2,t,u,v) Coefficients.logistic_activation(u,v, ...
+					u_L=u_L,u_k=u_k,u_0=u_0,v_L=v_L,v_k=v_k,v_0=v_0,gamma=gamma);
+
+				% compute r_activ_du
+				r_activ_du = @(x1,x2,t,u,v) Coefficients.logistic_activation_du(u,v, ...
+					u_L=u_L,u_k=u_k,u_0=u_0,v_L=v_L,v_k=v_k,v_0=v_0,gamma=gamma);
+				
+				% compute s_activ
+				s_activ = @(u,v) r_activ(0,0,0,u,v);
+
+			end
+
+			% PACKAGE RESULTS
+			r.r_const = r_const;
+			r.r_activ = r_activ;
+			r.r_activ_du = r_activ_du;
+			s.s_const = data.s_const;
+			s.s_activ = s_activ;
+			s.s_func  = @(u,v) s_const * r_activ(0,0,0,u,v);
+
+		end
 	end
 
 
