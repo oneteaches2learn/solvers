@@ -246,6 +246,8 @@ classdef GalerkinAssembler2d
 			end
 		end
 
+		%{
+		%NOTE: ORIGINAL VERSION
 		function f = getFunctionHandles(f,vars)
 
 			% convert to function handles
@@ -267,6 +269,48 @@ classdef GalerkinAssembler2d
 			end
 
 		end
+		%}
+
+		function f = getFunctionHandles(f,vars)
+		% getFunctionHandles converts inputs f to function handles of the
+		% variables vars. 
+		%
+		% INPUTS
+		%	f: a function_handle, symfun, double, or cell array of these
+		%	vars: a vector of symbolic variables, e.g. [x t] where x is a 2D
+		%		vector and t is time.
+		%
+		% OUTPUTS
+		%	f: a function_handle or cell array of function_handles
+		%
+
+			% convert to function handles
+			if iscell(f)
+				for i = 1:length(f)
+					if iscell(f{i})
+						func = f{i};
+						alpha = func{1};
+						u_R = func{2};
+						f{i} = {GalerkinAssembler2d.convertToFunctionHandle(alpha,vars),...
+								GalerkinAssembler2d.convertToFunctionHandle(u_R,vars)};
+					else
+						f{i} = GalerkinAssembler2d.convertToFunctionHandle(f{i},vars);
+					end
+				end
+			elseif ~isa(f,'function_handle') && isnan(f)
+				...
+			else
+				f = GalerkinAssembler2d.convertToFunctionHandle(f,vars);
+			end
+
+		end
+
+		function f = convertToFunctionHandle(f,vars)
+
+			if ~isa(f,'function_handle')
+				f = matlabFunction(symfun(f,vars));
+			end
+		end
 
 		function dom = assembleMesh(dom,p,base,NameValuePairs)
 
@@ -278,14 +322,13 @@ classdef GalerkinAssembler2d
 				NameValuePairs.meshInclusions = 'off';
 			end
 
-
 			% WHEN THE PROGRAM RANDOMLY FAILS, THIS IS THE PLACE WHERE THERE'S
 			% PROBABLY AN ISSUE. CAN YOU PLEASE FIX THIS PERMANENTLY?
 			dom = dom.setMesh(p,base, ...
 				effectiveRegion = NameValuePairs.effectiveRegion, ...
 				meshInclusions = NameValuePairs.meshInclusions);
 
-			dom = dom.setMesh(p,base);
+			%dom = dom.setMesh(p,base);
 
 		end
 
@@ -308,17 +351,33 @@ classdef GalerkinAssembler2d
 		
 			% check function variables
 			x = sym('x',[1 2],'real'); u = sym('u','real');
-			k = symfun(k,x);
-			r = symfun(r,x);
-			f = symfun(f,x);
 
-			% store diffusivity and reaction coefficients	
-			auxfun.cofs.k = matlabFunction(k);
-			auxfun.cofs.r = matlabFunction(r);
-			auxfun.cofs.dr_du = matlabFunction(diff(r,u));
+			% store diffusivity term
+			if ~isa(k,'function_handle')
+				k = symfun(k,x);
+				auxfun.cofs.k = matlabFunction(k);
+			else
+				auxfun.cofs.k = k;
+			end	
+	
+			% store reaction term
+			if ~isa(r,'function_handle')
+				r = symfun(r,x);
+				auxfun.cofs.r = matlabFunction(r);
+				auxfun.cofs.dr_du = matlabFunction(diff(r,u));
+			else
+				auxfun.cofs.r = r;
+				auxfun.cofs.dr_du = 0;
+				warning('Reaction term passed as function_handle. If your problem is to be solved using Newton iteration and r = r(u), then you must manually overwrite auxfun.cofs.dr_du.');
+			end
 
 			% store source term
-			auxfun.f = matlabFunction(f);
+			if ~isa(f,'function_handle')
+				f = symfun(f,x);
+				auxfun.f = matlabFunction(f);
+			else
+				auxfun.f = f;
+			end
 
 		end
 

@@ -135,6 +135,13 @@ classdef GalerkinSolver2d_pennes < GalerkinSolver2d_parabolic
 			 		 vectors.r_times_uStar + vectors.b_dyn) ...
 					 - S * vectors.U_D + (tensors.M_p_prevTime + tensors.M_dyn_prevTime) * vectors.U_prevTime;
 
+			% NOTE: as of June 26, 2025 periodic BCs are not implemented for parabolic problems.
+            % correct tensor for periodic BCs
+            S = S + tensors.P;
+
+			full(~(S==0))
+			pause()
+
 		end
 
 	end

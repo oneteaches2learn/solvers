@@ -242,6 +242,7 @@ classdef Domain2d_punctured < Domain2d
 				NameValueArgs.meshInclusions = self.meshInclusions
 			end
 
+
 			% specify whether inclusions are to be meshed
 			if strcmp(NameValueArgs.meshInclusions,"on")
 				self.meshInclusions = "on";
@@ -264,14 +265,14 @@ classdef Domain2d_punctured < Domain2d
 				self.mesh = Mesh2d(dl_mat,p,base);
 			end
 
+			% set effective nodes and elements
+			self = self.setEffectiveNodes;
+			self = self.setEffectiveElements;
+
 			% if BCs already set, distribute BC nodes
 			if ~isempty(self.boundary.edges(end).boundaryType)
 				self = self.setBoundaryNodes;
 			end
-
-			% set effective nodes and elements
-			self = self.setEffectiveNodes;
-			self = self.setEffectiveElements;
 
 		end
 
@@ -326,6 +327,12 @@ classdef Domain2d_punctured < Domain2d
 			self.mesh.unusedNodes = setdiff(1:self.mesh.nNodes, ...
 											self.mesh.effectiveNodes);
 
+			%{
+			fprintf('\n\n Call to setEffectiveNodes\n');
+			fprintf('  Effective nodes: %d\n',length(self.mesh.effectiveNodes));
+			fprintf('  Unused nodes: %d\n',length(self.mesh.unusedNodes));
+			pause();
+			%}
 		end
 
 		function self = setEffectiveElements(self)

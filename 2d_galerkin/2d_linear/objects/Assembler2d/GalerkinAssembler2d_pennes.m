@@ -16,7 +16,12 @@ classdef GalerkinAssembler2d_pennes < GalerkinAssembler2d_parabolic
 
 			% store blood temperature
 			x = sym('x',[1 2],'real');
-			auxfun.cofs.uStar = matlabFunction(symfun(uStar,x));
+
+			if ~isa(uStar,'function_handle')
+				auxfun.cofs.uStar = matlabFunction(symfun(uStar,x));
+			else
+				auxfun.cofs.uStar = uStar;
+			end
 
 		end
 	end

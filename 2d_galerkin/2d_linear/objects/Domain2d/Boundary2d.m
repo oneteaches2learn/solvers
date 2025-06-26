@@ -331,6 +331,17 @@ classdef Boundary2d
 												self.P_nodes.replica.corner];
 			self.freeNodes = setdiff(mesh.effectiveNodes,boundNodes);
 
+			%{
+			fprintf('\n\n Call to setFreeNodes \n');
+			fprintf('   Effective Nodes: %d\n',length(mesh.effectiveNodes));
+			fprintf('   Dirichlet Nodes: %d\n',length(self.D_nodes));
+			fprintf('   Periodic Nodes: %d\n',length(self.P_nodes.replica.edge) + ...
+												length(self.P_nodes.replica.corner));
+			fprintf('   Free nodes: %d\n',length(self.freeNodes));
+			fprintf('\n\n');
+			pause()
+			%}
+
 		end
 		
 
