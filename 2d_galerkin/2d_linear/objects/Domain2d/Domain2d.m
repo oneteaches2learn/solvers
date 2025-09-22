@@ -1031,7 +1031,7 @@ classdef Domain2d
 			%   reorder the nodes to match matlab's ordering
 			elements = msh.TRIANGLES(:,1:3);
 			elements = elements';
-			elements = elements([1 3 2],:);
+			%elements = elements([1 3 2],:);
 
 
 			% STEP 3: store the nodes;

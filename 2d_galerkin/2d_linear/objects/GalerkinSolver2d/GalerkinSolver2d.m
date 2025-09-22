@@ -195,7 +195,7 @@ classdef GalerkinSolver2d
 
 		function self = assembleBCs(self)
 
-			self = self.computePeriodicBCs;
+			%self = self.computePeriodicBCs;
 			self.vectors.U_D   = self.computeDirichletBCs;
 			self.vectors.b_neu = self.computeNeumannBCs;
 			[self.tensors.M_rob,self.vectors.b_rob] = self.computeRobinBCs;
@@ -419,6 +419,12 @@ classdef GalerkinSolver2d
 			end
 		end
 
+		%{
+		% NOTE: Deprecated. This function turned out to work, but only for
+		% problems with a stiffness matrix only, and not with more complicated
+		% tensor structures. On June 26, 2025, it was split into
+		% computePeriodicCorrectionMatrix and computePeriodicCorrectionVector.
+
 		function self = computePeriodicBCs(self)
 
 			% unpack variables
@@ -461,6 +467,66 @@ classdef GalerkinSolver2d
 			% assemble final result
 			F = F_rows + F_cols + F_diag;
 			self.tensors.P = F;
+
+		end
+		%}
+
+		function [S,b] = periodicCorrection(self,S,b)
+
+			% compute corrections
+			S_corr = self.computePeriodicCorrectionMatrix(S);
+			b_corr = self.computePeriodicCorrectionVector(b);
+
+			% return results
+			S = S + S_corr;
+			b = b + b_corr;
+
+		end
+
+		function S_corr = computePeriodicCorrectionMatrix(self,S)
+
+			% unpack variables
+			nNodes = self.domain.mesh.nNodes;
+			P = self.domain.boundary.P_nodes;
+
+			% initialize storage
+			F_rows = sparse(nNodes,nNodes);
+			F_cols = sparse(nNodes,nNodes);
+			F_diag = sparse(nNodes,nNodes);
+
+			% copy replica rows of tensor to corresponding free rows
+			F_rows(P.free.edge,:) = S(P.replica.edge,:);
+			if length(P.free.corner) > 0
+				F_rows(P.free.corner,:) = sum(S(P.replica.corner,:),1);
+			end
+			
+			% copy replica cols of tensor to corresponding free cols
+			F_cols(:,P.free.edge) = S(:,P.replica.edge);
+			if length(P.free.corner) > 0
+				F_cols(:,P.free.corner) = sum(S(:,P.replica.corner),2);
+			end
+			
+			% copy replica diag entries of tensor to corresponding free diag entries
+			F_diag(P.free.edge,:) = F_cols(P.replica.edge,:);
+			if length(P.free.corner) > 0
+				F_diag(P.free.corner,:) = sum(F_cols(P.replica.corner,:),1);
+			end
+
+			% assemble final result
+			S_corr = F_rows + F_cols + F_diag;
+
+		end
+
+		function b_corr = computePeriodicCorrectionVector(self,b)
+
+			% unpack variables
+			nNodes = self.domain.mesh.nNodes;
+			P = self.domain.boundary.P_nodes;
+
+			% compute source correction vector
+			b_corr = sparse(nNodes,1);
+			b_corr(P.free.edge) = b(P.replica.edge);
+			b_corr(P.free.corner) = sum(b(P.replica.corner));
 
 		end
 
@@ -507,12 +573,14 @@ classdef GalerkinSolver2d
 			% add NaN for unused nodes
 			self.solution(self.domain.mesh.unusedNodes,:) = NaN;
 
+			%{
 			% copy solution to periodic replica nodes
 			P = self.domain.boundary.P_nodes;
 			self.solution(P.replica.edge,:) = self.solution(P.free.edge,:);
 			self.solution(P.replica.corner,:) = ...
 							repmat(self.solution(P.free.corner,:),3,1);					
 			%self.solution(P.replica.corner,:) = self.solution(P.free.corner,:);
+			%}
 
             % ensure solution is full
             self.solution = full(self.solution);

@@ -59,6 +59,7 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 				self  = self.assembleVectors;
 				self  = self.assembleBCs;
 				[S,b] = self.finalAssembly;
+				[S,b] = self.periodicCorrection(S,b);
 
 				% solve and store solution
 				self = self.solveTimestep(S,b,FreeNodes);
@@ -79,9 +80,17 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 
 		function self = solveTimestep(self,S,b,FreeNodes);
 
+			
+			% solve
 			v = sparse(self.domain.mesh.nNodes,1);
 			v(FreeNodes) = S(FreeNodes,FreeNodes) \ b(FreeNodes);
 			self.solution(:,self.timestep) = v + self.vectors.U_D;
+
+			% copy solution to periodic replica nodes
+			P = self.domain.boundary.P_nodes;
+			self.solution(P.replica.edge,self.timestep) = self.solution(P.free.edge,self.timestep);
+			self.solution(P.replica.corner,self.timestep) = ...
+							repmat(self.solution(P.free.corner,self.timestep),3,1);					
 
 		end
 
@@ -420,6 +429,20 @@ classdef (Abstract) GalerkinSolver2d_parabolic < GalerkinSolver2d
 			t = NaN;
 			timestep = NaN;
 			fprintf('WARNING: Tolerance not reached during time-series\n');
+		end
+
+		function norm = getL2norm(self,timestep)
+
+			% default to last timestep
+			if nargin == 2
+				u = self.solution(:,timestep);
+			else
+				u = self.solution(:,:);
+			end
+
+			% compute L2 norm
+			norm = self.domain.L2norm_nodalQuadrature(u);
+
 		end
 
 	end

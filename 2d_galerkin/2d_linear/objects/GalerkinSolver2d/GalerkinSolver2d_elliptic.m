@@ -27,6 +27,7 @@ classdef (Abstract) GalerkinSolver2d_elliptic < GalerkinSolver2d
 			self = self.assembleVectors;
 			self = self.assembleBCs;
 			[S,b] = self.finalAssembly;
+			[S,b] = self.periodicCorrection(S,b);
 
 			% load variables
 			FreeNodes = self.domain.boundary.freeNodes;
@@ -35,6 +36,12 @@ classdef (Abstract) GalerkinSolver2d_elliptic < GalerkinSolver2d
 			v = sparse(self.domain.mesh.nNodes,1);
 			v(FreeNodes) = S(FreeNodes,FreeNodes) \ b(FreeNodes);
 			self.solution = v + self.vectors.U_D;
+
+			% copy solution to periodic replica nodes
+			P = self.domain.boundary.P_nodes;
+			self.solution(P.replica.edge,:) = self.solution(P.free.edge,:);
+			self.solution(P.replica.corner,:) = ...
+							repmat(self.solution(P.free.corner,:),3,1);					
 
 			% cleanup
 			self = self.cleanup;
@@ -56,7 +63,7 @@ classdef (Abstract) GalerkinSolver2d_elliptic < GalerkinSolver2d
 
 		function self = assembleBCs(self)
 
-			self = self.computePeriodicBCs;
+			%self = self.computePeriodicBCs;
 			self.vectors.U_D   = self.computeDirichletBCs;
 			self.vectors.b_neu = self.computeNeumannBCs;
 			[self.tensors.M_rob,self.vectors.b_rob] = self.computeRobinBCs;

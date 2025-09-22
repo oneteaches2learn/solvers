@@ -469,13 +469,23 @@ classdef Mesh2d
 				error("Solution must be a column vector")
 			end
 
+			%{
 			% plot solution
-			h = surf(self.nodes(1,:),self.nodes(2,:),sol);
+			h = trisurf(self.nodes(1,:),self.nodes(2,:),sol);
 			%h = pdeplot(self.Mesh,'XYData',sol,'ZData',sol);
 			%title('Solution on Mesh');
 			%xlabel('X-axis');
 			%ylabel('Y-axis');
 			colorbar;
+			%}
+
+			% store domain information
+			coordinates = self.nodes;
+			elements3 = self.elements;
+
+			% plot data
+			h = trisurf(elements3,coordinates(:,1),coordinates(:,2),sol, ...
+				'facecolor','interp');
 			
 		end
 

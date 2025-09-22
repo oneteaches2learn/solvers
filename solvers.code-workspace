@@ -11,7 +11,15 @@
 		},
 		{
 			"path": "../figures"
+		},
+		{
+			"path": "../MammothMath"
+		},
+		{
+			"path": "../../my-website"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "my-website"
+	}
 }

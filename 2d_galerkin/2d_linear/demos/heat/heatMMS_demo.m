@@ -21,7 +21,7 @@ base = 2;
 demo = 0;
 
 % specify BCs
-bTypes_outer = 'RRRR';
+bTypes_outer = 'PPPP';
 bTypes_inner = 'N';
 
 % specify coefficients
@@ -41,7 +41,7 @@ fprintf('MMS Test Begun\n')
 
 % assemble inputs
 auxfun    = ManufacturedFunctions2d_heat(c,k,uTrue);
-mmsparams = MMSParams(base,demo=demo,timeOffset=2,timeFactor=2,pmin=2,pmax=4, ...
+mmsparams = MMSParams(base,demo=demo,timeOffset=2,timeFactor=2,pmin=1,pmax=5, ...
 				meshInclusions='on',effectiveRegion='Omega_eps');
 
 % build domain
