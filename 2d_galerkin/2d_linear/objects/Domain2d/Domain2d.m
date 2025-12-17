@@ -5,6 +5,8 @@ classdef Domain2d
 		mesh
 		boundary
 		time
+		xLim
+		yLim
 	end
 
 	methods
@@ -20,6 +22,9 @@ classdef Domain2d
 
 				% create boundary object
 				self.boundary = Boundary2d(dl_mat);
+
+				self.xLim = x;
+				self.yLim = y;
 			end
 
 		end
@@ -85,6 +90,12 @@ classdef Domain2d
 
 			% compute domain area
 			self.domainArea = sum(self.mesh.areas);
+
+			% NOTE: This code added 11-10-2025 to attempt to fix the problem with the code randomly failing
+			% if BCs already set, distribute BC nodes
+			if ~isempty(self.boundary.edges(end).boundaryType)
+				self = self.setBoundaryNodes;
+			end
 
 		end
 
@@ -657,6 +668,118 @@ classdef Domain2d
 			y = [self.Vertices(1,2) self.Vertices(3,2)];
 		end
 
+
+		function h = plot_function(self,f,timestep)
+
+			%{
+			% for parabolic problems, plot final time point unless otherwise specified
+			if isa(self,'GalerkinSolver2d_parabolic') && nargin < 2, 
+                timestep = self.domain.time.N_t; 
+            elseif isa(self,'GalerkinSolver2d_elliptic')
+                timestep = 1;
+            end
+			%}
+
+			% store domain information
+			coordinates = self.mesh.nodes;
+			elements3 = self.mesh.elements;
+
+			% get solution at desired time step
+			if isa(f,'function_handle')
+				U = self.function2nodes(f);
+			elseif isa(f,'double')
+				try 
+					length(f) == self.mesh.nNodes;
+				catch
+					error('Length of input vector does not equal number of mesh nodes.')
+				end
+				U = f;
+			end
+
+
+			% plot data
+			h = trisurf(elements3,coordinates(:,1),coordinates(:,2),U', ...
+				'facecolor','interp');
+
+			% format plot
+			view(10,40);
+			title('$u$','Interpreter','latex');
+
+			% set zlim
+			zMin = min(U);
+			zMax = max(U);
+			if zMin == zMax
+				zMax = zMin + 1;
+			end
+			zlim([zMin, zMax]);
+
+			% set xlim
+			xMin = min(self.mesh.nodes(:,1));
+			xMax = max(self.mesh.nodes(:,1));
+			xlim([xMin, xMax]);
+
+			% set ylim
+			yMin = min(self.mesh.nodes(:,2));
+			yMax = max(self.mesh.nodes(:,2));
+			ylim([yMin, yMax]);
+
+			% set colorbar
+			colorbar;
+			clim([zMin, zMax]);
+
+			% adjust position 
+			f = gcf;
+			heightRatio = (yMax - yMin) / (xMax - xMin);
+			width = 500;
+			f.Position = [100, 100, width, width * heightRatio];
+
+		end
+
+		function h = plotPatch_function(self,f)
+
+			%{
+			% for parabolic problems, plot final time point unless otherwise specified
+			if isa(self,'GalerkinSolver2d_parabolic') && nargin < 2, 
+                timestep = self.domain.time.N_t; 
+            elseif isa(self,'GalerkinSolver2d_elliptic')
+                timestep = 1;
+            end
+			%}
+
+			% store domain information
+			coordinates = self.mesh.nodes;
+			elements3 = self.mesh.elements;
+
+			% get solution at desired time step
+			if isa(f,'function_handle')
+				U = self.function2nodes(f);
+			elseif isa(f,'double')
+				if length(f) ~= self.mesh.nNodes
+					error('Length of input vector does not equal number of mesh nodes.')
+				end
+				U = f;
+			end
+
+			% get solution at desired time step
+			u_min = min(min(U));
+			u_max = max(max(U));
+
+			% plot data
+			patch('Faces',elements3, ...
+				  'Vertices',coordinates, ...
+				  'FaceVertexCData',U, ...
+				  'FaceColor','interp');
+			axis('equal')
+			clim([u_min u_max])
+			xlim(self.xLim)
+			ylim(self.yLim)
+			colorbar
+
+			h = gcf;
+
+		end
+
+
 		
 		% THREE POINT QUADRATURE
 		function int = threePointQuadrature(self,arg)
@@ -1031,7 +1154,15 @@ classdef Domain2d
 			%   reorder the nodes to match matlab's ordering
 			elements = msh.TRIANGLES(:,1:3);
 			elements = elements';
-			%elements = elements([1 3 2],:);
+
+			% STEP 2b: Previously, my GMSH script output the elements in
+			% reversed orientation (relative to what MATLAB expects). I have
+			% since corrected GMSH. But older meshes might still be reversed.
+			% Therefore, this line manually reverses the orientation of the mesh
+			% at the level of MATLAB. If an Error occurs when running
+			% domainFromGmsh, try either commenting out or uncommenting this
+			% line.  
+			elements = elements([1 3 2],:);
 
 
 			% STEP 3: store the nodes;
