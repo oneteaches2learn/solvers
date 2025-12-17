@@ -26,6 +26,7 @@ classdef Coefficients
 
 			% combine maps
 			cof = @(u,v) (ramp_u(u) .* ramp_v(v).^cofs.gamma);
+			%cof = @(u,v) (ramp_u(u) .* ramp_v(v).^cofs.gamma + 0.1);
 			val = cof(u,v);
 
 		end	
@@ -152,6 +153,14 @@ classdef Coefficients
 				r_const = data.r_const;
 				s_const = data.s_const;
 
+			elseif strcmp(type,'Stolwijk')
+			% note: right now, you have no way of passing other parameters to
+			% the Stolwijk model. You should rethink how you're doing this. 
+			
+				% store Stolwijk data
+				r_const = data.r_const;
+				s_const = data.s_const;
+
 			else
 				error('Unknown type of coupling coefficients: %s',type);
 
@@ -241,6 +250,21 @@ classdef Coefficients
 				r_activ_du = @(x1,x2,t,u,v) Coefficients.logistic_activation_du(u,v, ...
 					u_L=u_L,u_k=u_k,u_0=u_0,v_L=v_L,v_k=v_k,v_0=v_0,gamma=gamma);
 				
+				% compute s_activ
+				s_activ = @(u,v) r_activ(0,0,0,u,v);
+
+			end
+
+
+			% STOLWIJK MODEL
+			if strcmp(type,'Stolwijk')
+
+				% compute r_activ
+				r_activ = @(x1,x2,t,u,v) Coefficients.omega_s(u,v);
+
+				% compute r_activ_du
+				r_activ_du = @(x1,x2,t,u,v) Coefficients.omega_s_du(u,v);
+
 				% compute s_activ
 				s_activ = @(u,v) r_activ(0,0,0,u,v);
 
@@ -386,6 +410,140 @@ classdef Coefficients
 
 		end
 	end
+
+	% STOLWIJK MODEL
+	methods (Static)
+
+		function val = e_hy(v,e_hySET) 
+
+			arguments
+				v
+				e_hySET = 37;
+			end
+
+			val = v - e_hySET;
+		end
+
+		function val = e_s(u,e_sSET)
+			
+			arguments
+				u
+				e_sSET = 33;
+			end
+
+			val = u - e_sSET;		
+
+		end
+
+		function val = DI(e_hy,e_s,C1,C2)
+			
+			arguments
+				e_hy
+				e_s
+				C1 = 28424;
+				C2 = 4870;
+			end
+
+			%val = Coefficients.rLU(C1 * e_hy + C2 * e_s);
+			val = 1e-6 * Coefficients.rLU(C1 * e_hy + C2 * e_s);
+
+		end
+
+		function val = DI_du(e_hy,e_s,C1,C2)
+			
+			arguments
+				e_hy
+				e_s
+				C1 = 28424;
+				C2 = 4870;
+			end
+
+			%val = C2 * Coefficients.heaviside(C1 * e_hy + C2 * e_s);
+			val = 1e-6 * C2 * Coefficients.heaviside(C1 * e_hy + C2 * e_s);
+
+		end
+
+
+		function val = CS(e_hy,e_s,C3,C4)
+			
+			arguments
+				e_hy
+				e_s
+				C3 = 1.1;
+				C4 = 3.3;
+			end
+
+			%val = Coefficients.rLU(-C3 * e_hy - C4 * e_s);
+			val = 1e-6 * Coefficients.rLU(-C3 * e_hy - C4 * e_s);
+
+		end
+
+		function val = CS_du(e_hy,e_s,C3,C4)
+			
+			arguments
+				e_hy
+				e_s
+				C3 = 1.1;
+				C4 = 3.3;
+			end
+
+			%val = -C4 * Coefficients.heaviside(-C3 * e_hy - C4 * e_s);
+			val = -1e-6 * C4 * Coefficients.heaviside(-C3 * e_hy - C4 * e_s);
+
+		end
+
+		function val = omega_s(u,v,omega_0,alpha_DI,cofs)
+
+			arguments
+				u
+				v
+				omega_0  = 4.39e-4; 
+				alpha_DI = 0.134;
+				cofs.C1  = 28424;
+				cofs.C2  = 4870;
+				cofs.C3  = 1.1;
+				cofs.C4  = 3.3;
+				cofs.e_hySET = 37;
+				cofs.e_sSET = 34;
+			end
+
+			e_hy = Coefficients.e_hy(v,cofs.e_hySET);
+			e_s  = Coefficients.e_s(u,cofs.e_sSET);
+			DI   = Coefficients.DI(e_hy,e_s,cofs.C1,cofs.C2);
+			CS   = Coefficients.CS(e_hy,e_s,cofs.C3,cofs.C4);
+
+			val = (omega_0 + alpha_DI .* DI) ./ (1 + CS);
+
+		end
+
+		function val = omega_s_du(u,v,omega_0,alpha_DI,cofs)
+
+			arguments
+				u
+				v
+				omega_0  = 4.39e-4;
+				alpha_DI = 0.134;
+				cofs.C1  = 28424;
+				cofs.C2  = 4870;
+				cofs.C3  = 1.1;
+				cofs.C4  = 3.3;
+				cofs.e_hySET = 37;
+				cofs.e_sSET = 34;
+			end
+
+			e_hy  = Coefficients.e_hy(v,cofs.e_hySET);
+			e_s   = Coefficients.e_s(u,cofs.e_sSET);
+			DI    = Coefficients.DI(e_hy,e_s,cofs.C1,cofs.C2);
+			DI_du = Coefficients.DI_du(e_hy,e_s,cofs.C1,cofs.C2);
+			CS    = Coefficients.CS(e_hy,e_s,cofs.C3,cofs.C4);
+			CS_du = Coefficients.CS_du(e_hy,e_s,cofs.C3,cofs.C4);
+
+			val = (alpha_DI .* DI_du .* (1 + CS) - (omega_0 + alpha_DI .* DI) .* CS_du) ./ (1 + CS).^2;
+
+		end
+	end
+
+
 
 	% VARIABLE CHECKING / SETTING METHODS
 	methods (Static)
