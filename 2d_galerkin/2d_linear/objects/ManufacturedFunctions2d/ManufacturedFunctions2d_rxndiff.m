@@ -59,6 +59,7 @@ classdef ManufacturedFunctions2d_rxndiff < ManufacturedFunctions2d_parabolic
 			% different assumptions about how the reaction term is handled. So
 			% that leads to different methods of manufacting the RHS. 
 			if Coefficients.isNonlinear(self.r)
+				fprintf(' hi im here \n');
 				f = self.cu_t + self.divq + compose(self.r,self.uTrue);
 			else
 				f = self.cu_t + self.divq + self.r * self.uTrue;
