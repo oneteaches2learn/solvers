@@ -324,11 +324,13 @@ classdef GalerkinAssembler2d
 
 			% WHEN THE PROGRAM RANDOMLY FAILS, THIS IS THE PLACE WHERE THERE'S
 			% PROBABLY AN ISSUE. CAN YOU PLEASE FIX THIS PERMANENTLY?
-			dom = dom.setMesh(p,base, ...
-				effectiveRegion = NameValuePairs.effectiveRegion, ...
-				meshInclusions = NameValuePairs.meshInclusions);
-
-			%dom = dom.setMesh(p,base);
+			if isa(dom,'Domain2d_punctured')
+				dom = dom.setMesh(p,base, ...
+					effectiveRegion = NameValuePairs.effectiveRegion, ...
+					meshInclusions = NameValuePairs.meshInclusions);
+			else
+				dom = dom.setMesh(p,base);
+			end
 
 		end
 
