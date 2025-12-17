@@ -28,7 +28,7 @@ classdef NewtonGalerkinSolver2d_heat < NewtonGalerkinSolver2d_parabolic
 			b = tensors.M_p_prevTime * vectors.U_prevTime + ... 
 					dt * (vectors.b_vol - vectors.b_neu + vectors.b_rob) - ... 
 					S * vectors.U_D;
-
+		
 			% assemble J
 			J = S * U_tilde - b;
 
