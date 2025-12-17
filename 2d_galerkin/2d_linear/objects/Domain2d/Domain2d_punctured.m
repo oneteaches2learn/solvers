@@ -194,6 +194,10 @@ classdef Domain2d_punctured < Domain2d
 			% set inclusion number
 			self.nInclusions = size(dl_mat,2) / 4 - 1;
 
+			% set x and y limits
+			self.xLim = x;
+			self.yLim = y;
+
 		end
 
 		
