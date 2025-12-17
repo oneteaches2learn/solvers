@@ -147,6 +147,7 @@ classdef CoupledSolver2d_parabolic < NewtonGalerkinSolver2d_parabolic
 
 
 		% PLOTTING FUNCTIONS
+		%{
 		function plot(self,timestep)
 			% PLOT Plots the PDE solution on the left and the ODE solution on the right.
 			% If an argument is passed, use that as the timestep; 
@@ -214,6 +215,7 @@ classdef CoupledSolver2d_parabolic < NewtonGalerkinSolver2d_parabolic
 			f = gcf;
 			f.Position = [100, 100, 500, 600];
 		end
+		%}
 
 		function h = plotTemperatures(self)
 
@@ -373,6 +375,7 @@ classdef CoupledSolver2d_parabolic < NewtonGalerkinSolver2d_parabolic
 			
 		end
 
+		%{
 		function animate(self)
 		% ANIMATE Sequentially plots the PDE + ODE solutions from the first
 		% to the last timestep. The total animation duration is one second.
@@ -397,6 +400,7 @@ classdef CoupledSolver2d_parabolic < NewtonGalerkinSolver2d_parabolic
 				self.plot(t);    % Call our custom plot method
 				pause(dtFrame);  % Pause for the frame duration
 			end
+			%}
 		end
 
 		function animateFrostbite(self)
