@@ -82,6 +82,7 @@ classdef CoupledNewtonSolver2d_parabolic < NewtonGalerkinSolver2d_parabolic
 		end
 
 		% PLOTTING FUNCTIONS
+		%{
 		function plot(self,timestep)
 
 			% default to last timestep
@@ -104,6 +105,7 @@ classdef CoupledNewtonSolver2d_parabolic < NewtonGalerkinSolver2d_parabolic
 			title(str,'Interpreter','latex','FontSize',80);
 
 		end
+		%}
 
 		function plotPDE(self,timestep)
 
@@ -318,6 +320,31 @@ classdef CoupledNewtonSolver2d_parabolic < NewtonGalerkinSolver2d_parabolic
 				pause(dtFrame);  
 			end
 
+		end
+
+		function animatePDE(self)
+
+			% Number of timesteps
+			nT = self.domain.time.N_t;
+			totalAnimTime = 1;
+			dtFrame = totalAnimTime / max(nT - 1, 1);
+
+			% initialize plot
+			self.plot(1);
+			pause();
+
+			% Loop over timesteps
+			for t = 1:nT
+
+				% reset figure
+				clf;             
+
+				% plot current timestep
+				self.plot(t);
+
+				% delay
+				pause(dtFrame);  
+			end
 		end
 		
 	end
