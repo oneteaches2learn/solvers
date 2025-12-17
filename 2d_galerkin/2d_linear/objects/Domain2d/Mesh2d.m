@@ -22,6 +22,7 @@ classdef Mesh2d
 		centroids
 		areas
 		quality
+		quality_byElement
 	end
 
 	properties (Hidden)
@@ -255,7 +256,7 @@ classdef Mesh2d
 
 		end
 
-		function vals = get.quality(self)
+		function vals = get.quality_byElement(self)
 		% The metric of quality used here is min(2 * r / R), where r is the
 		% in-radius and R is the circum-radius of the triangle. The value of 1
 		% indicates an equilateral triangle, while values less than 1 indicate a
@@ -286,7 +287,17 @@ classdef Mesh2d
 				(4 * self.areas);
 
 			% compute quality of each element
-			vals = min(2 * r ./ R);
+			vals = 2 * r ./ R;
+
+		end
+
+		function vals = get.quality(self)
+		% The metric of quality used here is min(2 * r / R), where r is the
+		% in-radius and R is the circum-radius of the triangle. The value of 1
+		% indicates an equilateral triangle, while values less than 1 indicate a
+		% degenerate triangle.
+
+			vals = min(self.quality_byElement);
 
 		end
 
