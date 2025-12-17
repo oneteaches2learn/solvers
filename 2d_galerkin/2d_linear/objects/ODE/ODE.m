@@ -13,6 +13,7 @@ classdef ODE
         tGrid
         order
         solution
+        data
     end
 
     methods
@@ -28,6 +29,7 @@ classdef ODE
             self.dt          = data.time.dt;
             self.constraints = data.constraints;
             self.order = options.order;
+            self.data = data;
 
             % compute additional data
             self.t0 = 0;
@@ -52,27 +54,98 @@ classdef ODE
 
         end
 
+        %NOTE: This is the real solveIteration function. It is temporarily muted to experiment with a Newton solver
         function V_out = solveIteration(self,V_in,SU,t)
 
-				% remaining coefficients
-                c = self.c;
-				dt = self.dt;
-				s  = self.s(SU,V_in);
-				g  = self.g;
-                V_prev = self.solution(self.timestep-1);
+            % remaining coefficients
+            c = self.c;
+            dt = self.dt;
+            s  = self.s(SU,V_in);
+            g  = self.g;
+            V_prev = self.solution(self.timestep-1);
 
-                % temporary: plug in g(t), because I haven't made a wrapper that checks if g is a function of t
-                %g = g(t);
+            % temporary: plug in g(t), because I haven't made a wrapper that checks if g is a function of t
+            if isa(g,'function_handle')
+                g = g(t);
+            elseif isa(g,'double')
+                ...
+            else
+                error('g must be a function_handle [g = g(t)] or a double.');
+            end
 
-				% solve current iteration
-				V_out = (dt * g + dt * s * SU + c * V_prev); 
+            % solve current iteration
+            V_out = (dt * g + dt * s * SU + c * V_prev); 
 
-				% apply resolvent
-                vLower = self.constraints.vLower;
-				vUpper = self.constraints.vUpper;
-				V_out  = self.resolvent(V_out, dt, c, s, vLower, vUpper);
+            % apply resolvent
+            vLower = self.constraints.vLower;
+            vUpper = self.constraints.vUpper;
+            V_out  = self.resolvent(V_out, dt, c, s, vLower, vUpper);
+
+            
+            %{
+            % temporary: newton solver experiment
+            % define s and ds as function handles
+            s = @(u,v)(v * (v - u));
+            ds = @(u,v)(2 * v - u);
+
+            for i = 1:10
+
+                % compute F and dF
+                F = (c * (V_in - V_prev) + s(SU,V_in) * dt - g * dt);
+                dF = (c + ds(SU,V_in) * dt);
+
+                % Newton update
+                V_in = V_in - F / dF;
+            end
+
+            V_test = V_in;
+            V_out = V_test;
+            %}
 
         end
+
+
+        %{
+        %NOTE: This solves the iteration using Newton's method
+        function V_out = solveIteration(self,V_in,SU,t)
+
+            % remaining coefficients
+            c  = self.c;
+            dt = self.dt;
+            s  = self.data.cofs.s;
+            ds = self.data.cofs.ds;
+            g  = self.g;
+            V_prev = self.solution(self.timestep-1);
+
+            % temporary: plug in g(t), because I haven't made a wrapper that checks if g is a function of t
+            if isa(g,'function_handle')
+                g = g(t);
+            elseif isa(g,'double')
+                ...
+            else
+                error('g must be a function_handle [g = g(t)] or a double.');
+            end
+
+            
+            % define s and ds as function handles
+            s = self.data.cofs.s;
+            ds = self.data.cofs.ds;
+
+            V_iter = V_in;
+            %for i = 1:10
+
+                % compute F and dF
+                F = (c * (V_iter - V_prev) + s(SU,V_iter) * dt - g * dt);
+                dF = (c + ds(SU,V_iter) * dt);
+
+                % Newton update
+                V_iter = V_iter - F / dF;
+            %end
+
+            V_out = V_iter;
+
+        end
+        %}
 
         function u = step(obj, t, u)
 
