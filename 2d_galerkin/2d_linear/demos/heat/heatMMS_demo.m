@@ -18,7 +18,7 @@ incRatio = pi/2; % <~~~ incRatio = |delta Q| / |Y|
 
 % mms parameters
 base = 2;
-demo = 0;
+demo = 1;
 
 % specify BCs
 bTypes_outer = 'PPPP';
@@ -32,8 +32,8 @@ k = 1;
 
 
 % specify desired result
-%uTrue = sin(2 * pi * x(1)) * sin(2 * pi * x(2)) * (t + 1) + (t + 1);
-uTrue = cos(2 * pi * x(1)) * cos(2* pi * x(2));
+uTrue = sin(2 * pi * x(1)) * sin(2 * pi * x(2)) * (t + 1) + (t + 1);
+%uTrue = cos(2 * pi * x(1)) * cos(2* pi * x(2));
 
 
 % MMS TEST %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

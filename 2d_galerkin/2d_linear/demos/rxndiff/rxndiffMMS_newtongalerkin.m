@@ -23,7 +23,7 @@ base = 2;
 demo = 0;
 
 % specify BCs
-bTypes_outer = 'PPPP';
+bTypes_outer = 'NNNN';
 bTypes_inner = 'R';
 
 % specify coefficients
@@ -35,7 +35,7 @@ r = 0;
 %}
 c = 1;
 k = 1;
-r = u^2;
+r = u^3;
 
 % specify nonlinear boundary conditions
 %u_N = sin(u); 
@@ -50,10 +50,10 @@ alpha_R = 1;
 
 % specify desired result
 %uTrue = 1 + sin(pi / 2* x(1)) * sin(pi / 2 * x(2));
-uTrue = cos(2 * pi * x(1)) * cos(2* pi * x(2));
+%uTrue = cos(2 * pi * x(1)) * cos(2* pi * x(2));
 %uTrue = exp(x(1) * x(2));
 %uTrue = sin(pi * x(1)) * sin(pi * x(2)) * t;
-%uTrue = sin(pi / 2 * x(1)) * sin(pi / 2 * x(2)) * t + t + 1;
+uTrue = sin(pi / 2 * x(1)) * sin(pi / 2 * x(2)) * t + t + 1;
 %uTrue = 1 + t;
 %uTrue = 1;
 
