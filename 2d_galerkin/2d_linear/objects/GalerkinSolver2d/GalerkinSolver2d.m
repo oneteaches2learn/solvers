@@ -19,7 +19,7 @@ classdef GalerkinSolver2d
 
 			% store default options
 			self.options = struct();
-			self.options.assemblyQuadrature = 'gauss3'; % 'centroid' or 'gauss3'
+			self.options.assemblyQuadrature = 'gaussP1'; % 'centroid' or 'gaussP1'
 
 			if nargin == 2
 				
@@ -48,8 +48,8 @@ classdef GalerkinSolver2d
 
 			% compute local mass matrices
 			switch self.options.assemblyQuadrature
-				case 'gauss3'
-					M_vec = self.localMassMatrix_gauss3(c);
+				case 'gaussP1'
+					M_vec = self.localMassMatrix_gaussP1(c);
 				case 'centroid'
 					M_vec = self.localMassMatrix_centroid(c);
 				otherwise
@@ -70,8 +70,8 @@ classdef GalerkinSolver2d
 
 			% integrate stiffness coefficient
 			switch self.options.assemblyQuadrature
-				case 'gauss3'
-					K = self.integrateStiffnessCoefficient_gauss3();
+				case 'gaussP1'
+					K = self.integrateStiffnessCoefficient_gaussP1();
 				case 'centroid'
 					K = self.integrateStiffnessCoefficient_centroid();
 				otherwise
@@ -125,7 +125,7 @@ classdef GalerkinSolver2d
 
 		end
 
-		function K = integrateStiffnessCoefficient_gauss3(self)
+		function K = integrateStiffnessCoefficient_gaussP1(self)
 
 			% unpack variables
 			coords    = self.domain.mesh.nodes;
@@ -176,12 +176,12 @@ classdef GalerkinSolver2d
 		end
 
 		function M_vec = localMassMatrix_vec(self,c)
-		% localMassMatrix_vec should be replaced with localMassMatrix_gauss3
-			M_vec = self.localMassMatrix_gauss3(c);
+		% localMassMatrix_vec should be replaced with localMassMatrix_gaussP1
+			M_vec = self.localMassMatrix_gaussP1(c);
 		end
 
-		function M_vec = localMassMatrix_gauss3(self,c)
-		% localMassMatrix_gauss3 computes mass matrix using 3-point Gaussian quadrature
+		function M_vec = localMassMatrix_gaussP1(self,c)
+		% localMassMatrix_gaussP1 computes mass matrix using 3-point Gaussian quadrature
 
 			% unpack variables
 			elements3 = self.domain.mesh.elements(self.domain.mesh.effectiveElems, :);
@@ -425,54 +425,104 @@ classdef GalerkinSolver2d
 
 		function [E,b] = computeRobinBCs(self)
 
-			% unpack variables
-			dom    = self.domain;
-			nNodes = self.domain.mesh.nNodes;
-			coords = self.domain.mesh.nodes;
+			switch self.options.assemblyQuadrature
+				case 'centroid'
+					[E,b] = computeRobinBCs_centroid(self);
+				case 'gaussP1'
+					[E,b] = computeRobinBCs_gaussP1(self);
+					%[E,b] = computeRobinBCs_centroid(self);
+				otherwise
+					error('Unknown assemblyQuadrature option.');
+			end
 
-			% initialize storage
+		end
+				
+		function [E,b] = computeRobinBCs_centroid(self)
+			dom    = self.domain;
+			nNodes = dom.mesh.nNodes;
+			coords = dom.mesh.nodes;
+
 			b = sparse(nNodes,1);
 			E = sparse(nNodes,nNodes);
 
-			% compute boundary conditions
-			for i = 1:self.domain.boundary.nEdges
-				
-				% compute Dirichlet condition
-				if dom.boundary.edges(i).boundaryType == 'R'
-					
-					bCond = dom.boundary.edges(i).boundaryCondition;
+			for i = 1:dom.boundary.nEdges
+				if dom.boundary.edges(i).boundaryType ~= 'R', continue; end
 
-					% unpack functions
-					alpha = bCond{1};
-					u_BC  = bCond{2};
+				bCond = dom.boundary.edges(i).boundaryCondition;
+				alpha = bCond{1};
+				u_BC  = bCond{2};
 
-					% NEW: check boundary condition variables
-					[alpha,t,U,V] = checkVariables(self,alpha);
-					[u_BC,t,U,V] = checkVariables(self,u_BC);
+				[alpha,t,U,V] = checkVariables(self,alpha);
+				[u_BC,t,U,V]  = checkVariables(self,u_BC);
 
-					% store nodes on i-th edge of domain
-					bNodes_i = dom.boundary.edges(i).nodes;
+				bNodes_i = dom.boundary.edges(i).nodes;
 
-					% loop over segments of i-th edge
-					for j = 1:length(bNodes_i)-1
+				for j = 1:length(bNodes_i)-1
+					edge = [bNodes_i(j) bNodes_i(j+1)];
 
-						% get edge data
-						edge = [bNodes_i(j) bNodes_i(j+1)];
-						edgeMidPt = sum(coords(edge,:)/2);
-						edgeLength = norm(coords(edge(1),:) - coords(edge(2),:));
+					xm = sum(coords(edge,:),1)/2;
+					L  = norm(coords(edge(1),:) - coords(edge(2),:));
+					Um = sum(U(edge))/2;
 
-						% compute RHS vector
-						b(edge) = b(edge) + ...
-							edgeLength * alpha(edgeMidPt(1),edgeMidPt(2),t,sum(U(edge))/2,V) * ...
-							u_BC(edgeMidPt(1),edgeMidPt(2),t,sum(U(edge))/2,V) / 2;
+					a_m  = alpha(xm(1), xm(2), t, Um, V);
+					ub_m = u_BC (xm(1), xm(2), t, Um, V);
 
-						% compute E matrix
-						E(edge(1),edge(1)) = E(edge(1),edge(1)) + ...
-							1/2 * edgeLength * alpha(coords(edge(1),1),coords(edge(1),2),t,sum(U(edge))/2);
-						E(edge(2),edge(2)) = E(edge(2),edge(2)) + ...
-							1/2 * edgeLength * alpha(coords(edge(2),1),coords(edge(2),2),t,sum(U(edge))/2);
+					b(edge)      = b(edge)      + (L * a_m * ub_m / 2);
+					E(edge,edge) = E(edge,edge) + (L * a_m / 6) * [2 1; 1 2];
+				end
+			end
+		end
 
+		function [E,b] = computeRobinBCs_gaussP1(self)
+			dom    = self.domain;
+			nNodes = dom.mesh.nNodes;
+			coords = dom.mesh.nodes;
+
+			b = sparse(nNodes,1);
+			E = sparse(nNodes,nNodes);
+
+			% 2-pt Gauss on [0,1]
+			s = [0.5 - 1/(2*sqrt(3)), 0.5 + 1/(2*sqrt(3))];
+			w = [0.5, 0.5];
+
+			for i = 1:dom.boundary.nEdges
+				if dom.boundary.edges(i).boundaryType ~= 'R', continue; end
+
+				bCond = dom.boundary.edges(i).boundaryCondition;
+				alpha = bCond{1};
+				u_BC  = bCond{2};
+
+				[alpha,t,U,V] = checkVariables(self,alpha);
+				[u_BC,t,U,V]  = checkVariables(self,u_BC);
+
+				bNodes_i = dom.boundary.edges(i).nodes;
+
+				for j = 1:length(bNodes_i)-1
+					edge = [bNodes_i(j) bNodes_i(j+1)];
+
+					x1 = coords(edge(1),:);  x2 = coords(edge(2),:);
+					U1 = U(edge(1));         U2 = U(edge(2));
+
+					L  = norm(x1 - x2);
+
+					E_loc = zeros(2,2);
+					b_loc = zeros(2,1);
+
+					for q = 1:2
+						sq = s(q);
+						phi = [1 - sq; sq];              % [phi1; phi2]
+						xq  = (1 - sq)*x1 + sq*x2;       % 1x2 point on segment
+						Uq  = phi(1)*U1 + phi(2)*U2;     % P1 exact on edge
+
+						aq  = alpha(xq(1), xq(2), t, Uq, V);
+						ubq = u_BC (xq(1), xq(2), t, Uq, V);
+
+						E_loc = E_loc + (L * w(q) * aq)      * (phi*phi.');
+						b_loc = b_loc + (L * w(q) * aq*ubq)  * phi;
 					end
+
+					E(edge,edge) = E(edge,edge) + E_loc;
+					b(edge)      = b(edge)      + b_loc;
 				end
 			end
 		end
@@ -1399,3 +1449,61 @@ end
 		end
 		%}
 
+		%{
+		% =============================================================
+		% legacy method for computing Robin BCs
+		function [E,b] = computeRobinBCs(self)
+
+			% unpack variables
+			dom    = self.domain;
+			nNodes = self.domain.mesh.nNodes;
+			coords = self.domain.mesh.nodes;
+
+			% initialize storage
+			b = sparse(nNodes,1);
+			E = sparse(nNodes,nNodes);
+
+			% compute boundary conditions
+			for i = 1:self.domain.boundary.nEdges
+				
+				% compute Dirichlet condition
+				if dom.boundary.edges(i).boundaryType == 'R'
+					
+					bCond = dom.boundary.edges(i).boundaryCondition;
+
+					% unpack functions
+					alpha = bCond{1};
+					u_BC  = bCond{2};
+
+					% NEW: check boundary condition variables
+					[alpha,t,U,V] = checkVariables(self,alpha);
+					[u_BC,t,U,V] = checkVariables(self,u_BC);
+
+					% store nodes on i-th edge of domain
+					bNodes_i = dom.boundary.edges(i).nodes;
+
+					% loop over segments of i-th edge
+					for j = 1:length(bNodes_i)-1
+
+						% get edge data
+						edge = [bNodes_i(j) bNodes_i(j+1)];
+						edgeMidPt = sum(coords(edge,:)/2);
+						edgeLength = norm(coords(edge(1),:) - coords(edge(2),:));
+
+						% compute RHS vector
+						b(edge) = b(edge) + ...
+							edgeLength * alpha(edgeMidPt(1),edgeMidPt(2),t,sum(U(edge))/2,V) * ...
+							u_BC(edgeMidPt(1),edgeMidPt(2),t,sum(U(edge))/2,V) / 2;
+
+						% compute E matrix
+						E(edge(1),edge(1)) = E(edge(1),edge(1)) + ...
+							1/2 * edgeLength * alpha(coords(edge(1),1),coords(edge(1),2),t,sum(U(edge))/2);
+						E(edge(2),edge(2)) = E(edge(2),edge(2)) + ...
+							1/2 * edgeLength * alpha(coords(edge(2),1),coords(edge(2),2),t,sum(U(edge))/2);
+
+					end
+				end
+			end
+		end
+		% =============================================================
+		%}
