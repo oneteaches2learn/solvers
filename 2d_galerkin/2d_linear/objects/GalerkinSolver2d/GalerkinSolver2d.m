@@ -60,11 +60,101 @@ classdef GalerkinSolver2d
 			% check coefficient variables
 			[k,t,U,V] = self.checkVariables(k);
 
+			%{
 			% compute k on centroids
 			K = k(centroids(:,1),centroids(:,2),t,U,V);
 			if length(K) == 1
 				K = K * ones(nElems,1);
 			end
+			%}
+
+
+			%{
+			% ============================================================
+			% Degree-2 (3-point) quadrature for k on each triangle
+			% (points in barycentric coords; weights sum to 1)
+			% ============================================================
+			L = [2/3, 1/6, 1/6;
+				1/6, 2/3, 1/6;
+				1/6, 1/6, 2/3];
+			w = 1/3;
+
+			% vertex coordinates per element
+			x1 = coords(elements3(:,1),1);  y1 = coords(elements3(:,1),2);
+			x2 = coords(elements3(:,2),1);  y2 = coords(elements3(:,2),2);
+			x3 = coords(elements3(:,3),1);  y3 = coords(elements3(:,3),2);
+
+			% nodal U values per element (needed if k is nonlinear in u)
+			U1 = U(elements3(:,1));
+			U2 = U(elements3(:,2));
+			U3 = U(elements3(:,3));
+
+			% compute elementwise effective k by 3-point rule
+			k_eff = zeros(nElems,1);
+			for q = 1:3
+				l1 = L(q,1); l2 = L(q,2); l3 = L(q,3);
+
+				% physical quadrature point
+				xq = l1*x1 + l2*x2 + l3*x3;
+				yq = l1*y1 + l2*y2 + l3*y3;
+
+				% u_h evaluated at quadrature point (exact for P1)
+				Uq = l1*U1 + l2*U2 + l3*U3;
+
+				% coefficient at quadrature point
+				Kq = k(xq, yq, t, Uq, V);
+				if length(Kq) == 1
+					Kq = Kq * ones(nElems,1);
+				end
+
+				k_eff = k_eff + w * Kq;
+			end
+
+			K = k_eff;
+			% ============================================================
+			%}
+
+
+			% ============================================================
+			% Degree-2 (3-point) quadrature for k on each triangle
+			% (points in barycentric coords; weights sum to 1)
+			% VECTORIZED VERSION
+			% ============================================================
+			% barycentric weights
+			L = [2/3, 1/6, 1/6;
+				1/6, 2/3, 1/6;
+				1/6, 1/6, 2/3];
+
+			% vertex coordinates per element
+			x1 = coords(elements3(:,1),1);  y1 = coords(elements3(:,1),2);
+			x2 = coords(elements3(:,2),1);  y2 = coords(elements3(:,2),2);
+			x3 = coords(elements3(:,3),1);  y3 = coords(elements3(:,3),2);
+
+			% nodal U values per element (needed if k is nonlinear in u)
+			U1 = U(elements3(:,1));
+			U2 = U(elements3(:,2));
+			U3 = U(elements3(:,3));
+
+			% physical quadrature points (nElems x 3 arrays)
+			xq = x1.*L(:,1).' + x2.*L(:,2).' + x3.*L(:,3).';
+			yq = y1.*L(:,1).' + y2.*L(:,2).' + y3.*L(:,3).';
+
+			% u_h at quadrature points (exact for P1)
+			Uq = U1.*L(:,1).' + U2.*L(:,2).' + U3.*L(:,3).';
+
+			% evaluate k at all quadrature points at once
+			Kq = k(xq, yq, t, Uq, V);   % size: nElems x 3
+
+			% handle scalar coefficient
+			if numel(Kq) == 1
+				Kq = Kq * ones(nElems,3);
+			end
+
+			% degree-2 average
+			k_eff = mean(Kq, 2);
+			K = k_eff;
+			% ============================================================
+
 
 			% get 2 x nElem arrays of node coordinates by element
 			node1 = coords(elements3(:,1),:)';
@@ -95,6 +185,68 @@ classdef GalerkinSolver2d
 
 		end
 
+		function M_vec = localMassMatrix_vec(self,c)
+		% localMassMatrix_vec using 3-point Gaussian quadrature
+
+			% unpack variables
+			elements3 = self.domain.mesh.elements(self.domain.mesh.effectiveElems, :);
+			coords    = self.domain.mesh.nodes;   % (nNodes x 2) [x,y]
+			nElems    = size(elements3,1);
+
+			% check coefficient variables
+			[c,t,U,V] = self.checkVariables(c);
+
+			% vertex coordinates per element
+			x1 = coords(elements3(:,1),1);  y1 = coords(elements3(:,1),2);
+			x2 = coords(elements3(:,2),1);  y2 = coords(elements3(:,2),2);
+			x3 = coords(elements3(:,3),1);  y3 = coords(elements3(:,3),2);
+
+			% nodal U values per element
+			U1 = U(elements3(:,1));
+			U2 = U(elements3(:,2));
+			U3 = U(elements3(:,3));
+
+			% Degree-2 (3-point) triangle rule in barycentric coords:
+			% lambda^(1) = (2/3,1/6,1/6), lambda^(2) = (1/6,2/3,1/6), lambda^(3) = (1/6,1/6,2/3)
+			L = [2/3, 1/6, 1/6;
+				1/6, 2/3, 1/6;
+				1/6, 1/6, 2/3];
+			w = 1/3;   % weights sum to 1, so area scaling can be done later
+
+			% Precompute outer products lambda*lambda^T for each quadrature point (constant 3x3 matrices)
+			LamOuter = zeros(3,3,3);
+			for q = 1:3
+				lam = L(q,:).';
+				LamOuter(:,:,q) = lam*lam.';
+			end
+
+			% Accumulate M_vec = sum_q w * c(x_q)* (lambda lambda^T)
+			M_vec = zeros(3,3,nElems);
+
+			for q = 1:3
+				l1 = L(q,1); l2 = L(q,2); l3 = L(q,3);
+
+				% physical quadrature points x_q = sum_i lambda_i x_i
+				xq = l1*x1 + l2*x2 + l3*x3;
+				yq = l1*y1 + l2*y2 + l3*y3;
+
+				% u_h at quadrature points
+				Uq = l1*U1 + l2*U2 + l3*U3;
+
+				% coefficient at quadrature points
+				Cq = c(xq, yq, t, Uq, V);
+				if length(Cq) == 1
+					Cq = repmat(Cq, nElems, 1);
+				end
+
+				Cq_vec = permute(Cq, [3,2,1]);   % 1x1xnElems
+				M_vec  = M_vec + w * pagemtimes(LamOuter(:,:,q), Cq_vec);
+			end
+
+		end
+
+		%{
+		% OLD VERSION: localMassMatrix_vec using centroid evaluation
 		function M_vec = localMassMatrix_vec(self,c);
 
 			% unpack variables
@@ -120,10 +272,15 @@ classdef GalerkinSolver2d
 			M_vec = pagemtimes(M_loc,C_vec);
 
 		end
+		%}
 
 		function M = localMassMatrix(self)
 
+			% standard mass matrix
 			M = [2,1,1; 1,2,1; 1,1,2] / 12;
+
+			% alternate "mass lumped" version
+			%M = eye(3) / 3;
 
 		end
 
