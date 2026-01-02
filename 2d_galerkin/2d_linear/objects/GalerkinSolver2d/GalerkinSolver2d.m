@@ -425,6 +425,9 @@ classdef GalerkinSolver2d
 
 		function [E,b] = computeRobinBCs(self)
 
+			fprintf(' BCs called at timestep t = %f\n',self.t);
+		
+
 			switch self.options.assemblyQuadrature
 				case 'centroid'
 					[E,b] = computeRobinBCs_centroid(self);
