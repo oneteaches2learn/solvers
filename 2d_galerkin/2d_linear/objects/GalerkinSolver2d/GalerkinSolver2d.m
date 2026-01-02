@@ -5,6 +5,7 @@ classdef GalerkinSolver2d
 		coefficients
 		f
 		solution
+		options
 	end
 
 	properties (Hidden)
@@ -15,6 +16,10 @@ classdef GalerkinSolver2d
 	methods
         % CONSTRUCTOR
 		function self = GalerkinSolver2d(dom,auxfun)
+
+			% store default options
+			self.options = struct();
+			self.options.assemblyQuadrature = 'gauss3'; % 'centroid' or 'gauss3'
 
 			if nargin == 2
 				
@@ -41,120 +46,37 @@ classdef GalerkinSolver2d
 
 		function M = assembleMassMatrix(self,c)
 
-			M_vec = self.localMassMatrix_vec(c);
+			% compute local mass matrices
+			switch self.options.assemblyQuadrature
+				case 'gauss3'
+					M_vec = self.localMassMatrix_gauss3(c);
+				case 'centroid'
+					M_vec = self.localMassMatrix_centroid(c);
+				otherwise
+					error('Unknown assemblyQuadrature option.');
+			end
+
+			% assemble global mass matrix
 			M = self.sumLocalMatrices(M_vec);
 
 		end
 
 		function A_vec = localStiffnessMatrix_vec(self)
 
-			% store variables
-			k = self.coefficients.k;
-
 			% unpack variables
 			coords    = self.domain.mesh.nodes;
 			elements3 = self.domain.mesh.elements(self.domain.mesh.effectiveElems,:);
-			centroids = self.domain.mesh.centroids(self.domain.mesh.effectiveElems,:);
 			nElems    = size(elements3,1);
 
-			% check coefficient variables
-			[k,t,U,V] = self.checkVariables(k);
-
-			%{
-			% compute k on centroids
-			K = k(centroids(:,1),centroids(:,2),t,U,V);
-			if length(K) == 1
-				K = K * ones(nElems,1);
+			% integrate stiffness coefficient
+			switch self.options.assemblyQuadrature
+				case 'gauss3'
+					K = self.integrateStiffnessCoefficient_gauss3();
+				case 'centroid'
+					K = self.integrateStiffnessCoefficient_centroid();
+				otherwise
+					error('Unknown assemblyQuadrature option.');
 			end
-			%}
-
-
-			%{
-			% ============================================================
-			% Degree-2 (3-point) quadrature for k on each triangle
-			% (points in barycentric coords; weights sum to 1)
-			% ============================================================
-			L = [2/3, 1/6, 1/6;
-				1/6, 2/3, 1/6;
-				1/6, 1/6, 2/3];
-			w = 1/3;
-
-			% vertex coordinates per element
-			x1 = coords(elements3(:,1),1);  y1 = coords(elements3(:,1),2);
-			x2 = coords(elements3(:,2),1);  y2 = coords(elements3(:,2),2);
-			x3 = coords(elements3(:,3),1);  y3 = coords(elements3(:,3),2);
-
-			% nodal U values per element (needed if k is nonlinear in u)
-			U1 = U(elements3(:,1));
-			U2 = U(elements3(:,2));
-			U3 = U(elements3(:,3));
-
-			% compute elementwise effective k by 3-point rule
-			k_eff = zeros(nElems,1);
-			for q = 1:3
-				l1 = L(q,1); l2 = L(q,2); l3 = L(q,3);
-
-				% physical quadrature point
-				xq = l1*x1 + l2*x2 + l3*x3;
-				yq = l1*y1 + l2*y2 + l3*y3;
-
-				% u_h evaluated at quadrature point (exact for P1)
-				Uq = l1*U1 + l2*U2 + l3*U3;
-
-				% coefficient at quadrature point
-				Kq = k(xq, yq, t, Uq, V);
-				if length(Kq) == 1
-					Kq = Kq * ones(nElems,1);
-				end
-
-				k_eff = k_eff + w * Kq;
-			end
-
-			K = k_eff;
-			% ============================================================
-			%}
-
-
-			% ============================================================
-			% Degree-2 (3-point) quadrature for k on each triangle
-			% (points in barycentric coords; weights sum to 1)
-			% VECTORIZED VERSION
-			% ============================================================
-			% barycentric weights
-			L = [2/3, 1/6, 1/6;
-				1/6, 2/3, 1/6;
-				1/6, 1/6, 2/3];
-
-			% vertex coordinates per element
-			x1 = coords(elements3(:,1),1);  y1 = coords(elements3(:,1),2);
-			x2 = coords(elements3(:,2),1);  y2 = coords(elements3(:,2),2);
-			x3 = coords(elements3(:,3),1);  y3 = coords(elements3(:,3),2);
-
-			% nodal U values per element (needed if k is nonlinear in u)
-			U1 = U(elements3(:,1));
-			U2 = U(elements3(:,2));
-			U3 = U(elements3(:,3));
-
-			% physical quadrature points (nElems x 3 arrays)
-			xq = x1.*L(:,1).' + x2.*L(:,2).' + x3.*L(:,3).';
-			yq = y1.*L(:,1).' + y2.*L(:,2).' + y3.*L(:,3).';
-
-			% u_h at quadrature points (exact for P1)
-			Uq = U1.*L(:,1).' + U2.*L(:,2).' + U3.*L(:,3).';
-
-			% evaluate k at all quadrature points at once
-			Kq = k(xq, yq, t, Uq, V);   % size: nElems x 3
-
-			% handle scalar coefficient
-			if numel(Kq) == 1
-				Kq = Kq * ones(nElems,3);
-			end
-
-			% degree-2 average
-			k_eff = mean(Kq, 2);
-			K = k_eff;
-			% ============================================================
-
 
 			% get 2 x nElem arrays of node coordinates by element
 			node1 = coords(elements3(:,1),:)';
@@ -185,8 +107,81 @@ classdef GalerkinSolver2d
 
 		end
 
+		function K = integrateStiffnessCoefficient_centroid(self)
+
+			% unpack variables
+			centroids = self.domain.mesh.centroids(self.domain.mesh.effectiveElems,:);
+			nElems    = size(centroids,1);
+
+			% check coefficient variables
+			k = self.coefficients.k;
+			[k,t,U,V] = self.checkVariables(k);
+
+			% compute k on centroids
+			K = k(centroids(:,1),centroids(:,2),t,U,V);
+			if length(K) == 1
+				K = K * ones(nElems,1);
+			end
+
+		end
+
+		function K = integrateStiffnessCoefficient_gauss3(self)
+
+			% unpack variables
+			coords    = self.domain.mesh.nodes;
+			elements3 = self.domain.mesh.elements(self.domain.mesh.effectiveElems,:);
+			nElems    = size(elements3,1);
+
+			% check coefficient variables
+			k = self.coefficients.k;
+			[k,t,U,V] = self.checkVariables(k);
+
+			% Barycentric coordinates and weights
+			L = [2/3, 1/6, 1/6;
+				1/6, 2/3, 1/6;
+				1/6, 1/6, 2/3];
+			w = 1/3;
+
+			% vertex coordinates per element
+			x1 = coords(elements3(:,1),1);  y1 = coords(elements3(:,1),2);
+			x2 = coords(elements3(:,2),1);  y2 = coords(elements3(:,2),2);
+			x3 = coords(elements3(:,3),1);  y3 = coords(elements3(:,3),2);
+
+			% nodal U values per element (needed if k is nonlinear in u)
+			U1 = U(elements3(:,1));
+			U2 = U(elements3(:,2));
+			U3 = U(elements3(:,3));
+
+			% compute elementwise effective k by 3-point rule
+			K = zeros(nElems,1);
+			for q = 1:3
+				l1 = L(q,1); l2 = L(q,2); l3 = L(q,3);
+
+				% physical quadrature point
+				xq = l1*x1 + l2*x2 + l3*x3;
+				yq = l1*y1 + l2*y2 + l3*y3;
+
+				% u_h evaluated at quadrature point (exact for P1)
+				Uq = l1*U1 + l2*U2 + l3*U3;
+
+				% coefficient at quadrature point
+				Kq = k(xq, yq, t, Uq, V);
+				if length(Kq) == 1
+					Kq = Kq * ones(nElems,1);
+				end
+
+				K = K + w * Kq;
+			end
+
+		end
+
 		function M_vec = localMassMatrix_vec(self,c)
-		% localMassMatrix_vec using 3-point Gaussian quadrature
+		% localMassMatrix_vec should be replaced with localMassMatrix_gauss3
+			M_vec = self.localMassMatrix_gauss3(c);
+		end
+
+		function M_vec = localMassMatrix_gauss3(self,c)
+		% localMassMatrix_gauss3 computes mass matrix using 3-point Gaussian quadrature
 
 			% unpack variables
 			elements3 = self.domain.mesh.elements(self.domain.mesh.effectiveElems, :);
@@ -245,9 +240,7 @@ classdef GalerkinSolver2d
 
 		end
 
-		%{
-		% OLD VERSION: localMassMatrix_vec using centroid evaluation
-		function M_vec = localMassMatrix_vec(self,c);
+		function M_vec = localMassMatrix_centroid(self,c)
 
 			% unpack variables
 			centroids = self.domain.mesh.centroids(self.domain.mesh.effectiveElems, :);
@@ -272,7 +265,6 @@ classdef GalerkinSolver2d
 			M_vec = pagemtimes(M_loc,C_vec);
 
 		end
-		%}
 
 		function M = localMassMatrix(self)
 
