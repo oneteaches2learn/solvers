@@ -200,8 +200,8 @@ classdef PhysiologicalBC
         function val = get.coefficients(self)
             val(1) = self.B .* self.windSpeed.^self.m;
             val(2) = self.view_factor .* self.emissivity .* self.stefan_boltzmann;
-            val(3) = 74.4 .* self.a_SW;
-            val(4) = 31.9 .* self.a_SW;
+            val(3) = 31.9 .* self.a_SW;
+            val(4) = 74.4 .* self.a_SW;
             val(5) = 5.6;
         end
     end
