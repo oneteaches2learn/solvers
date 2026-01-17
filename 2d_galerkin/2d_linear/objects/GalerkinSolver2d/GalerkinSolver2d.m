@@ -425,15 +425,11 @@ classdef GalerkinSolver2d
 
 		function [E,b] = computeRobinBCs(self)
 
-			fprintf(' BCs called at timestep t = %f\n',self.t);
-		
-
 			switch self.options.assemblyQuadrature
 				case 'centroid'
 					[E,b] = computeRobinBCs_centroid(self);
 				case 'gaussP1'
 					[E,b] = computeRobinBCs_gaussP1(self);
-					%[E,b] = computeRobinBCs_centroid(self);
 				otherwise
 					error('Unknown assemblyQuadrature option.');
 			end
@@ -477,6 +473,7 @@ classdef GalerkinSolver2d
 		end
 
 		function [E,b] = computeRobinBCs_gaussP1(self)
+
 			dom    = self.domain;
 			nNodes = dom.mesh.nNodes;
 			coords = dom.mesh.nodes;
@@ -489,7 +486,7 @@ classdef GalerkinSolver2d
 			w = [0.5, 0.5];
 
 			for i = 1:dom.boundary.nEdges
-				if dom.boundary.edges(i).boundaryType ~= 'R', continue; end
+				if ~strcmp(dom.boundary.edges(i).boundaryType, 'R'), continue; end
 
 				bCond = dom.boundary.edges(i).boundaryCondition;
 				alpha = bCond{1};
