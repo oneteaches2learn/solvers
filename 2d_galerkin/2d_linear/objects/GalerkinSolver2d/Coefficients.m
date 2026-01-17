@@ -504,7 +504,7 @@ classdef Coefficients
 				cofs.C3  = 1.1;
 				cofs.C4  = 3.3;
 				cofs.e_hySET = 37;
-				cofs.e_sSET = 34;
+				cofs.e_sSET = 33;
 			end
 
 			e_hy = Coefficients.e_hy(v,cofs.e_hySET);
@@ -528,7 +528,7 @@ classdef Coefficients
 				cofs.C3  = 1.1;
 				cofs.C4  = 3.3;
 				cofs.e_hySET = 37;
-				cofs.e_sSET = 34;
+				cofs.e_sSET = 33;
 			end
 
 			e_hy  = Coefficients.e_hy(v,cofs.e_hySET);
