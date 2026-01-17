@@ -24,8 +24,8 @@ demo = 0;
 % specify BCs
 %bTypes_outer = 'TTTT';
 %bTypes_outer = 'RRRR';
-bTypes_outer = 'PPPP';
-bTypes_inner = 'R';
+bTypes_outer = 'NNNN';
+bTypes_inner = 'N';
 
 % specify coefficients
 p = 1 + x(1) * x(2) * t;
@@ -33,8 +33,10 @@ k = 1 + x(1) * x(2) * t;
 r = 1 + x(1) * x(2) * t; 
 
 % specify desired result
-%uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2)) * t + t;
-uTrue = cos(2*pi*x(1)) * cos(2*pi*x(2))*t;
+uTrue = sin(pi/2 * x(1)) * sin(pi/2 * x(2)) * t + t;
+%uTrue = cos(2*pi*x(1)) * cos(2*pi*x(2))*t;
+%uTrue = exp(x(1)) * exp(-x(2)) * t + t;
+
 
 
 % MMS TEST %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -24,7 +24,7 @@ demo = 0;
 
 % specify BCs
 bTypes_outer = 'NNNN';
-bTypes_inner = 'R';
+bTypes_inner = 'N';
 
 % specify coefficients
 %{

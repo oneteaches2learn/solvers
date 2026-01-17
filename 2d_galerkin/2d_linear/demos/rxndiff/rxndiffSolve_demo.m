@@ -25,8 +25,8 @@ k = 1;
 f = 2;
 
 % specify BCs
-bTypes = 'DDDD';
-bTypes2 = 'T';
+bTypes = 'RRRR';
+bTypes2 = 'R';
 
 % specify Dirichlet conditions
 u_D = 0;
@@ -35,7 +35,7 @@ u_D = 0;
 u_N = 0;
 
 % specify Robin conditions
-alpha = 1;
+alpha = cos(pi/2 * x(1)) * cos(pi/2 * x(2));
 u_R = 1;
 
 % specify Dynamic conditions
@@ -64,7 +64,7 @@ fprintf(' Contructing Domain:'), tic
 	dom = GalerkinAssembler2d_heat.assembleTimeStepping(dom,T,dt,eq);
 	dom = dom.add_yline;
 	%dom = dom.inclusionsON;
-	dom = GalerkinAssembler2d_heat.assembleBoundary(dom,bTypes,u_D,u_N,alpha,u_R,beta,gamma,u_T,bTypes2); 
+	dom = GalerkinAssembler2d_heat.assembleBoundary(dom,bTypes,u_D,u_N,alpha,u_R,bTypes2); 
 	dom = GalerkinAssembler2d_heat.assembleMesh(dom,p,base); 
 executionTime = toc; 
 fprintf(' %f s\n',executionTime)
