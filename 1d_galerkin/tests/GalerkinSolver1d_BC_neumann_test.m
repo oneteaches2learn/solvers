@@ -19,7 +19,7 @@ k = 1;
 r = 1;
 
 % boundary conditions
-BCtypes = 'DN';
+BCtypes = 'NN';
 
 
 % BLACK BOX %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
