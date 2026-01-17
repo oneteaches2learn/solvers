@@ -31,8 +31,7 @@ manfun = ManufacturedFunctions1d_poisson(k,r,uTrue,BCtypes);
 auxfun = manfun.outputCoefficients();
 
 % manufacture boundary conditions
-BCvals = manfun.outputBoundaryConditions();
-dom.boundary = Boundary1d(xLim,BCtypes,BCvals);
+dom.boundary = manfun.outputBoundaryConditions(dom);
 
 % loop over mesh refinements
 err = {};
