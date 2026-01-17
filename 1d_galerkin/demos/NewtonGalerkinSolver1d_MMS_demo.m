@@ -1,77 +1,10 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% NOTE: DO NOT CHANGE THE SOLUTION OR PARAMETERS
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% If you wish to test other problems, create a new script based on this one.
-%
-% This script demonstrates the failure of the NewtonGalerkinSolver1d_poisson
-% class to converge for a particular manufactured solution. 
-% 
-% SETUP:
-% The problem solved is:
-%
-%    -d/dx(k du/dx) + r u = f,  x in (0,1)
-%                -k du/dn = g_1, x = 0
-%                -k du/dn = g_2, x = 1
-%
-% Here, g_1 and g_2 can either be manufactured Neumann boundary conditions, i.e.
-% linear boundary conditions where the values g_1 and g_2 are determined from
-% the desired solution uTrue. Or g_1 and g_2 can be nonlinear boundary condtions
-% given by:
-% 
-%    g_1(u) = exp(u)
-%    g_2(u) = -(exp(u-2) + 2)
-%
-% These nonlinear boundary conditions have been chosen so to be compatible with
-% the true solution
-% 
-%    uTrue = x + x^2.
-%
-% The initial guess is set to be either the constant function u = 1, or a
-% perturbation of the true solution.
-%
-%
-% RESULTS:
-% The choice of:
-%
-%    LEFT_nonlinearBCs = 0
-%    RIGHT_nonlinearBCs = 1
-%    constant_initial_guess = 1
-%    rU_linear = 1
-% 
-% will cause the Newton iteration to fail to converge. The choice of 
-%
-%   LEFT_nonlinearBCs = 1 
-%   RIGHT_nonlinearBCs = 1
-%   constant_initial_guess = 1
-%   rU_linear = 1
-%
-% will cause order 1 convergence. All other choices cause order 2 convergence.
-%
-% EXPLANATION:
-% The issue appears to be that the initial guess u = 1 is outside the basin of
-% convergence for Newton's method when the BC on the right side is nonlinear,
-% the BC on the left side is linear, and r(u) = u. Changing any of these three
-% conditions appears to place the initial guess within the basin of convergence.
-%
-% Intiutively, this makes some sense. When r(u) = u, the problem is linear on
-% the interior and the nonlinearity is on only the right boundary node. The
-% nonlinear boundary condition there is exponential. So if the initial guess is
-% too far from the true solution, then Newton's method actually converges to a
-% different (and spurious) solution. If both boundary conditions are nonlinear,
-% then the nonlinearity on the left boundary appears to help guide the solution
-% towards the true solution. If r(u) = u^2, then the problem is nonlinear on the
-% interior as well, which also appears to help guide the solution towards the
-% true solution.
-
-
 clear all; syms x t u;
 % USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % original problem
 uTrue = x + x^2;
 
 % determine to use nonlinear BCs on left, right, or both
-LEFT_nonlinearBCs = 0;      % if 1, use nonlinear BCs; if 0, use linear (manufactured) BCs
+LEFT_nonlinearBCs = 1;      % if 1, use nonlinear BCs; if 0, use linear (manufactured) BCs
 RIGHT_nonlinearBCs = 1;     % if 1, use nonlinear BCs; if 0, use linear (manufactured) BCs
 constant_initial_guess = 0; % if 1, use constant initial guess u = 1; else use perturbed true solution
 rU_linear = 1;              % if 1, use r(u) = u; if 0, use r(u) = u^2
@@ -95,7 +28,7 @@ else
 end
 
 % boundary conditions
-BCtypes = 'NN';
+BCtypes = 'DD';
 
 % original problem
 U_N_L = exp(u);
@@ -105,6 +38,7 @@ dU_N_R = -exp(u-2);
 
 BCvals = {U_N_L, U_N_R};
 BCvals_du = {dU_N_L, dU_N_R};
+
 
 % BLACK BOX %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % create domain 
