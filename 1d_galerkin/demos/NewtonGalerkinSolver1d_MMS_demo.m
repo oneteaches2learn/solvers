@@ -7,7 +7,7 @@ uTrue = x + x^2;
 LEFT_nonlinearBCs = 1;      % if 1, use nonlinear BCs; if 0, use linear (manufactured) BCs
 RIGHT_nonlinearBCs = 1;     % if 1, use nonlinear BCs; if 0, use linear (manufactured) BCs
 constant_initial_guess = 0; % if 1, use constant initial guess u = 1; else use perturbed true solution
-rU_linear = 1;              % if 1, use r(u) = u; if 0, use r(u) = u^2
+rU_linear = 1;             % if 1, use r(u) = u; if 0, use r(u) = u^2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -28,7 +28,7 @@ else
 end
 
 % boundary conditions
-BCtypes = 'DD';
+BCtypes = 'NN';
 
 % original problem
 U_N_L = exp(u);

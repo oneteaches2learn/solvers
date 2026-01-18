@@ -1,9 +1,17 @@
-clear all; syms x t;
+% For this test, we choose u_N_L = exp(u) and uTrue = x + x^2. These
+% choices "match" in the following way: 
+% 
+% -n cdot grad(uTrue) = - (1 + 2x) = -1 at x = 0, and
+% exp(uTrue(0)) = exp(0 + 0) = exp(0) = 1 at x = 0.
+% 
+% So the strategy is to choose a desired nonlinear boundary condition to test,
+% then choose a uTrue that pointwise satisfies that boundary condition.
+
+clear all; syms x t u;
 % USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % desired uTrue
-uTrue = sin(4* pi*x);
-
+uTrue = x + x^2;
 
 % DOMAIN PARAMETERS
 % domain parameters
@@ -12,14 +20,15 @@ xLim = [0 1];
 % mesh parameters
 base = 2;
 
-
 % PDE PARAMETERS
 % pde coefficients
 k = 1;
-r = 1;
+r = u^2;
 
 % boundary conditions
-BCtypes = 'DD';
+BCtypes = 'ND';
+
+u_N_L = exp(u);  % nonlinear Neumann BC on left edge
 
 
 % BLACK BOX %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -27,17 +36,24 @@ BCtypes = 'DD';
 dom = Domain1d(xLim);
 
 % manufacture auxiliary functions
-manfun = ManufacturedFunctions1d_poisson(k,r,uTrue,BCtypes);
+manfun = ManufacturedFunctions1d_poisson(k,r,uTrue,BCtypes,'reaction_form','source');
 auxfun = manfun.outputCoefficients();
 
-% manufacture boundary conditions
-dom.boundary = manfun.outputBoundaryConditions(dom);
+% manufacture boundary
+dom.boundary = manfun.outputBoundaryConditions(dom,BCtypes);
 
+% overwrite appropriate boundary condition with nonlinear Neumann BC
+dom.boundary.edges(1).boundaryCondition = u_N_L;
+dom.boundary.edges(1).boundaryCondition_ddu = diff(u_N_L,u);
+
+
+fprintf('Begin MMS test\n');
 % loop over mesh refinements
 err = {};
 i = 0;
 for p = 2:5
 
+    fprintf('  p = %d:',p); tic;
     % update counter
     i = i + 1;
 
@@ -45,7 +61,9 @@ for p = 2:5
     dom.mesh = Mesh1d(xLim,base,p);
 
     % create galerkin solver
-    prob = GalerkinSolver1d_poisson(dom,auxfun);
+    prob = NewtonGalerkinSolver1d_poisson(dom,auxfun);
+
+    % solve
     prob = prob.solve;
 
     % compute and display errors
@@ -55,6 +73,12 @@ for p = 2:5
     if i > 1
         rate{i-1} = log(err{i-1}/err{i})/log(base);
     end
+    timeRequired = toc;
+    fprintf(' %.4f s\n',timeRequired);
+
+    % plot result
+    %prob.plot;
+    %pause()
 
 end
 

@@ -1,9 +1,8 @@
-clear all; syms x t;
+clear all; syms x t u;
 % USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % desired uTrue
-uTrue = sin(4* pi*x);
-
+uTrue = sin(pi*x / 4) + 1;
 
 % DOMAIN PARAMETERS
 % domain parameters
@@ -12,11 +11,10 @@ xLim = [0 1];
 % mesh parameters
 base = 2;
 
-
 % PDE PARAMETERS
 % pde coefficients
 k = 1;
-r = 1;
+r = sin(2*pi*x) * u^3;
 
 % boundary conditions
 BCtypes = 'DD';
@@ -27,17 +25,20 @@ BCtypes = 'DD';
 dom = Domain1d(xLim);
 
 % manufacture auxiliary functions
-manfun = ManufacturedFunctions1d_poisson(k,r,uTrue,BCtypes);
+manfun = ManufacturedFunctions1d_poisson(k,r,uTrue,BCtypes,'reaction_form','source');
 auxfun = manfun.outputCoefficients();
 
-% manufacture boundary conditions
-dom.boundary = manfun.outputBoundaryConditions(dom);
+% manufacture boundary
+dom.boundary = manfun.outputBoundaryConditions(dom,BCtypes);
 
+
+fprintf('Begin MMS test\n');
 % loop over mesh refinements
 err = {};
 i = 0;
 for p = 2:5
 
+    fprintf('  p = %d:',p); tic;
     % update counter
     i = i + 1;
 
@@ -45,7 +46,9 @@ for p = 2:5
     dom.mesh = Mesh1d(xLim,base,p);
 
     % create galerkin solver
-    prob = GalerkinSolver1d_poisson(dom,auxfun);
+    prob = NewtonGalerkinSolver1d_poisson(dom,auxfun);
+
+    % solve
     prob = prob.solve;
 
     % compute and display errors
@@ -55,6 +58,12 @@ for p = 2:5
     if i > 1
         rate{i-1} = log(err{i-1}/err{i})/log(base);
     end
+    timeRequired = toc;
+    fprintf(' %.4f s\n',timeRequired);
+
+    % plot result
+    %prob.plot;
+    %pause()
 
 end
 
