@@ -47,6 +47,25 @@ classdef ManufacturedFunctions1d < Coefficients
 %  equation, listed above, already has two coefficients p and k.) Outputting a
 %  structure allows flexibility for each subclass to load as many coefficients
 %  as is necessary into the structure.  
+%
+%  (7) ManufacturedFunctions1d manufactures the source for either the
+%  GalerkinSolver1d or NewtonGalerkinSovler1d, and these solvers make different
+%  assumptions about the form of the reaction term. GalerkinSolver1d assumes
+%  that it is solving
+%
+% 			 -div (k grad u) + r(x) * u = f
+%
+%  where r(x) * u corresponds to a mass matrix. However, NewtonGalerkinSolver1d
+%  assumes that it is solving
+%  
+% 			 -div (k grad u) + r(x,u) = f
+%
+%  where r(x,u) corresponds to a source term. So, when manufacturing the source
+%  f, ManufacturedFunctions1d must know which solver will be using the
+%  manufactured source. This is specified by setting the reaction_form property
+%  to either 'mass' or 'source', depending on whether the GalerkinSolver1d or
+%  NewtonGalerkinSolver1d will be using the manufactured source, respectively.
+%	
 %-----------------------------------------------------------------------------%
 
 
@@ -63,18 +82,17 @@ classdef ManufacturedFunctions1d < Coefficients
 		bcConds
 	end
 
+	properties (Hidden)
+		reaction_form = 'mass'; % 'mass' or 'source' form of PDE reaction term
+	end
+
 	methods
 		% CONSTRUCTOR
-		function self = ManufacturedFunctions1d(k,uTrue,NameValueArgs)
+		function self = ManufacturedFunctions1d(k,uTrue)
 
 			% store inputs
 			self.uTrue = uTrue;
 			self.k = k;
-            %{
-			self.u_N = NameValueArgs.u_N;
-			self.alpha_R = NameValueArgs.alpha_R;
-			self.u_R = NameValueArgs.u_R;
-            %}
 
 			% manufacture data
 			self.q = self.manufactureFlux;

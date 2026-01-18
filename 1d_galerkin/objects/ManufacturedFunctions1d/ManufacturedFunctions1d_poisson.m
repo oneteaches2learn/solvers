@@ -17,10 +17,11 @@ classdef ManufacturedFunctions1d_poisson < ManufacturedFunctions1d_elliptic
 				NameValueArgs.u_N = 0;
 				NameValueArgs.alpha_R = 0;
 				NameValueArgs.u_R = 0;
+				NameValueArgs.reaction_form = 'mass'
 			end
 			
 			% call superclass constructor
-			self@ManufacturedFunctions1d_elliptic(k,uTrue,NameValueArgs);
+			self@ManufacturedFunctions1d_elliptic(k,uTrue);
 
 			% store additional coefficients
 			self.r = r;
@@ -38,6 +39,9 @@ classdef ManufacturedFunctions1d_poisson < ManufacturedFunctions1d_elliptic
 				self.BCtypes = BCtypes;
 			end
 
+			% store reaction form
+			self.reaction_form = NameValueArgs.reaction_form;
+
 			% manufacture RHS
 			self.f = self.manufactureRHS; 
 
@@ -47,20 +51,28 @@ classdef ManufacturedFunctions1d_poisson < ManufacturedFunctions1d_elliptic
 		% MANUFACTURING FUNCTIONS
 		function f = manufactureRHS(self)
 		% Manufactures symfun f (i.e. the right-hand side) from data
-
+		%
+		% NOTE: ManufacturedFunctions1d manufactures f for either of
+		% 
+		% 	(1) - div (k grad u) + r(u) = f  (nonlinear, 'source' form)
+		% 	(2) - div (k grad u) + r*u = f   (linear, 'mass' form)
+		%
+		% so this method must account for both cases. It does so by checking
+		% whether r = r(u), in which case it assumes case (1). Or, if the
+		% property reaction_form has been manually overwritten as reaction_form
+		% = 'source', then ManufacturedFunctions1d_poisson will also assume case
+		% (1). Otherwise, it assumes case (2). 
+		
 			% manufacture RHS
-			syms x; syms t;
+			syms x; syms t; syms u;
 
-			% note: this is a kludge. The linear and nonlinear solvers make
-			% different assumptions about how the reaction term is handled. So
-			% that leads to different methods of manufacting the RHS. 
-			if Coefficients.isNonlinear(self.r)
-				f = self.divq + compose(self.r,self.uTrue);
+			if Coefficients.isNonlinear(self.r) || strcmp(self.reaction_form, "source")
+				%f = self.divq + compose(self.r,self.uTrue);
+				f = self.divq + compose(self.r,self.uTrue,u,x);
 			else
 				f = self.divq + self.r * self.uTrue;
 			end
 
-		
 		end
 
 
