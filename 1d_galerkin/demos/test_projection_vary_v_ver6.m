@@ -13,12 +13,12 @@ xLim = [0 1];
 
 % mesh parameters
 base = 2;
-p = 5;
+p = 1;
 
 
 % PDE PARAMETERS
 % pde coefficients
-lambda = -10;
+lambda = 0;
 k = 1;
 r = lambda * u;
 dr_du = lambda;
@@ -27,32 +27,36 @@ dr_du = lambda;
 BCtypes = 'NN';
 
 % original problem
-U_N_L = u*v;
-U_N_R = u*v;
-dU_N_L = diff(U_N_L,u);
-dU_N_R = diff(U_N_R,u);
+U_N = u * v;
+dU_N = diff(U_N,u);
 
-BCvals = {U_N_L, U_N_R};
-BCvals_du = {dU_N_L, dU_N_R};
+BCvals = {U_N, U_N};
+BCvals_du = {dU_N, dU_N};
 
 % BLACK BOX %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % create domain 
 dom = Domain1d(xLim);
 
 % make waitbar
-wait = waitbar(0,'Solving projection problems...');
+%wait = waitbar(0,'Solving projection problems...');
 
 % initialize solution storage
 ind = 1;
-exponents = -5:0.1:5;
-exponents = -1:0.01:1;
+exponents_pos = 10.^(-7:1:7);
+exponents_neg = -fliplr(exponents_pos);
+exponents = [exponents_neg exponents_pos];
+
 N = length(exponents);
 
-for i = exponents
+hold on
+%for i = exponents
+%for i = 10
+for i = 0
 
     % set u and v
-    u_fixed = x + x^2 + 1;
-    v_fixed = 10^i;
+    %u_fixed = x + x^2 + 1;
+    u_fixed = x^2;
+    v_fixed = i;
 
     % manufacture auxiliary functions
     auxfun = AuxFun1d_projection(k,0);
@@ -60,6 +64,7 @@ for i = exponents
     auxfun.dr_du = matlabFunction(symfun(dr_du,x));
     auxfun.u_fixed = matlabFunction(symfun(u_fixed,x));
     auxfun.v_fixed = matlabFunction(symfun(v_fixed,x));
+    auxfun.lambda = lambda;
 
     % add boundary conditions to domain
     dom.boundary = Boundary1d(xLim);
@@ -81,12 +86,44 @@ for i = exponents
     ind = ind + 1;
 
     % update waitbar in a simple way
-    waitbar(ind/N,wait);
+    %waitbar(ind/N,wait);
 
-    fprintf(' ind: %d, v = 10^{%.5f}, W_max = %.3f \n',ind,i,max(abs(prob.solution)));
+    fprintf(' ind: %d, v = %.5f, W_max = %.3f \n',ind,i,max(abs(prob.solution)));
+    plot(prob.domain.mesh.nodes,prob.solution,'LineWidth',1);
+    pause()
+
+    %{
+    % compute exact solution
+    u_exact_denom = 24 * (-lambda^2 + 8*lambda*v_fixed - 48*lambda + 96*v_fixed);
+    u_exact(1,1) = lambda * (lambda + 48);
+    u_exact(2,1) = -5 * lambda^2 + 36 * lambda * v_fixed - 240 * lambda + 576 * v_fixed;
+    u_exact(3,1) = -23 * lambda^2 + 192 * lambda * v_fixed - 1104 * lambda + 2304 * v_fixed;
+    u_exact = u_exact / u_exact_denom;
+    %}
+
+    %{
+    % compute numerical solution
+    K = [2 -2 0; -2 4 -2; 0 -2 2];
+    M = [1/6 1/12 0; 1/12 1/3 1/12; 0 1/12 1/6];
+    B = [1 0 0; 0 0 0; 0 0 1];
+    b = [-1/2; -1; 3/2] + lambda * [1/96; 7/48; 17/96] - v_fixed * [0; 0 ;1];
+
+    % assemble
+    A = K + lambda * M - v_fixed * B;
+
+    % solve
+    w = A \ b;
+    %}
+
+    %{
+    % compute error
+    max(prob.solution - u_exact)
+    %u_exact - w
+    pause()
+    %}
 
 end
 hold off
 
 % close waitbar
-close(wait);
+%close(wait);
