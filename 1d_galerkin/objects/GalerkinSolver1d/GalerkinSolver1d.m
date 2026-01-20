@@ -238,6 +238,74 @@ classdef GalerkinSolver1d
             b = sparse(b);
         end
         
+        function b = computeVolumeForces_gauss2(self, g)
+        % COMPUTEVOLUMEFORCES_GAUSS2
+        % Assemble the volume load vector b_i = ∫_Ω g(x,t,u,v) φ_i(x) dx
+        % using 2-point Gauss quadrature on each 1D element.
+        %
+        % Usage:
+        %   b = self.computeVolumeForces_gauss2(g)
+        %
+        % Notes:
+        % - Exact for polynomials up to degree 3 (per element) in x when g depends only on x.
+        % - If g depends on u, we evaluate u at Gauss points by linear interpolation.
+
+            if nargin < 2 || isempty(g)
+                g = self.f;
+            end
+
+            % Mesh data
+            coords = self.domain.mesh.nodes(:);
+            elems  = self.domain.mesh.elements;
+            nElems = size(elems,1);
+            nNodes = numel(coords);
+
+            xL = coords(elems(:,1));
+            xR = coords(elems(:,2));
+            h  = xR - xL;
+            mid  = (xL + xR)/2;
+            half = h/2; % Jacobian for mapping from [-1,1] to [xL,xR]
+
+            % Gauss points/weights on reference [-1,1]
+            xi = [-1/sqrt(3); 1/sqrt(3)];
+            w  = [1; 1];
+
+            % Shape functions at Gauss points (reference)
+            N1 = (1 - xi)/2; % corresponds to left node
+            N2 = (1 + xi)/2; % corresponds to right node
+
+            % Current solution values at element nodes (for u-dependent g)
+            U = self.U;
+            if isempty(U)
+                U = zeros(nNodes,1);
+            end
+            UL = U(elems(:,1));
+            UR = U(elems(:,2));
+
+            % Evaluate g at Gauss points (vectorized)
+            [gfun, t, ~, V] = self.checkVariables(g);
+
+            % Physical Gauss points per element
+            xq1 = mid + half*xi(1);
+            xq2 = mid + half*xi(2);
+
+            % Interpolate U to Gauss points (P1)
+            Uq1 = N1(1)*UL + N2(1)*UR;
+            Uq2 = N1(2)*UL + N2(2)*UR;
+
+            g1 = gfun(xq1, t, Uq1, V);
+            g2 = gfun(xq2, t, Uq2, V);
+
+            % Local load contributions for each element:
+            % bL(e) = ∑_q w_q * g(x_q) * N1(xi_q) * (h/2)
+            % bR(e) = ∑_q w_q * g(x_q) * N2(xi_q) * (h/2)
+            bL = (w(1)*g1*N1(1) + w(2)*g2*N1(2)) .* half;
+            bR = (w(1)*g1*N2(1) + w(2)*g2*N2(2)) .* half;
+
+            % Assemble into global vector
+            b = accumarray(elems(:), [bL; bR], [nNodes,1], @sum, 0, true);
+            b = sparse(b);
+        end
 
         % BOUNDARY CONDITION FUNCTIONS
         %{

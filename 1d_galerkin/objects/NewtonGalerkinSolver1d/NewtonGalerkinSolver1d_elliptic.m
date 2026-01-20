@@ -58,8 +58,8 @@ classdef NewtonGalerkinSolver1d_elliptic < GalerkinSolver1d_elliptic & NewtonGal
 				self.U = U_tilde + self.vectors.U_D;
 
 				% check convegence
-				if norm(W) < 10^(-10)
-					%fprintf(' %d iterations,',i)
+				if norm(W) < 10^(-12)
+					fprintf(' %d iterations,',i)
 					break
 				end
 

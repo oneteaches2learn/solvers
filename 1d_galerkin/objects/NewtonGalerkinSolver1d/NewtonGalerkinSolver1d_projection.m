@@ -87,6 +87,9 @@ classdef NewtonGalerkinSolver1d_projection < NewtonGalerkinSolver1d_elliptic
 			% set initial guess to (U_fixed,V_fixed)
 			self.U = U_fixed;
 			self.V = V_fixed;
+			self.U = ones(size(self.U)) * mean(U_fixed);  % better initial guess
+			self.U = ones(size(self.U));
+			%self.U = zeros(size(self.U));
 
 			% store RHS
 			self.vectors.b_neuFixed = self.computeNeumannBCs(U_fixed,V_fixed);
@@ -94,9 +97,8 @@ classdef NewtonGalerkinSolver1d_projection < NewtonGalerkinSolver1d_elliptic
 			self = self.assembleVectors;
 			self.vectors.b_vol = self.computeRHS(U_fixed,V_fixed);
 
-			% temporary: overwrite b_vol with the exact value, computed by hand
-			%self.vectors.b_vol_estimate = self.vectors.b_vol;
-			%self.vectors.b_vol = [-1/2; -1; 3/2] + 1 * [1/96; 7/48; 17/96] - [0; 0; 1];
+			% store lambda
+			self.coefficients.lambda = auxfun.lambda;
 
 			% solve
 			%self = self.solve;
@@ -134,10 +136,11 @@ classdef NewtonGalerkinSolver1d_projection < NewtonGalerkinSolver1d_elliptic
 			b = (vectors.b_vol + vectors.b_neu) - S * vectors.U_D;
 
 			% assemble J
-            J = S * U_tilde + b_nonlinear - b;
+	        J = S * U_tilde + b_nonlinear - b;
+			%J = (tensors.A + tensors.M_dr) * U_tilde - b;
+			%J = (tensors.A + tensors.M_dr - tensors.M_dneu) * U_tilde - vectors.b_vol;
                 
 			% assemble DJ
-			%DJ = tensors.A + self.coefficients.lambda * tensors.M_dr + tensors.M_dneu;
 			DJ = tensors.A + tensors.M_dr - tensors.M_dneu;
 
 		end
@@ -155,7 +158,8 @@ classdef NewtonGalerkinSolver1d_projection < NewtonGalerkinSolver1d_elliptic
 		% it means you can overwrite it before calling solve.
 		
 			%self.vectors.b_vol = self.computeRHS(self.u_fixed,self.v_fixed);
-			self.vectors.M_r = self.computeVolumeForces(self.coefficients.r);
+			%self.vectors.M_r = self.computeVolumeForces(self.coefficients.r);
+			self.vectors.M_r = self.computeVolumeForces_gauss2(self.coefficients.r);
 
 		end
 
@@ -197,7 +201,16 @@ classdef NewtonGalerkinSolver1d_projection < NewtonGalerkinSolver1d_elliptic
 
 			% compute right-hand side vector
 			%b_vol = (tensors.A + lambda * tensors.M_r) * U_fixed - vectors.b_neuFixed;
-			b_vol = (tensors.A + tensors.M_r) * U_fixed - vectors.b_neuFixed;
+			%b_vol = (tensors.A + tensors.M_r) * U_fixed - vectors.b_neuFixed;
+			%b_vol = (tensors.A + tensors.M_dr) * U_fixed - vectors.b_neuFixed;
+
+
+			% temporary: overwrite b_vol with the exact value, computed by hand
+			lambda = self.coefficients.lambda;
+			m = self.computeVolumeForces_gauss2(self.coefficients.u_fixed);
+			b_vol = tensors.A * U_fixed - vectors.b_neuFixed;
+			%b_vol = b_vol + [1/96; 7/48; 17/96];
+			b_vol = b_vol + lambda * m;
 
 		end
 
