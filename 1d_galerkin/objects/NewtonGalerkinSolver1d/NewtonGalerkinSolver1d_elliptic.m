@@ -45,6 +45,8 @@ classdef NewtonGalerkinSolver1d_elliptic < GalerkinSolver1d_elliptic & NewtonGal
 				self = self.assembleVectors;
 				self = self.assembleBCs;
 				[DJ,J] = self.finalAssembly(U_tilde);
+				self.DJ = DJ;  % store for access after solve
+				self.J  = J;
 
 				% Solving one Newton step
 				W = zeros(self.domain.mesh.nNodes,1);

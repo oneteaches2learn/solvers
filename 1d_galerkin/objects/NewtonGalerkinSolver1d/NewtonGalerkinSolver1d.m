@@ -3,6 +3,11 @@ classdef NewtonGalerkinSolver1d
     properties
     end
 
+	properties (Hidden)
+		DJ  % Jacobian matrix
+		J   % Residual vector
+	end
+
     methods
         function self = NewtonGalerkinSolver1d()
             ...
