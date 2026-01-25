@@ -10,6 +10,8 @@ classdef (Abstract) GalerkinSolver2d_elliptic < GalerkinSolver2d
 			% call superclass constructor
 			self@GalerkinSolver2d(dom,auxfun);
 
+			%{
+			% NOTE: don't call solve in advance
 			if nargin == 2
 
 				% calculate solution
@@ -17,6 +19,7 @@ classdef (Abstract) GalerkinSolver2d_elliptic < GalerkinSolver2d
             	self = self.solve;
 
 			end
+			%}
 
 		end
 
