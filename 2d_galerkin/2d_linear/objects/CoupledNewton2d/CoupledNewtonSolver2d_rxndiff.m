@@ -10,7 +10,7 @@ classdef CoupledNewtonSolver2d_rxndiff < CoupledNewtonSolver2d_parabolic
 			self@CoupledNewtonSolver2d_parabolic(dom,auxfun,ODE);
 
 			% solve
-			self = self.solve;
+			%self = self.solve;
 
 		end
 

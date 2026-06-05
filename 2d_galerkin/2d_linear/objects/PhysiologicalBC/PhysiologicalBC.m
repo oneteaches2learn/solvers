@@ -177,24 +177,37 @@ classdef PhysiologicalBC
 
         function func = radiation_linearized(self)
 
-            func = @(x1,x2,t,u,v) 4.27 .* (u - self.uInf);
+            % NOTE: 4.27 is the value copied from Castellani
+            %   4.2758 is the value I compute by linearizing around u = 33. 
+            %   3.1403 is the value from linearizing using T_inf = -40
+
+            func = @(x1,x2,t,u,v) 4.2758 .* (u - self.uInf);
+            %func = @(x1,x2,t,u,v) 3.1403 .* (u - self.uInf);
 
         end
 
         function func = radiation_linearized_du(self)
 
-            func = @(x1,x2,t,u,v) 4.27;
+            % NOTE: 4.27 is the value copied from Castellani
+            %   4.2758 is the value I compute by linearizing around u = 33. 
+            %   3.1403 is the value from linearizing using T_inf = -40
+
+            func = @(x1,x2,t,u,v) 4.2758;
+            %func = @(x1,x2,t,u,v) 3.1403;
 
         end
 
         function func = evaporation(self)
             cofs = self.coefficients;
+            cofs(5) = 0;
             func = @(x1,x2,t,u,v) max(cofs(3) .* (u - self.uStar) + cofs(4) .* (v - self.vStar),0) + cofs(5);
         end
 
         function func = evaporation_du(self)
             cofs = self.coefficients;
-            func = @(x1,x2,t,u,v) (cofs(3) .* (u - self.uStar) + cofs(4) .* (v - self.vStar) >= 0) .* cofs(3);
+            cofs(5) = 0;
+            func = @(x1,x2,t,u,v) cofs(5);
+
         end
 
         function val = get.coefficients(self)

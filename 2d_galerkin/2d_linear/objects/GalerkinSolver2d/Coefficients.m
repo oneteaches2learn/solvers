@@ -13,11 +13,20 @@ classdef Coefficients
 			arguments
 				u
 				v
-				cofs.v_min= 0;
+				% these are the default coefficients
+				cofs.v_min = 0;
 				cofs.v_max = 1;
 				cofs.u_min = 0;
 				cofs.u_max = 1;
 				cofs.gamma = 1;
+				%{
+				% these are coefficients for making the Stolwijk plot
+				cofs.v_min = 29;
+				cofs.v_max = 36.5;
+				cofs.u_min = 29;
+				cofs.u_max = 34;
+				cofs.gamma = 1;
+				%}
 			end
 			
 			% define individual ramps
@@ -428,6 +437,7 @@ classdef Coefficients
 			
 			arguments
 				u
+				%e_sSET = 34;
 				e_sSET = 33;
 			end
 
@@ -473,8 +483,8 @@ classdef Coefficients
 				C4 = 3.3;
 			end
 
-			%val = Coefficients.rLU(-C3 * e_hy - C4 * e_s);
-			val = 1e-6 * Coefficients.rLU(-C3 * e_hy - C4 * e_s);
+			val = Coefficients.rLU(-C3 * e_hy - C4 * e_s);
+			%val = 1e-6 * Coefficients.rLU(-C3 * e_hy - C4 * e_s);
 
 		end
 
@@ -487,8 +497,8 @@ classdef Coefficients
 				C4 = 3.3;
 			end
 
-			%val = -C4 * Coefficients.heaviside(-C3 * e_hy - C4 * e_s);
-			val = -1e-6 * C4 * Coefficients.heaviside(-C3 * e_hy - C4 * e_s);
+			val = -C4 * Coefficients.heaviside(-C3 * e_hy - C4 * e_s);
+			%val = -1e-6 * C4 * Coefficients.heaviside(-C3 * e_hy - C4 * e_s);
 
 		end
 
@@ -498,7 +508,8 @@ classdef Coefficients
 				u
 				v
 				omega_0  = 4.39e-4; 
-				alpha_DI = 0.134;
+				%alpha_DI = 0.134;
+				alpha_DI = 0.1;
 				cofs.C1  = 28424;
 				cofs.C2  = 4870;
 				cofs.C3  = 1.1;
@@ -522,7 +533,8 @@ classdef Coefficients
 				u
 				v
 				omega_0  = 4.39e-4;
-				alpha_DI = 0.134;
+				%alpha_DI = 0.134;
+				alpha_DI = 0.1;
 				cofs.C1  = 28424;
 				cofs.C2  = 4870;
 				cofs.C3  = 1.1;

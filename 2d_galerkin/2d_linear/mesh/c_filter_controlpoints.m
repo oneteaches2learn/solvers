@@ -11,7 +11,7 @@ if isempty(data)
 end
 
 % Define the distance threshold (set by the user)
-distanceThreshold = 5;  % Example threshold, adjust as needed
+distanceThreshold = 3;  % Example threshold, adjust as needed; 5 is default
 
 % Initialize a logical array to mark points for removal
 toRemove = false(size(data, 1), 1);
