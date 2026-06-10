@@ -1,0 +1,77 @@
+\subsection{Probability Density Functions}
+The purpose of this section is to record some notes for my own understanding of probability density functions.
+
+\begin{defn}[Borel subsets of $\R^n$][Caitlin, pg. 4]
+Let $\mathcal{F}$ denote the set of closed subsets of $\R^n$. The collection of \textit{Borel subsets} of $\R^n$, denoted $B_n$, is the minimal (with respect to inclusion) $\sigma$-field containing $\mathcal{F}$.
+\end{defn}
+
+
+
+\begin{defn}[Probability measure][Caitlin, pg. 4]
+Let $\bm X : (\Omega, \mathcal E, P) \to (\R^n, B_n)$ be a random vector. The \textit{probability measure} on $\R^n$ induced by $X$, denoted $P_\bm{X} : B_n \to \R$, is defined by
+%
+\begin{equation}
+    \label{eq:probability_measure}
+    P_\bm{X}(B) = P ( \bm X^{-1} (B)), \qquad B \in B_n.
+\end{equation}
+\end{defn}
+
+The probability measure on $\R^n$ induced by $X$ can also be called the \textit{$X$-pushforward measure}, as explained in the next remark. 
+
+\begin{remark}
+A \textit{pushforward} is ... WHAT? 
+
+In this case, the domain of $X$ is the probability space $(\Omega, \mathcal E, P)$, which is obviously equipped with a measure $P$. We use $P$ and $X$ to define a new measure $P_X$ on the codomain of $X$ by using definition \eqref{eq:probability_measure}. Thus we imagine that the existing measure is ``pushed-forward'' in the sense that $X: \Omega \to \R^n$. 
+\end{remark}
+
+The probability measure is intuitively useful because it is iterpreted as the probability of a given outcome in an experiment, game, or other probabilistic phenomenon. That is, for $B \in B_n$, $P_\bm{X}(B)$ is interpreted as the probability that $X$ takes on values in $B$. 
+
+The next example illustrates this interpretation.
+
+\begin{remark}
+This example involves the probability of rolling a 6 with a pair of fair dice. Intuitively, there are $6 \times 6 = 36$ pairs of outcomes for the two dice. Each outcome has a 1-in-36 chance of occuring. But there are five pairs of rolls that sum to 6, so we intuitively believe that the desired probability is $\frac{5}{36}$.  
+
+To formalize this idea, we first describe the probability space that models this scenario. Consider $(\Omega, \mathcal E, P)$ where 
+%
+\begin{equation}
+    \Omega = D \times D, \qquad D = \{1, 2, 3, 4, 5, 6\}, 
+\end{equation}
+%
+$\mathcal E$ is the power set of $\mathcal E$, and $P$ is defined so that 
+%
+\begin{equation}
+    P((n_1,n_2)) = \frac{1}{36}.
+\end{equation}
+%
+The elements of this space are the pairs 
+%
+\begin{equation}
+    (1,1), (1,2), \dots, (2,1), (2,2) \dots, (6,5), (6,6),
+\end{equation}
+%
+which represent the values that the two dice take. 
+
+In this scenario, however, we are interested in the sum of the values of the dice, which we modl using the following random variable. Define $X : \Omega \to \R$ by 
+%
+\begin{equation}
+    X(x,y) = x + y.
+\end{equation}
+%
+
+The desired outcome is $\{6\} \subset \R$, which is a Borel subset of $\R$, so $P_X(\{6\})$ is defined on this set. The inverse image
+%
+\begin{equation}
+    X^{-1}(\{6\}) = \{(1,5), (2,4), (3,3), (4,2), (5,1)\}
+\end{equation}
+%
+represents all the ways that one can ``roll a 6'' in this scenario. 
+
+Finally, because $P$ is a measure, it is countably additive on disjoint subsets, so
+%
+\begin{equation}
+    P((1,5), (2,4), (3,3), (4,2), (5,1)) = \frac{5}{36}.
+\end{equation}
+%
+\end{example}
+
+The above example illustrates that for discrete probability spaces, the probability measure $P_X$ works in an intuivitely pleasing way: we consider a desired outcome. We consider all the ways to achieve that outcome, which is the inverse image part. We consider the probability of those individual outcomes. And then we sum up the probabilities of those individual outcomes. 

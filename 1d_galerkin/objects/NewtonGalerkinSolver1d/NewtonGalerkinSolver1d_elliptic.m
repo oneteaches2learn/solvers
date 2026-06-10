@@ -38,7 +38,7 @@ classdef NewtonGalerkinSolver1d_elliptic < GalerkinSolver1d_elliptic & NewtonGal
             U_tilde(dirichlet) = 0;
 
 			% Newton-Galerkin iteration
-			for i = 1:100
+			for i = 1:1000
 			
 				% Assembly
 				self = self.assembleTensors;
@@ -60,12 +60,13 @@ classdef NewtonGalerkinSolver1d_elliptic < GalerkinSolver1d_elliptic & NewtonGal
 				self.U = U_tilde + self.vectors.U_D;
 
 				% check convegence
-				if norm(W) < 10^(-12)
+				if norm(W) < 10^(-5)
 					fprintf(' %d iterations,',i)
 					break
 				end
 
 			end
+			i
 
 			% store result
 			self.solution = self.U;
