@@ -1,5 +1,41 @@
-runExperiment = 1;
+runExperiment = 0;
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%actFunc = StolwijkActivation();
+%sigma = actFunc.value;
+
+%cofs = Coefficients;
+
+
+    % DOMAIN INFORMATION
+    %hand_small_fine
+    %tyler_closed_medium
+    %tyler_closed_fine
+    tyler_closed_lc2
+
+    % mirror the mesh across horizontal midline (if using tyler_closed_lc2)
+    p = msh.POS;
+    t = msh.TRIANGLES;
+    %p(:,1) = -p(:,1);
+    y0 = (min(p(:,1)) + max(p(:,1))) / 2;
+    p(:,1) = 2*y0 - p(:,1);
+    t(:,[2 3]) = t(:,[3 2]);
+    msh.POS = p;
+    msh.TRIANGLES = t;
+
+    % rescale mesh
+    msh.POS = msh.POS / max(max(msh.POS));
+    msh.POS = msh.POS * 0.24;
+
+    % Construct Domain Geometry
+    dom_geo = Domain2d.domainFromGmsh(msh);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%{
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% test of random variables
 syms u v a b 
 
 expr = a * (u - v) + b * u;
@@ -10,13 +46,57 @@ F = F.addParameter("a", GaussianParameter(10, 1));
 F = F.addParameter("b", GaussianParameter(1000, 100));
 
 [f1, params1] = F.sample()
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%}
+
+%{
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% test of random coefficients
+c = @(x1,x2) 3.0e6 + 1.0e5 .* x1;
+
+k = @(x1,x2) 0.45 + 0.05 .* x2;
+
+f = 350;
+uInit = 33;
+
+auxRand = AuxFun_gaussian(c, k, f, uInit);
+
+aux1 = auxRand.sample();
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%}
+
+
+%{
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+syms x1 x2 a real
+
+aRand = GaussianParameter(2.0, 0.25);
+
+c = GaussianFunction(1 + a*cos(x1)^2, [x1, x2]);
+c = c.addParameter("a", aRand);
+
+k = 0.45;
+f = 350;
+uInit = 33;
+
+auxRand = AuxFun_gaussian(c, k, f, uInit);
+
+[aux1, samples1] = auxRand.sample();
+[aux2, samples2] = auxRand.sample();
+
+samples1.c
+samples2.c
+
+aux1.cofs.c(0.5, 0.7)
+aux2.cofs.c(0.5, 0.7)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%}
 
 %value = f1(33, 37);
 
-%{
 if runExperiment
     % rxndiffSolve_demo 
-    clearvars -except saveResults1 saveResults2 outputFolder plot_temps
+%    clearvars -except saveResults1 saveResults2 outputFolder plot_temps
     x = sym('x',[1 2],'real'); syms t; syms u; syms v;
     % USER INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -177,11 +257,38 @@ if runExperiment
 
     % Solve
     fprintf(' Solving:'), tic
-        ode  = ODE(data,options);
-        kf   = KalmanFilter2d(dom,auxfun,ode);
+%        ode  = ODE(data,options);
+%        kf   = KalmanFilter2d(dom,auxfun,ode);
     executionTime = toc; 
     fprintf(' %f s\n',executionTime)
 
 end
+
+
+%{
+u = [25:.1:34];
+%plot(u,sigma(u,37))
+sigma_old = auxfun.cofs.r_activ;
+omega_b = 1.1e-3;
+
+hold on
+plot(u,sigma_old(0,0,0,u,37))
+plot(u,omega_b * sigma(u,37))
+hold off
 %}
 
+%{
+D = actFunc.D;
+hold on
+plot(u,cofs.DI(37-37,u-33))
+plot(u,D(u,37))
+hold off
+%}
+
+%{
+C = actFunc.C;
+hold on
+plot(u,cofs.CS(37-37,u-33))
+plot(u,C(u,37))
+hold off
+%}
